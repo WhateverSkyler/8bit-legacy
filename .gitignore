@@ -1,0 +1,9 @@
+config/.env
+config/*.secret
+data/*.csv
+data/*.json
+__pycache__/
+*.pyc
+.DS_Store
+venv/
+.venv/

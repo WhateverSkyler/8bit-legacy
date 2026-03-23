@@ -1,0 +1,126 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════
+   8-BIT LEGACY — Light Theme Design System
+   Nintendo Switch-inspired SaaS · Clean · Professional
+   ═══════════════════════════════════════════════════════ */
+
+@theme inline {
+  /* Backgrounds */
+  --color-bg-primary: #F8F9FB;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-nested: #F1F3F5;
+  --color-bg-hover: #E9ECF0;
+
+  /* Accent */
+  --color-accent-cyan: #0EA5E9;
+  --color-accent-cyan-deep: #0284C7;
+  --color-accent-red: #EF4444;
+  --color-accent-red-deep: #DC2626;
+
+  /* Status */
+  --color-status-success: #22C55E;
+  --color-status-warning: #F59E0B;
+  --color-status-error: #EF4444;
+  --color-status-info: #0EA5E9;
+
+  /* Text */
+  --color-text-primary: #111827;
+  --color-text-secondary: #4B5563;
+  --color-text-muted: #9CA3AF;
+
+  /* Borders */
+  --color-border: #E2E5E9;
+  --color-border-hover: #CBD0D8;
+
+  /* Cyan glows (light-mode tints) */
+  --color-cyan-glow: rgba(14, 165, 233, 0.08);
+  --color-cyan-glow-strong: rgba(14, 165, 233, 0.15);
+  --color-red-glow: rgba(239, 68, 68, 0.08);
+
+  /* Radii */
+  --radius-card: 12px;
+  --radius-pill: 24px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+
+  /* Layout */
+  --sidebar-expanded: 280px;
+  --sidebar-collapsed: 80px;
+  --topbar-height: 56px;
+
+  /* Fonts */
+  --font-sans: "Nunito", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", Monaco, monospace;
+
+  /* Shadows (soft, professional) */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-card-hover: 0 10px 25px rgba(14, 165, 233, 0.1), 0 4px 10px rgba(0, 0, 0, 0.05);
+  --shadow-elevated: 0 20px 50px rgba(0, 0, 0, 0.12);
+  --shadow-dropdown: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+/* Base */
+html {
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-hover);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* Focus visible */
+*:focus-visible {
+  outline: 2px solid var(--color-accent-cyan);
+  outline-offset: 2px;
+}
+
+/* Tabular numbers for data */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Horizontal scroll snap container (Switch game tile style) */
+.scroll-snap-x {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.scroll-snap-x > * {
+  scroll-snap-align: start;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

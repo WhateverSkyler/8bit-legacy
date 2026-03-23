@@ -1,0 +1,19 @@
+{
+  "default_multiplier": 1.35,
+  "minimum_profit_usd": 3.00,
+  "shopify_fee_percent": 0.029,
+  "shopify_fee_fixed": 0.30,
+  "price_field": "loose",
+  "round_to": 0.99,
+  "category_multipliers": {
+    "pokemon_cards": 1.35,
+    "retro_games": 1.35,
+    "consoles": 1.30,
+    "accessories": 1.40
+  },
+  "notes": {
+    "round_to": "Prices end in .99 (e.g., $27.99) for retail psychology. Set to null to disable.",
+    "price_field": "Which PriceCharting field to use: loose, cib, or new",
+    "minimum_profit_usd": "Items below this profit threshold after fees get flagged, not auto-updated"
+  }
+}
