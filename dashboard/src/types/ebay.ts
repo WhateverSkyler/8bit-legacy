@@ -15,4 +15,5 @@ export interface EbaySearchResult {
   results: EbayListing[];
   shopifyPrice?: number;
   isFallback: boolean;
+  fallbackUrl?: string;
 }

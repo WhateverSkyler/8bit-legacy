@@ -8,32 +8,52 @@ import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
 import { staggerContainer, staggerItem } from "@/lib/motion";
 import { formatCurrency } from "@/lib/utils";
-import { Grid3X3, List, Upload, Search, Gamepad2 } from "lucide-react";
+import { Grid3X3, List, Upload, Search, Gamepad2, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useProducts } from "@/hooks/use-products";
 
-const SAMPLE_PRODUCTS = [
-  { id: "1", title: "Super Mario Bros 3", console: "NES", price: 34.99, marketPrice: 25.92, margin: 22.6, status: "active" },
-  { id: "2", title: "The Legend of Zelda: A Link to the Past", console: "SNES", price: 44.99, marketPrice: 33.33, margin: 21.4, status: "active" },
-  { id: "3", title: "Sonic the Hedgehog 2", console: "Genesis", price: 14.99, marketPrice: 11.10, margin: 18.2, status: "active" },
-  { id: "4", title: "GoldenEye 007", console: "N64", price: 29.99, marketPrice: 22.22, margin: 21.8, status: "active" },
-  { id: "5", title: "Pokemon Red", console: "Game Boy", price: 49.99, marketPrice: 37.03, margin: 22.0, status: "active" },
-  { id: "6", title: "Final Fantasy VII", console: "PS1", price: 39.99, marketPrice: 29.62, margin: 21.9, status: "active" },
-  { id: "7", title: "Super Smash Bros", console: "N64", price: 39.99, marketPrice: 29.62, margin: 21.9, status: "active" },
-  { id: "8", title: "Mega Man 2", console: "NES", price: 24.99, marketPrice: 18.51, margin: 20.6, status: "active" },
-];
+interface ShopifyProduct {
+  productId: string;
+  productTitle: string;
+  productHandle: string;
+  productTags: string[];
+  variantId: string;
+  variantTitle: string;
+  sku: string;
+  currentPrice: number;
+  barcode: string;
+}
 
 export default function InventoryPage() {
   const [view, setView] = useState<"grid" | "list">("grid");
   const [search, setSearch] = useState("");
+  const { data, isLoading } = useProducts();
 
-  const filtered = SAMPLE_PRODUCTS.filter((p) =>
-    p.title.toLowerCase().includes(search.toLowerCase())
-  );
+  const products: ShopifyProduct[] = data?.products ?? [];
+
+  const filtered = useMemo(() => {
+    if (!search) return products;
+    const q = search.toLowerCase();
+    return products.filter(
+      (p) =>
+        p.productTitle.toLowerCase().includes(q) ||
+        p.sku.toLowerCase().includes(q) ||
+        p.productTags.some((t: string) => t.toLowerCase().includes(q))
+    );
+  }, [products, search]);
+
+  // Estimate margin using 1.35x multiplier assumption (market price = current / 1.35)
+  const getEstimatedMargin = (price: number) => {
+    const estimatedMarket = price / 1.35;
+    const fees = price * 0.029 + 0.30;
+    const profit = price - estimatedMarket - fees;
+    return Math.round((profit / price) * 1000) / 10;
+  };
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Inventory" description="Manage products and pricing.">
+      <PageHeader title="Inventory" description={`${products.length} products in store.`}>
         <Link href="/inventory/price-sync">
           <Button variant="primary" size="sm">
             <Upload size={14} />
@@ -69,63 +89,91 @@ export default function InventoryPage() {
         </div>
       </div>
 
-      {/* Product Grid */}
-      {view === "grid" ? (
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 size={24} className="animate-spin text-accent-cyan" />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-12 text-sm text-text-muted">
+          {search ? "No products match your search." : "No products found."}
+        </div>
+      ) : view === "grid" ? (
         <motion.div
           className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
           variants={staggerContainer}
           initial="hidden"
           animate="visible"
+          key={`grid-${search}`}
         >
-          {filtered.map((product) => (
-            <motion.div key={product.id} variants={staggerItem}>
-              <Link href={`/inventory/${product.id}`}>
-                <Card hoverable className="cursor-pointer">
-                  <CardContent>
-                    <div className="flex h-32 items-center justify-center rounded-[var(--radius-md)] bg-bg-nested mb-3">
-                      <Gamepad2 size={32} className="text-text-muted" />
-                    </div>
-                    <p className="text-sm font-semibold text-text-primary truncate">{product.title}</p>
-                    <div className="mt-1 flex items-center gap-2">
-                      <Badge variant="info">{product.console}</Badge>
-                    </div>
-                    <div className="mt-3 flex items-center justify-between">
-                      <span className="text-lg font-bold tabular-nums text-text-primary">{formatCurrency(product.price)}</span>
-                      <span className="text-xs text-status-success font-medium">{product.margin}% margin</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            </motion.div>
-          ))}
+          {filtered.map((product) => {
+            const console = product.productTags[0] ?? "";
+            const margin = getEstimatedMargin(product.currentPrice);
+            return (
+              <motion.div key={product.variantId} variants={staggerItem}>
+                <Link href={`/inventory/${product.productId.replace("gid://", "")}`}>
+                  <Card hoverable className="cursor-pointer">
+                    <CardContent>
+                      <div className="flex h-32 items-center justify-center rounded-[var(--radius-md)] bg-bg-nested mb-3">
+                        <Gamepad2 size={32} className="text-text-muted" />
+                      </div>
+                      <p className="text-sm font-semibold text-text-primary truncate">{product.productTitle}</p>
+                      <div className="mt-1 flex items-center gap-2">
+                        {console && <Badge variant="info">{console}</Badge>}
+                        {product.sku && <span className="text-xs text-text-muted font-mono">{product.sku}</span>}
+                      </div>
+                      <div className="mt-3 flex items-center justify-between">
+                        <span className="text-lg font-bold tabular-nums text-text-primary">{formatCurrency(product.currentPrice)}</span>
+                        <span className={`text-xs font-medium ${margin >= 15 ? "text-status-success" : margin >= 5 ? "text-status-warning" : "text-status-error"}`}>
+                          ~{margin}% margin
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              </motion.div>
+            );
+          })}
         </motion.div>
       ) : (
         <Card>
           <CardContent>
-            <table className="w-full">
-              <thead>
-                <tr className="border-b-2 border-border">
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-muted">Product</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-muted">Console</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-text-muted">Market</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-text-muted">Price</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-text-muted">Margin</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((p) => (
-                  <tr key={p.id} className="border-b border-border hover:bg-bg-hover/50 transition-colors">
-                    <td className="px-4 py-3 text-sm font-medium text-text-primary">{p.title}</td>
-                    <td className="px-4 py-3"><Badge variant="info">{p.console}</Badge></td>
-                    <td className="px-4 py-3 text-right text-sm tabular-nums text-text-secondary">{formatCurrency(p.marketPrice)}</td>
-                    <td className="px-4 py-3 text-right text-sm font-semibold tabular-nums text-text-primary">{formatCurrency(p.price)}</td>
-                    <td className="px-4 py-3 text-right text-sm font-medium text-status-success">{p.margin}%</td>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b-2 border-border">
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-muted">Product</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-muted">Console</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-muted">SKU</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-text-muted">Price</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-text-muted">Margin</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <motion.tbody variants={staggerContainer} initial="hidden" animate="visible" key={`list-${search}`}>
+                  {filtered.map((p) => {
+                    const margin = getEstimatedMargin(p.currentPrice);
+                    return (
+                      <motion.tr key={p.variantId} variants={staggerItem} className="border-b border-border hover:bg-bg-hover/50 transition-colors">
+                        <td className="px-4 py-3 text-sm font-medium text-text-primary">{p.productTitle}</td>
+                        <td className="px-4 py-3">{p.productTags[0] && <Badge variant="info">{p.productTags[0]}</Badge>}</td>
+                        <td className="px-4 py-3 text-sm text-text-muted font-mono">{p.sku}</td>
+                        <td className="px-4 py-3 text-right text-sm font-semibold tabular-nums text-text-primary">{formatCurrency(p.currentPrice)}</td>
+                        <td className={`px-4 py-3 text-right text-sm font-medium ${margin >= 15 ? "text-status-success" : margin >= 5 ? "text-status-warning" : "text-status-error"}`}>
+                          ~{margin}%
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
+                </motion.tbody>
+              </table>
+            </div>
           </CardContent>
         </Card>
+      )}
+
+      {data?.source === "sample" && (
+        <p className="text-center text-xs text-text-muted">
+          Showing sample data. Add Shopify credentials to <code className="bg-bg-nested px-1 py-0.5 rounded text-accent-cyan">.env.local</code> for live inventory.
+        </p>
       )}
     </div>
   );

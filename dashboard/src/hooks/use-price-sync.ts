@@ -35,7 +35,7 @@ export function usePriceSyncDiff() {
 
 export function usePriceSyncApply() {
   return useMutation({
-    mutationFn: async (changes: { variantId: string; newPrice: number }[]) => {
+    mutationFn: async (changes: { variantId: string; newPrice: number; productTitle?: string; marketPrice?: number; oldPrice?: number; priceDiff?: number; estimatedProfit?: number }[]) => {
       const resp = await fetch("/api/price-sync/apply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

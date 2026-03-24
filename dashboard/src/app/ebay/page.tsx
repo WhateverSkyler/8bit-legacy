@@ -8,21 +8,45 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { staggerContainer, staggerItem } from "@/lib/motion";
-import { Search, ExternalLink, ShoppingCart } from "lucide-react";
-import { useState } from "react";
-
-const SAMPLE_RESULTS = [
-  { title: "Super Mario Bros 3 NES Cartridge - Tested Working", price: 18.99, shipping: 3.99, total: 22.98, seller: "retro_games_usa", rating: "99.2%", condition: "Used" },
-  { title: "Super Mario Bros. 3 (NES) Authentic Cart Only", price: 19.50, shipping: 4.25, total: 23.75, seller: "game_vault_88", rating: "98.7%", condition: "Used" },
-  { title: "Super Mario Bros 3 Nintendo NES Game Cartridge", price: 20.00, shipping: 3.50, total: 23.50, seller: "pixel_paradise", rating: "99.5%", condition: "Used" },
-  { title: "Mario Bros 3 NES - Cleaned & Tested", price: 21.99, shipping: 0.0, total: 21.99, seller: "classic_ctrl", rating: "97.8%", condition: "Used" },
-  { title: "Super Mario Bros. 3 NES Authentic - Free Ship", price: 24.99, shipping: 0.0, total: 24.99, seller: "nostalgic_gamer", rating: "99.1%", condition: "Used" },
-];
+import { Search, ExternalLink, Loader2 } from "lucide-react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEbaySearch } from "@/hooks/use-ebay-search";
 
 export default function EbayPage() {
-  const [query, setQuery] = useState("Super Mario Bros 3 NES");
-  const [searched, setSearched] = useState(true);
+  return (
+    <Suspense>
+      <EbayPageInner />
+    </Suspense>
+  );
+}
+
+function EbayPageInner() {
+  const searchParams = useSearchParams();
+  const initialQuery = searchParams.get("q") ?? "";
+  const [query, setQuery] = useState(initialQuery);
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
   const shopifyPrice = 34.99;
+
+  // Update when navigated to with ?q= param
+  useEffect(() => {
+    const q = searchParams.get("q");
+    if (q && q !== query) {
+      setQuery(q);
+      setSearchQuery(q);
+    }
+  }, [searchParams]);
+
+  const { data, isLoading } = useEbaySearch(searchQuery, {
+    enabled: searchQuery.length > 0,
+  });
+
+  const handleSearch = () => {
+    if (query.trim()) setSearchQuery(query.trim());
+  };
+
+  const results = data?.results ?? [];
+  const isFallback = data?.isFallback ?? false;
 
   return (
     <div className="space-y-6">
@@ -39,11 +63,11 @@ export default function EbayPage() {
                 className="pl-9"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && setSearched(true)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               />
             </div>
-            <Button variant="primary" onClick={() => setSearched(true)}>
-              <Search size={14} />
+            <Button variant="primary" onClick={handleSearch} disabled={isLoading}>
+              {isLoading ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
               Search
             </Button>
           </div>
@@ -51,61 +75,93 @@ export default function EbayPage() {
       </Card>
 
       {/* Results */}
-      {searched && (
+      {searchQuery && !isLoading && (
         <Card>
           <CardContent>
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <p className="text-sm text-text-secondary">
-                  {SAMPLE_RESULTS.length} results for <span className="font-medium text-text-primary">&ldquo;{query}&rdquo;</span>
+                  {results.length} results for <span className="font-medium text-text-primary">&ldquo;{searchQuery}&rdquo;</span>
+                  {isFallback && results.length === 0 && (
+                    <span className="ml-2 text-text-muted">(eBay API not configured)</span>
+                  )}
                 </p>
                 <p className="text-xs text-text-muted mt-0.5">
                   Shopify price: <span className="text-accent-cyan font-medium">{formatCurrency(shopifyPrice)}</span>
                 </p>
               </div>
-              <Button variant="secondary" size="sm">
-                <ShoppingCart size={14} />
-                Bulk Search Orders
-              </Button>
+              {isFallback && data?.fallbackUrl && (
+                <a href={data.fallbackUrl} target="_blank" rel="noopener noreferrer">
+                  <Button variant="secondary" size="sm">
+                    <ExternalLink size={14} />
+                    Search on eBay.com
+                  </Button>
+                </a>
+              )}
             </div>
-            <motion.div className="space-y-2" variants={staggerContainer} initial="hidden" animate="visible">
-              {SAMPLE_RESULTS.map((listing, i) => {
-                const profit = shopifyPrice - listing.total - (shopifyPrice * 0.029 + 0.30);
-                return (
-                  <motion.div
-                    key={i}
-                    variants={staggerItem}
-                    className="flex items-center justify-between rounded-[var(--radius-md)] border border-border bg-bg-nested p-4 transition-colors hover:border-accent-cyan/30 hover:bg-bg-hover/50"
-                  >
-                    <div className="flex-1 min-w-0 mr-4">
-                      <p className="text-sm font-medium text-text-primary truncate">{listing.title}</p>
-                      <div className="mt-1 flex items-center gap-3 text-xs text-text-secondary">
-                        <span>{listing.seller}</span>
-                        <span className="text-status-success">{listing.rating}</span>
-                        <Badge variant="neutral">{listing.condition}</Badge>
+
+            {results.length > 0 ? (
+              <motion.div className="space-y-2" variants={staggerContainer} initial="hidden" animate="visible" key={searchQuery}>
+                {results.map((listing, i) => {
+                  const profit = shopifyPrice - listing.total - (shopifyPrice * 0.029 + 0.30);
+                  return (
+                    <motion.div
+                      key={i}
+                      variants={staggerItem}
+                      className="flex items-center justify-between rounded-[var(--radius-md)] border border-border bg-bg-nested p-4 transition-colors hover:border-accent-cyan/30 hover:bg-bg-hover/50"
+                    >
+                      <div className="flex-1 min-w-0 mr-4">
+                        <p className="text-sm font-medium text-text-primary truncate">{listing.title}</p>
+                        <div className="mt-1 flex items-center gap-3 text-xs text-text-secondary">
+                          <span>{listing.seller}</span>
+                          <span className="text-status-success">{listing.sellerFeedback}</span>
+                          <Badge variant="neutral">{listing.condition}</Badge>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-6 shrink-0">
-                      <div className="text-right">
-                        <p className="text-sm font-bold tabular-nums text-text-primary">{formatCurrency(listing.total)}</p>
-                        <p className="text-xs text-text-muted tabular-nums">
-                          {formatCurrency(listing.price)} + {formatCurrency(listing.shipping)} ship
-                        </p>
+                      <div className="flex items-center gap-6 shrink-0">
+                        <div className="text-right">
+                          <p className="text-sm font-bold tabular-nums text-text-primary">{formatCurrency(listing.total)}</p>
+                          <p className="text-xs text-text-muted tabular-nums">
+                            {formatCurrency(listing.price)} + {formatCurrency(listing.shipping)} ship
+                          </p>
+                        </div>
+                        <div className="text-right w-20">
+                          <p className={`text-sm font-semibold tabular-nums ${profit >= 0 ? "text-status-success" : "text-status-error"}`}>
+                            {formatCurrency(profit)}
+                          </p>
+                          <p className="text-xs text-text-muted">profit</p>
+                        </div>
+                        {listing.url && (
+                          <a href={listing.url} target="_blank" rel="noopener noreferrer">
+                            <Button variant="ghost" size="icon" aria-label="Open on eBay">
+                              <ExternalLink size={16} />
+                            </Button>
+                          </a>
+                        )}
                       </div>
-                      <div className="text-right w-20">
-                        <p className={`text-sm font-semibold tabular-nums ${profit >= 0 ? "text-status-success" : "text-status-error"}`}>
-                          {formatCurrency(profit)}
-                        </p>
-                        <p className="text-xs text-text-muted">profit</p>
-                      </div>
-                      <Button variant="ghost" size="icon" aria-label="Open on eBay">
-                        <ExternalLink size={16} />
-                      </Button>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </motion.div>
+                    </motion.div>
+                  );
+                })}
+              </motion.div>
+            ) : isFallback ? (
+              <p className="text-center text-sm text-text-muted py-8">
+                eBay API not configured. Use the button above to search directly on eBay.com.
+              </p>
+            ) : (
+              <p className="text-center text-sm text-text-muted py-8">
+                No results found.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {isLoading && (
+        <Card>
+          <CardContent>
+            <div className="flex items-center justify-center py-12">
+              <Loader2 size={24} className="animate-spin text-accent-cyan" />
+            </div>
           </CardContent>
         </Card>
       )}

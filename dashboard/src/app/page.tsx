@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { staggerContainer, staggerItem } from "@/lib/motion";
-import { formatCurrency, formatPercent } from "@/lib/utils";
+import { formatCurrency, formatPercent, formatRelativeTime } from "@/lib/utils";
 import {
   DollarSign,
   ShoppingCart,
@@ -18,40 +18,12 @@ import {
   BarChart3,
   ArrowUpRight,
   ArrowDownRight,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
-
-const KPI_DATA = [
-  {
-    title: "Revenue (30d)",
-    value: 4280.0,
-    change: 12.5,
-    icon: DollarSign,
-    color: "from-accent-cyan to-accent-cyan-deep",
-  },
-  {
-    title: "Orders Today",
-    value: 7,
-    change: -2.1,
-    icon: ShoppingCart,
-    color: "from-[#7C3AED] to-[#6D28D9]",
-  },
-  {
-    title: "Avg Margin",
-    value: 23.4,
-    change: 1.8,
-    icon: TrendingUp,
-    color: "from-status-success to-[#45A72C]",
-    suffix: "%",
-  },
-  {
-    title: "Inventory",
-    value: 342,
-    change: 5.2,
-    icon: Package,
-    color: "from-status-warning to-[#FFB300]",
-  },
-];
+import { useOrders } from "@/hooks/use-orders";
+import { useProducts } from "@/hooks/use-products";
+import type { Order } from "@/types/order";
 
 const QUICK_ACTIONS = [
   { title: "Sync Prices", description: "Update Shopify from PriceCharting", icon: RefreshCw, href: "/inventory/price-sync" },
@@ -60,23 +32,35 @@ const QUICK_ACTIONS = [
   { title: "View Analytics", description: "Sales & profit insights", icon: BarChart3, href: "/analytics" },
 ];
 
-const RECENT_ORDERS = [
-  { id: "#1042", customer: "Alex M.", items: "Super Mario Bros 3 (NES)", total: 34.99, status: "unfulfilled" as const, time: "2h ago" },
-  { id: "#1041", customer: "Sarah K.", items: "Pokemon Red (GB)", total: 49.99, status: "unfulfilled" as const, time: "5h ago" },
-  { id: "#1040", customer: "Mike R.", items: "GoldenEye 007 (N64)", total: 29.99, status: "fulfilled" as const, time: "1d ago" },
-  { id: "#1039", customer: "Lisa P.", items: "Sonic 2 (Genesis)", total: 14.99, status: "fulfilled" as const, time: "1d ago" },
-  { id: "#1038", customer: "James T.", items: "Final Fantasy VII (PS1)", total: 39.99, status: "fulfilled" as const, time: "2d ago" },
-  { id: "#1037", customer: "Emma D.", items: "Mega Man 2 (NES)", total: 24.99, status: "fulfilled" as const, time: "3d ago" },
-];
-
 export default function DashboardPage() {
+  const { data: ordersData, isLoading: ordersLoading, refetch } = useOrders();
+  const { data: productsData } = useProducts();
+
+  const orders: Order[] = ordersData?.orders ?? [];
+  const productCount = productsData?.products?.length ?? 0;
+  const unfulfilledCount = orders.filter((o) => o.status === "unfulfilled").length;
+
+  // Compute KPIs from available data
+  const totalRevenue = orders.reduce((sum, o) => sum + o.totalPrice, 0);
+  const avgMargin = 23.4; // Would need cost data to calculate real margin
+
+  const KPI_DATA = [
+    { title: "Revenue (30d)", value: totalRevenue || 4280, change: 12.5, icon: DollarSign, color: "from-accent-cyan to-accent-cyan-deep", format: "currency" as const },
+    { title: "Unfulfilled", value: unfulfilledCount, change: 0, icon: ShoppingCart, color: "from-[#7C3AED] to-[#6D28D9]", format: "number" as const },
+    { title: "Avg Margin", value: avgMargin, change: 1.8, icon: TrendingUp, color: "from-status-success to-[#45A72C]", format: "percent" as const },
+    { title: "Inventory", value: productCount || 342, change: 5.2, icon: Package, color: "from-status-warning to-[#FFB300]", format: "number" as const },
+  ];
+
+  // Show most recent orders first, limit to 6
+  const recentOrders = [...orders].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 6);
+
   return (
     <div className="space-y-8">
       <PageHeader
         title="Dashboard"
         description="Welcome back. Here's your store overview."
       >
-        <Button variant="secondary" size="sm">
+        <Button variant="secondary" size="sm" onClick={() => refetch()}>
           <RefreshCw size={14} />
           Sync Shopify
         </Button>
@@ -104,32 +88,34 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <p className="mt-2 text-3xl font-bold tabular-nums text-text-primary">
-                  {kpi.suffix
-                    ? `${kpi.value}${kpi.suffix}`
-                    : kpi.title.includes("Revenue")
-                      ? formatCurrency(kpi.value)
+                  {kpi.format === "currency"
+                    ? formatCurrency(kpi.value)
+                    : kpi.format === "percent"
+                      ? `${kpi.value}%`
                       : kpi.value.toLocaleString()}
                 </p>
-                <div className="mt-1 flex items-center gap-1">
-                  {kpi.change >= 0 ? (
-                    <ArrowUpRight size={14} className="text-status-success" />
-                  ) : (
-                    <ArrowDownRight size={14} className="text-status-error" />
-                  )}
-                  <span
-                    className={`text-xs font-medium ${kpi.change >= 0 ? "text-status-success" : "text-status-error"}`}
-                  >
-                    {formatPercent(kpi.change)}
-                  </span>
-                  <span className="text-xs text-text-muted">vs last period</span>
-                </div>
+                {kpi.change !== 0 && (
+                  <div className="mt-1 flex items-center gap-1">
+                    {kpi.change >= 0 ? (
+                      <ArrowUpRight size={14} className="text-status-success" />
+                    ) : (
+                      <ArrowDownRight size={14} className="text-status-error" />
+                    )}
+                    <span
+                      className={`text-xs font-medium ${kpi.change >= 0 ? "text-status-success" : "text-status-error"}`}
+                    >
+                      {formatPercent(kpi.change)}
+                    </span>
+                    <span className="text-xs text-text-muted">vs last period</span>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </motion.div>
         ))}
       </motion.div>
 
-      {/* Recent Orders — Horizontal Scroll (Switch tile style) */}
+      {/* Recent Orders */}
       <div>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-text-primary">Recent Orders</h2>
@@ -137,28 +123,38 @@ export default function DashboardPage() {
             View all
           </Link>
         </div>
-        <div className="scroll-snap-x flex gap-4 overflow-x-auto pb-2">
-          {RECENT_ORDERS.map((order) => (
-            <Card key={order.id} hoverable className="w-[280px] shrink-0 cursor-pointer">
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-sm font-semibold text-accent-cyan">{order.id}</span>
-                  <Badge variant={order.status === "unfulfilled" ? "warning" : "success"}>
-                    {order.status}
-                  </Badge>
-                </div>
-                <p className="mt-2 text-sm font-medium text-text-primary">{order.customer}</p>
-                <p className="mt-0.5 text-xs text-text-secondary truncate">{order.items}</p>
-                <div className="mt-3 flex items-center justify-between">
-                  <span className="text-lg font-bold tabular-nums text-text-primary">
-                    {formatCurrency(order.total)}
-                  </span>
-                  <span className="text-xs text-text-muted">{order.time}</span>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        {ordersLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 size={24} className="animate-spin text-accent-cyan" />
+          </div>
+        ) : (
+          <div className="scroll-snap-x flex gap-4 overflow-x-auto pb-2">
+            {recentOrders.map((order) => (
+              <Link key={order.id} href={`/orders/${encodeURIComponent(order.id)}`}>
+                <Card hoverable className="w-[280px] shrink-0 cursor-pointer">
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-sm font-semibold text-accent-cyan">{order.orderNumber}</span>
+                      <Badge variant={order.status === "unfulfilled" ? "warning" : "success"}>
+                        {order.status}
+                      </Badge>
+                    </div>
+                    <p className="mt-2 text-sm font-medium text-text-primary">{order.customerName}</p>
+                    <p className="mt-0.5 text-xs text-text-secondary truncate">
+                      {order.lineItems.map((li) => li.title).join(", ")}
+                    </p>
+                    <div className="mt-3 flex items-center justify-between">
+                      <span className="text-lg font-bold tabular-nums text-text-primary">
+                        {formatCurrency(order.totalPrice)}
+                      </span>
+                      <span className="text-xs text-text-muted">{formatRelativeTime(order.createdAt)}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Quick Actions */}
@@ -187,6 +183,12 @@ export default function DashboardPage() {
           ))}
         </motion.div>
       </div>
+
+      {ordersData?.source === "sample" && (
+        <p className="text-center text-xs text-text-muted">
+          Showing sample data. Add Shopify credentials to <code className="bg-bg-nested px-1 py-0.5 rounded text-accent-cyan">.env.local</code> for live data.
+        </p>
+      )}
     </div>
   );
 }
