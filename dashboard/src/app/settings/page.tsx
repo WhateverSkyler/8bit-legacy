@@ -55,6 +55,10 @@ export default function SettingsPage() {
   const [priceField, setPriceField] = useState("loose");
   const [categoryMultipliers, setCategoryMultipliers] = useState<Record<string, string>>({});
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [autoApply, setAutoApply] = useState(false);
+  const [autoApplyThreshold, setAutoApplyThreshold] = useState("15");
+  const [maxPriceChange, setMaxPriceChange] = useState("30");
+  const [factorAdSpend, setFactorAdSpend] = useState(false);
 
   // Populate form when data loads
   useEffect(() => {
@@ -71,6 +75,10 @@ export default function SettingsPage() {
         cats[k] = v.toString();
       }
       setCategoryMultipliers(cats);
+      setAutoApply(p.auto_apply_enabled ?? false);
+      setAutoApplyThreshold((p.auto_apply_threshold_percent ?? 15).toString());
+      setMaxPriceChange((p.max_price_change_percent ?? 30).toString());
+      setFactorAdSpend(p.factor_ad_spend ?? false);
     }
   }, [data]);
 
@@ -88,6 +96,10 @@ export default function SettingsPage() {
       price_field: priceField as "loose" | "cib" | "new",
       round_to: roundTo ? parseFloat(roundTo) : null,
       category_multipliers: catMults,
+      auto_apply_enabled: autoApply,
+      auto_apply_threshold_percent: parseInt(autoApplyThreshold) || 15,
+      max_price_change_percent: parseInt(maxPriceChange) || 30,
+      factor_ad_spend: factorAdSpend,
     };
 
     saveMutation.mutate(pricing);
@@ -223,6 +235,75 @@ export default function SettingsPage() {
             <div>
               <label className="text-xs font-medium text-text-secondary mb-1 block">Fixed Fee ($)</label>
               <Input type="number" step="0.01" value={feeFixed} onChange={(e) => setFeeFixed(e.target.value)} />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Automation Controls */}
+      <Card>
+        <CardContent>
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-text-muted mb-4">Pricing Automation</h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between rounded-[var(--radius-md)] bg-bg-nested p-4">
+              <div>
+                <p className="text-sm font-medium text-text-primary">Auto-apply price changes</p>
+                <p className="text-xs text-text-muted">Automatically update Shopify prices from PriceCharting data</p>
+              </div>
+              <button
+                onClick={() => setAutoApply(!autoApply)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  autoApply ? "bg-accent-cyan" : "bg-border"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    autoApply ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="text-xs font-medium text-text-secondary mb-1 block">Auto-apply threshold (%)</label>
+                <Input
+                  type="number"
+                  step="1"
+                  value={autoApplyThreshold}
+                  onChange={(e) => setAutoApplyThreshold(e.target.value)}
+                />
+                <p className="mt-1 text-xs text-text-muted">Changes above this % need manual review</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-text-secondary mb-1 block">Max price change (%)</label>
+                <Input
+                  type="number"
+                  step="1"
+                  value={maxPriceChange}
+                  onChange={(e) => setMaxPriceChange(e.target.value)}
+                />
+                <p className="mt-1 text-xs text-text-muted">Hard limit — changes above this are rejected</p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between rounded-[var(--radius-md)] bg-bg-nested p-4">
+              <div>
+                <p className="text-sm font-medium text-text-primary">Factor in ad spend</p>
+                <p className="text-xs text-text-muted">Include Google Ads cost-per-order in profit calculations</p>
+              </div>
+              <button
+                onClick={() => setFactorAdSpend(!factorAdSpend)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  factorAdSpend ? "bg-accent-cyan" : "bg-border"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    factorAdSpend ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
             </div>
           </div>
         </CardContent>

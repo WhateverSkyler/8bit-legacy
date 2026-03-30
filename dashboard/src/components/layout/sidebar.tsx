@@ -9,9 +9,11 @@ import Image from "next/image";
 import {
   LayoutDashboard,
   ShoppingCart,
+  Truck,
   Package,
   Search,
   Share2,
+  Target,
   BarChart3,
   Settings,
   PanelLeftClose,
@@ -21,9 +23,11 @@ import {
 const NAV_ITEMS = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/orders", label: "Orders", icon: ShoppingCart },
+  { href: "/fulfillment", label: "Fulfillment", icon: Truck },
   { href: "/inventory", label: "Inventory", icon: Package },
   { href: "/ebay", label: "eBay Finder", icon: Search },
   { href: "/social", label: "Social Media", icon: Share2 },
+  { href: "/ads", label: "Google Ads", icon: Target },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

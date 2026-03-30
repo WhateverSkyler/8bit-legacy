@@ -99,13 +99,125 @@ sqlite.exec(`
     status TEXT NOT NULL DEFAULT 'draft',
     scheduled_at TEXT,
     published_at TEXT,
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL,
+    buffer_id TEXT,
+    buffer_profile_id TEXT,
+    engagement_likes INTEGER DEFAULT 0,
+    engagement_comments INTEGER DEFAULT 0,
+    engagement_shares INTEGER DEFAULT 0
   );
 
   CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL,
     updated_at TEXT NOT NULL
+  );
+
+  -- Automation system
+  CREATE TABLE IF NOT EXISTS automation_runs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    job_name TEXT NOT NULL,
+    started_at TEXT NOT NULL,
+    finished_at TEXT,
+    status TEXT NOT NULL DEFAULT 'running',
+    items_processed INTEGER DEFAULT 0,
+    items_changed INTEGER DEFAULT 0,
+    error_message TEXT,
+    metadata_json TEXT
+  );
+
+  -- Fulfillment tracker
+  CREATE TABLE IF NOT EXISTS fulfillment_tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    shopify_order_id TEXT NOT NULL,
+    shopify_order_number TEXT NOT NULL,
+    line_item_title TEXT NOT NULL,
+    line_item_sku TEXT NOT NULL DEFAULT '',
+    line_item_price REAL NOT NULL,
+    line_item_quantity INTEGER NOT NULL DEFAULT 1,
+    line_item_image_url TEXT,
+    status TEXT NOT NULL DEFAULT 'pending',
+    ebay_order_id TEXT,
+    ebay_listing_url TEXT,
+    ebay_purchase_price REAL,
+    ebay_seller_name TEXT,
+    tracking_number TEXT,
+    tracking_carrier TEXT,
+    customer_name TEXT NOT NULL,
+    customer_city TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL,
+    ordered_at TEXT,
+    shipped_at TEXT,
+    delivered_at TEXT,
+    fulfilled_at TEXT,
+    notes TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS fulfillment_alerts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id INTEGER,
+    type TEXT NOT NULL,
+    message TEXT NOT NULL,
+    severity TEXT NOT NULL DEFAULT 'warning',
+    acknowledged INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL
+  );
+
+  -- Pricing automation
+  CREATE TABLE IF NOT EXISTS price_snapshots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_title TEXT NOT NULL,
+    console_name TEXT NOT NULL,
+    loose_price REAL NOT NULL,
+    cib_price REAL DEFAULT 0,
+    new_price REAL DEFAULT 0,
+    source TEXT NOT NULL DEFAULT 'scraper',
+    scraped_at TEXT NOT NULL
+  );
+
+  -- Google Ads
+  CREATE TABLE IF NOT EXISTS google_ads_performance (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    date TEXT NOT NULL,
+    entity_type TEXT NOT NULL,
+    entity_id TEXT NOT NULL,
+    entity_name TEXT NOT NULL,
+    impressions INTEGER NOT NULL DEFAULT 0,
+    clicks INTEGER NOT NULL DEFAULT 0,
+    cost REAL NOT NULL DEFAULT 0,
+    conversions INTEGER NOT NULL DEFAULT 0,
+    conversion_value REAL NOT NULL DEFAULT 0,
+    roas REAL DEFAULT 0,
+    cpc REAL DEFAULT 0,
+    synced_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS google_ads_search_terms (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    date TEXT NOT NULL,
+    search_term TEXT NOT NULL,
+    campaign_id TEXT NOT NULL,
+    impressions INTEGER NOT NULL DEFAULT 0,
+    clicks INTEGER NOT NULL DEFAULT 0,
+    cost REAL NOT NULL DEFAULT 0,
+    conversions INTEGER NOT NULL DEFAULT 0,
+    is_negative INTEGER NOT NULL DEFAULT 0,
+    synced_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS google_ads_actions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    run_id INTEGER,
+    action_type TEXT NOT NULL,
+    target_entity_type TEXT NOT NULL,
+    target_entity_id TEXT NOT NULL,
+    target_entity_name TEXT NOT NULL,
+    old_value TEXT,
+    new_value TEXT,
+    reason TEXT NOT NULL,
+    executed_at TEXT NOT NULL,
+    success INTEGER NOT NULL DEFAULT 1,
+    error_message TEXT
   );
 `);
 

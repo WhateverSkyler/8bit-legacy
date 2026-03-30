@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { staggerContainer, staggerItem } from "@/lib/motion";
-import { Sparkles, Copy, Calendar, Globe, Tv, Camera, Check, Loader2 } from "lucide-react";
+import { Sparkles, Copy, Calendar, Globe, Tv, Camera, Check, Loader2, Send } from "lucide-react";
 import { useState, useCallback } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { useScheduleSocialPosts } from "@/hooks/use-social";
 import type { SocialPost } from "@/types/social";
 
 const TEMPLATE_TYPES = [
@@ -62,6 +63,36 @@ export default function SocialPage() {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [posts, setPosts] = useState<SocialPost[]>(SAMPLE_POSTS);
   const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [selectedPosts, setSelectedPosts] = useState<Set<number>>(new Set());
+  const scheduleMutation = useScheduleSocialPosts();
+
+  const togglePostSelection = (index: number) => {
+    setSelectedPosts((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  };
+
+  const handleScheduleSelected = () => {
+    // For posts without DB IDs (sample data), just mark as scheduled locally
+    const postIds = Array.from(selectedPosts);
+    scheduleMutation.mutate(
+      { postIds },
+      {
+        onSuccess: () => {
+          // Update local state
+          setPosts((prev) =>
+            prev.map((p, i) =>
+              selectedPosts.has(i) ? { ...p, status: "scheduled" } : p
+            )
+          );
+          setSelectedPosts(new Set());
+        },
+      }
+    );
+  };
 
   const generateMutation = useMutation({
     mutationFn: async (params: { batch: number; type?: string }) => {
@@ -112,19 +143,36 @@ export default function SocialPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Social Media" description="Generate and schedule social media posts.">
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={handleGenerate}
-          disabled={generateMutation.isPending}
-        >
-          {generateMutation.isPending ? (
-            <Loader2 size={14} className="animate-spin" />
-          ) : (
-            <Sparkles size={14} />
+        <div className="flex items-center gap-2">
+          {selectedPosts.size > 0 && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleScheduleSelected}
+              disabled={scheduleMutation.isPending}
+            >
+              {scheduleMutation.isPending ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Send size={14} />
+              )}
+              Schedule Selected ({selectedPosts.size})
+            </Button>
           )}
-          Generate Batch (20)
-        </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={handleGenerate}
+            disabled={generateMutation.isPending}
+          >
+            {generateMutation.isPending ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <Sparkles size={14} />
+            )}
+            Generate Batch (20)
+          </Button>
+        </div>
       </PageHeader>
 
       {/* Template Picker */}
@@ -176,6 +224,14 @@ export default function SocialPage() {
                   <Card>
                     <CardContent>
                       <div className="flex items-start justify-between gap-4">
+                        <div className="pt-1 shrink-0">
+                          <input
+                            type="checkbox"
+                            checked={selectedPosts.has(i)}
+                            onChange={() => togglePostSelection(i)}
+                            className="h-4 w-4 rounded border-border text-accent-cyan focus:ring-accent-cyan"
+                          />
+                        </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-2">
                             <Badge variant="info">{post.type.replace(/_/g, " ")}</Badge>

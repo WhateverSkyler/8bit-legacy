@@ -40,10 +40,26 @@ cd dashboard && npm install && npm run dev -- --port 3001
 - `src/hooks/` — TanStack Query hooks for all data fetching
 - `src/components/ui/` — Reusable component library (button, card, badge, tabs, dialog, etc.)
 
+**Pages:** Dashboard, Orders, Fulfillment, Inventory, Price Sync, eBay Finder, Social Media, Google Ads, Analytics, Settings
+
+**Automation Systems (built):**
+- `src/lib/scheduler.ts` — node-cron job scheduler with locking and run logging
+- `src/lib/safety.ts` — Hard/soft limits, circuit breakers for pricing and ads
+- `src/lib/buffer.ts` — Buffer API client for social media scheduling
+- `src/lib/google-ads.ts` — Google Ads API client (GAQL queries, negative keywords)
+- Fulfillment Tracker — order lifecycle: pending → ordered → shipped → delivered → fulfilled
+- Automated Pricing Engine — scrape PriceCharting → match → safety check → auto-apply
+- Smart Margin Engine — factors ad cost/order into profit calculations
+- Social Auto-Scheduling — generate posts → schedule to Buffer
+- Google Ads Management — sync performance, auto-optimize bids, manage negative keywords
+
+**DB tables (14 total):** products, variants, orders, orderLineItems, priceSyncRuns, priceSyncItems, ebaySearches, socialPosts, settings, automationRuns, fulfillmentTasks, fulfillmentAlerts, priceSnapshots, googleAdsPerformance, googleAdsSearchTerms, googleAdsActions
+
 **Remaining work:**
-- Wire sample data to real Shopify/eBay APIs (fill in dashboard/.env.local)
-- Connect SQLite sync to cache Shopify data locally
-- Add interactivity (CSV upload, fulfillment workflow, social scheduling)
+- Fill in dashboard/.env.local with real API credentials (Shopify, eBay, Google Ads, Buffer)
+- Apply for Google Ads developer token (can take days)
+- Connect Shopify to Google Merchant Center for Shopping feed
+- Deploy to VPS and start scheduler
 
 ## Key APIs
 - **Shopify Admin API** (GraphQL) — product CRUD, order data, bulk operations

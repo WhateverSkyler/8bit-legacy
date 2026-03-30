@@ -5,16 +5,21 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { Search, Truck, Loader2, ArrowLeft } from "lucide-react";
+import { Search, Truck, Loader2, ArrowLeft, Plus } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useOrders } from "@/hooks/use-orders";
+import { useFulfillmentTasks, useCreateFulfillmentTask } from "@/hooks/use-fulfillment";
 import Link from "next/link";
 import type { Order } from "@/types/order";
+import { FULFILLMENT_STATUS_LABELS, FULFILLMENT_STATUS_VARIANTS } from "@/types/fulfillment";
 
 export default function OrderDetailPage() {
   const params = useParams();
   const orderId = decodeURIComponent(params.id as string);
   const { data, isLoading } = useOrders();
+  const { data: fulfillmentData } = useFulfillmentTasks();
+  const createTask = useCreateFulfillmentTask();
+  const fulfillmentTasks = fulfillmentData?.tasks ?? [];
 
   const order: Order | undefined = data?.orders?.find(
     (o: Order) => o.id === orderId || o.orderNumber === orderId
@@ -67,27 +72,83 @@ export default function OrderDetailPage() {
             <CardContent>
               <h3 className="text-sm font-semibold uppercase tracking-wide text-text-muted mb-4">Line Items</h3>
               <div className="space-y-3">
-                {order.lineItems.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between rounded-[var(--radius-md)] bg-bg-nested p-3">
-                    <div>
-                      <p className="text-sm font-medium text-text-primary">{item.title}</p>
-                      <p className="text-xs text-text-secondary">
-                        {item.sku ? `${item.sku} \u00B7 ` : ""}Qty: {item.quantity}
-                      </p>
+                {order.lineItems.map((item, i) => {
+                  const existingTask = fulfillmentTasks.find(
+                    (t) =>
+                      t.shopifyOrderId === order.id &&
+                      t.lineItemTitle === item.title
+                  );
+
+                  return (
+                    <div key={i} className="rounded-[var(--radius-md)] bg-bg-nested p-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-text-primary">{item.title}</p>
+                          <p className="text-xs text-text-secondary">
+                            {item.sku ? `${item.sku} \u00B7 ` : ""}Qty: {item.quantity}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-semibold tabular-nums text-text-primary">
+                            {formatCurrency(item.price * item.quantity)}
+                          </span>
+                          <Link href={`/ebay?q=${encodeURIComponent(item.title)}`}>
+                            <Button variant="outline" size="sm">
+                              <Search size={14} />
+                              Find on eBay
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                      {/* Fulfillment Status */}
+                      <div className="mt-2 flex items-center justify-between border-t border-border/50 pt-2">
+                        {existingTask ? (
+                          <div className="flex items-center gap-2">
+                            <Badge variant={FULFILLMENT_STATUS_VARIANTS[existingTask.status as keyof typeof FULFILLMENT_STATUS_VARIANTS]}>
+                              {FULFILLMENT_STATUS_LABELS[existingTask.status as keyof typeof FULFILLMENT_STATUS_LABELS]}
+                            </Badge>
+                            {existingTask.ebayOrderId && (
+                              <span className="font-mono text-xs text-text-muted">
+                                eBay: {existingTask.ebayOrderId}
+                              </span>
+                            )}
+                            <Link href="/fulfillment">
+                              <Button variant="ghost" size="sm">
+                                Manage
+                              </Button>
+                            </Link>
+                          </div>
+                        ) : (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            disabled={createTask.isPending}
+                            onClick={() =>
+                              createTask.mutate({
+                                shopifyOrderId: order.id,
+                                shopifyOrderNumber: order.orderNumber,
+                                lineItemTitle: item.title,
+                                lineItemSku: item.sku,
+                                lineItemPrice: item.price,
+                                lineItemQuantity: item.quantity,
+                                lineItemImageUrl: item.imageUrl,
+                                customerName: order.customerName,
+                                customerCity: order.customerCity,
+                              })
+                            }
+                          >
+                            {createTask.isPending ? (
+                              <Loader2 size={14} className="animate-spin" />
+                            ) : (
+                              <Plus size={14} />
+                            )}
+                            Create Fulfillment Task
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-semibold tabular-nums text-text-primary">
-                        {formatCurrency(item.price * item.quantity)}
-                      </span>
-                      <Link href={`/ebay?q=${encodeURIComponent(item.title)}`}>
-                        <Button variant="outline" size="sm">
-                          <Search size={14} />
-                          Find on eBay
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>

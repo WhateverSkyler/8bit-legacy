@@ -81,3 +81,40 @@ export function parsePrice(priceStr: string): number {
   const value = parseFloat(cleaned);
   return isNaN(value) ? 0 : value;
 }
+
+/**
+ * Calculate profit factoring in ad spend per order.
+ * Used by the smart margin engine.
+ */
+export function calculateProfitWithAdCost(
+  sellPrice: number,
+  marketPrice: number,
+  config: PricingConfig,
+  adCostPerUnit: number = 0
+): number {
+  const shopifyFee =
+    sellPrice * config.shopify_fee_percent + config.shopify_fee_fixed;
+  return Math.round((sellPrice - marketPrice - shopifyFee - adCostPerUnit) * 100) / 100;
+}
+
+/**
+ * Calculate the minimum multiplier needed to hit the profit threshold,
+ * accounting for fees and optional ad cost.
+ */
+export function getRequiredMultiplier(
+  marketPrice: number,
+  config: PricingConfig,
+  adCostPerUnit: number = 0,
+  targetProfit?: number
+): number {
+  if (marketPrice <= 0) return config.default_multiplier;
+  const minProfit = targetProfit ?? config.minimum_profit_usd;
+  // sellPrice = marketPrice * multiplier
+  // profit = sellPrice - marketPrice - (sellPrice * feePercent + feeFixed) - adCost >= minProfit
+  // sellPrice * (1 - feePercent) = marketPrice + feeFixed + adCost + minProfit
+  // sellPrice = (marketPrice + feeFixed + adCost + minProfit) / (1 - feePercent)
+  const requiredSellPrice =
+    (marketPrice + config.shopify_fee_fixed + adCostPerUnit + minProfit) /
+    (1 - config.shopify_fee_percent);
+  return Math.round((requiredSellPrice / marketPrice) * 100) / 100;
+}

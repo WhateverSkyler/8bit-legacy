@@ -11,9 +11,17 @@
     "consoles": 1.30,
     "accessories": 1.40
   },
+  "auto_apply_enabled": false,
+  "auto_apply_threshold_percent": 15,
+  "max_price_change_percent": 30,
+  "factor_ad_spend": false,
+  "ad_cost_lookback_days": 30,
   "notes": {
     "round_to": "Prices end in .99 (e.g., $27.99) for retail psychology. Set to null to disable.",
     "price_field": "Which PriceCharting field to use: loose, cib, or new",
-    "minimum_profit_usd": "Items below this profit threshold after fees get flagged, not auto-updated"
+    "minimum_profit_usd": "Items below this profit threshold after fees get flagged, not auto-updated",
+    "auto_apply_enabled": "Set to true to auto-apply safe price changes from scheduled runs",
+    "auto_apply_threshold_percent": "Changes above this % need manual review",
+    "max_price_change_percent": "Hard limit — changes above this are rejected"
   }
 }

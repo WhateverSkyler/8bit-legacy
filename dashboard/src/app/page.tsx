@@ -19,10 +19,13 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Loader2,
+  Truck,
+  AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
 import { useOrders } from "@/hooks/use-orders";
 import { useProducts } from "@/hooks/use-products";
+import { useFulfillmentTasks, useFulfillmentAlerts } from "@/hooks/use-fulfillment";
 import type { Order } from "@/types/order";
 
 const QUICK_ACTIONS = [
@@ -35,6 +38,12 @@ const QUICK_ACTIONS = [
 export default function DashboardPage() {
   const { data: ordersData, isLoading: ordersLoading, refetch } = useOrders();
   const { data: productsData } = useProducts();
+  const { data: fulfillmentData } = useFulfillmentTasks();
+  const { data: alertsData } = useFulfillmentAlerts();
+
+  const pendingFulfillments = fulfillmentData?.tasks?.filter((t) => t.status === "pending").length ?? 0;
+  const inTransitFulfillments = fulfillmentData?.tasks?.filter((t) => t.status === "shipped").length ?? 0;
+  const alertCount = alertsData?.alerts?.length ?? 0;
 
   const orders: Order[] = ordersData?.orders ?? [];
   const productCount = productsData?.products?.length ?? 0;
@@ -156,6 +165,61 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Fulfillment Queue */}
+      {(pendingFulfillments > 0 || inTransitFulfillments > 0 || alertCount > 0) && (
+        <div>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-text-primary">Fulfillment Queue</h2>
+            <Link href="/fulfillment" className="text-sm text-accent-cyan hover:underline">
+              View all
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Card>
+              <CardContent>
+                <div className="flex items-center gap-3">
+                  <div className="rounded-[var(--radius-md)] bg-orange-100 p-2">
+                    <Truck size={20} className="text-orange-500" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Pending</p>
+                    <p className="text-2xl font-bold tabular-nums text-text-primary">{pendingFulfillments}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent>
+                <div className="flex items-center gap-3">
+                  <div className="rounded-[var(--radius-md)] bg-blue-100 p-2">
+                    <Package size={20} className="text-blue-500" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">In Transit</p>
+                    <p className="text-2xl font-bold tabular-nums text-text-primary">{inTransitFulfillments}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            {alertCount > 0 && (
+              <Card>
+                <CardContent>
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-[var(--radius-md)] bg-red-100 p-2">
+                      <AlertTriangle size={20} className="text-red-500" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Alerts</p>
+                      <p className="text-2xl font-bold tabular-nums text-red-500">{alertCount}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Quick Actions */}
       <div>
