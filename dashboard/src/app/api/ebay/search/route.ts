@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
     const result = await searchEbay(query, config.appId, {
       maxPrice,
       condition,
+      certId: config.certId,
     });
     return NextResponse.json(result);
   } catch (error) {

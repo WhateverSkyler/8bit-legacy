@@ -20,6 +20,21 @@ const cronTasks = new Map<string, ReturnType<typeof cron.schedule>>();
 
 // Registered job definitions (handlers added by each phase)
 const jobRegistry = new Map<string, ScheduledJob>();
+let _initialized = false;
+
+/**
+ * Ensure jobs are registered (lazy init for Next.js multi-process).
+ */
+async function ensureInitialized(): Promise<void> {
+  if (_initialized) return;
+  _initialized = true;
+  try {
+    const { registerAllJobs } = await import("./jobs");
+    registerAllJobs();
+  } catch (e) {
+    console.error("[Scheduler] Failed to initialize jobs:", e);
+  }
+}
 
 /**
  * Register a job definition. Call this from each phase's initialization.
@@ -46,6 +61,7 @@ export function setJobEnabled(name: string, enabled: boolean): void {
 export async function runJobNow(
   name: string
 ): Promise<{ success: boolean; runId?: number; error?: string }> {
+  await ensureInitialized();
   const job = jobRegistry.get(name);
   if (!job) return { success: false, error: `Job "${name}" not found` };
   return executeJob(job);
@@ -154,14 +170,15 @@ export function stopScheduler(): void {
 /**
  * Get status of all registered jobs for the dashboard.
  */
-export function getSchedulerStatus(): Array<{
+export async function getSchedulerStatus(): Promise<Array<{
   name: string;
   cron: string;
   enabled: boolean;
   running: boolean;
   description: string;
   lastRun?: { id: number; status: string; finishedAt: string | null; itemsProcessed: number | null; itemsChanged: number | null };
-}> {
+}>> {
+  await ensureInitialized();
   const statuses = [];
 
   for (const [name, job] of jobRegistry) {

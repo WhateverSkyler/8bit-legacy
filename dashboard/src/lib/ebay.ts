@@ -3,6 +3,48 @@ import type { EbayListing, EbaySearchResult } from "@/types/ebay";
 
 const EBAY_SEARCH_URL =
   "https://api.ebay.com/buy/browse/v1/item_summary/search";
+const EBAY_TOKEN_URL =
+  "https://api.ebay.com/identity/v1/oauth2/token";
+
+// Cached OAuth token with expiry
+let _cachedToken: { token: string; expiresAt: number } | null = null;
+
+/**
+ * Exchange App ID + Cert ID for an OAuth access token.
+ * Tokens are cached until they expire (typically 2 hours).
+ */
+async function getEbayAccessToken(appId: string, certId: string): Promise<string | null> {
+  if (_cachedToken && Date.now() < _cachedToken.expiresAt) {
+    return _cachedToken.token;
+  }
+
+  const credentials = Buffer.from(`${appId}:${certId}`).toString("base64");
+  try {
+    const resp = await fetch(EBAY_TOKEN_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${credentials}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "grant_type=client_credentials&scope=https://api.ebay.com/oauth/api_scope",
+    });
+
+    if (!resp.ok) {
+      console.error(`eBay token error: ${resp.status}`);
+      return null;
+    }
+
+    const data = await resp.json();
+    _cachedToken = {
+      token: data.access_token,
+      expiresAt: Date.now() + (data.expires_in - 60) * 1000, // refresh 60s early
+    };
+    return _cachedToken.token;
+  } catch (error) {
+    console.error("eBay token error:", error);
+    return null;
+  }
+}
 
 /**
  * Search eBay via Browse API for matching listings.
@@ -15,16 +57,22 @@ export async function searchEbay(
     maxPrice?: number;
     condition?: "USED" | "NEW" | "ANY";
     limit?: number;
+    certId?: string;
   } = {}
 ): Promise<EbaySearchResult> {
-  const { maxPrice, condition = "USED", limit = 20 } = options;
+  const { maxPrice, condition = "USED", limit = 20, certId } = options;
 
-  if (!appId) {
+  if (!appId || !certId) {
     return {
       query,
       results: [],
       isFallback: true,
     };
+  }
+
+  const accessToken = await getEbayAccessToken(appId, certId);
+  if (!accessToken) {
+    return { query, results: [], isFallback: true };
   }
 
   let filter = "buyingOptions:{FIXED_PRICE},deliveryCountry:US";
@@ -45,7 +93,7 @@ export async function searchEbay(
   try {
     const resp = await fetch(`${EBAY_SEARCH_URL}?${params}`, {
       headers: {
-        Authorization: `Bearer ${appId}`,
+        Authorization: `Bearer ${accessToken}`,
         "X-EBAY-C-MARKETPLACE-ID": "EBAY_US",
         "Content-Type": "application/json",
       },

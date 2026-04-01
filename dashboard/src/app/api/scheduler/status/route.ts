@@ -4,7 +4,7 @@ import { getAllCircuitBreakerStatus } from "@/lib/safety";
 
 export async function GET() {
   try {
-    const jobs = getSchedulerStatus();
+    const jobs = await getSchedulerStatus();
     const circuitBreakers = getAllCircuitBreakerStatus();
 
     return NextResponse.json({

@@ -45,6 +45,7 @@ export function getShopifyConfig() {
 export function getEbayConfig() {
   return {
     appId: getEnv("EBAY_APP_ID"),
+    certId: getEnv("EBAY_CERT_ID"),
   };
 }
 
