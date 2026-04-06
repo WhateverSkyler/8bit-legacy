@@ -4,6 +4,7 @@ import { fetchAllProducts, fetchUnfulfilledOrders } from "./shopify";
 import { isGoogleAdsConfigured } from "./google-ads";
 import { validateOrderPrices } from "./order-validator";
 import { refreshPokemonCardPrices } from "./pokemon-price-sync";
+import { refreshGamePricesBatch } from "./game-price-sync";
 import { db } from "@db/index";
 import { products, variants, orders, orderLineItems } from "@db/schema";
 import { eq, like } from "drizzle-orm";
@@ -160,26 +161,25 @@ export function registerAllJobs(): void {
     },
   });
 
-  // ── Automated Price Sync ──────────────────────────────────────────
+  // ── Automated Game Price Sync (Search-Based) ──────────────────────
   registerJob({
     name: "price-sync",
-    cron: "0 */6 * * *", // every 6 hours
+    cron: "0 */4 * * *", // every 4 hours
     enabled: true,
-    description: "Sync prices from PriceCharting and auto-apply safe changes",
+    description: "Refresh game prices from PriceCharting (100 most stale products per run)",
     handler: async () => {
-      const resp = await fetch("http://localhost:3001/api/automation/price-sync/run", {
-        method: "POST",
-      });
-      const data = await resp.json();
-
-      if (!data.success && data.error) {
-        throw new Error(data.error);
-      }
+      const result = await refreshGamePricesBatch();
 
       return {
-        itemsProcessed: data.summary?.totalMatched ?? 0,
-        itemsChanged: data.summary?.autoApplied ?? 0,
-        metadata: data.summary,
+        itemsProcessed: result.searched,
+        itemsChanged: result.looseUpdated + result.cibUpdated,
+        metadata: {
+          searched: result.searched,
+          matched: result.matched,
+          looseUpdated: result.looseUpdated,
+          cibUpdated: result.cibUpdated,
+          errors: result.errors,
+        },
       };
     },
   });
