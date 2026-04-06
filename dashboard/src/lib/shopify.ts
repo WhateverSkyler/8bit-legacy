@@ -210,16 +210,35 @@ export async function fetchUnfulfilledOrders(
 
 /**
  * Update a single variant's price on Shopify.
+ * Uses productVariantsBulkUpdate (Shopify 2024-10+ API).
  */
 export async function updateVariantPrice(
   config: ShopifyConfig,
   variantId: string,
   price: number
 ): Promise<{ success: boolean; errors?: string[] }> {
+  // First, get the product ID for this variant
+  const lookupQuery = `
+    {
+      node(id: "${variantId}") {
+        ... on ProductVariant {
+          product { id }
+        }
+      }
+    }
+  `;
+
+  const lookupData = await shopifyGraphQL(config, lookupQuery);
+  const productId = (lookupData as any).data?.node?.product?.id;
+
+  if (!productId) {
+    return { success: false, errors: ["Could not find product for variant"] };
+  }
+
   const mutation = `
-    mutation productVariantUpdate($input: ProductVariantInput!) {
-      productVariantUpdate(input: $input) {
-        productVariant {
+    mutation productVariantsBulkUpdate($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+      productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+        productVariants {
           id
           price
         }
@@ -232,13 +251,11 @@ export async function updateVariantPrice(
   `;
 
   const data = await shopifyGraphQL(config, mutation, {
-    input: {
-      id: variantId,
-      price: price.toString(),
-    },
+    productId,
+    variants: [{ id: variantId, price: price.toString() }],
   });
 
-  const result = (data as any).data?.productVariantUpdate;
+  const result = (data as any).data?.productVariantsBulkUpdate;
   const userErrors = result?.userErrors ?? [];
 
   if (userErrors.length > 0) {

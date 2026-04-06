@@ -282,12 +282,20 @@ def create_shopify_product(card: dict, market_price: float, sell_price: float,
         print(f"  {flag} {title:<55} market: ${market_price:>7.2f}  sell: ${sell_price:>7.2f}  profit: ${profit:>6.2f}")
         return True
 
-    mutation = """
-    mutation productCreate($input: ProductInput!, $media: [CreateMediaInput!]) {
-      productCreate(input: $input, media: $media) {
+    # Step 1: Create the product (Shopify 2024-10 API — no variants in ProductCreateInput)
+    create_mutation = """
+    mutation productCreate($product: ProductCreateInput!, $media: [CreateMediaInput!]) {
+      productCreate(product: $product, media: $media) {
         product {
           id
           title
+          variants(first: 1) {
+            edges {
+              node {
+                id
+              }
+            }
+          }
         }
         userErrors {
           field
@@ -297,24 +305,14 @@ def create_shopify_product(card: dict, market_price: float, sell_price: float,
     }
     """
 
-    variables = {
-        "input": {
+    create_vars = {
+        "product": {
             "title": title,
             "descriptionHtml": GENERIC_DESCRIPTION,
             "productType": PRODUCT_TYPE,
             "vendor": "Pokémon",
             "tags": tags,
-            "status": "DRAFT",  # Start as draft until we're ready to go live
-            "variants": [
-                {
-                    "price": str(sell_price),
-                    "sku": f"PKM-{set_id}-{card_number}",
-                    "inventoryManagement": None,  # No inventory tracking (dropship)
-                    "requiresShipping": True,
-                    "options": ["Near Mint"],
-                }
-            ],
-            "options": ["Condition"],
+            "status": "DRAFT",
         },
         "media": [
             {
@@ -326,11 +324,57 @@ def create_shopify_product(card: dict, market_price: float, sell_price: float,
     }
 
     try:
-        result = shopify_graphql(mutation, variables)
-        errors = result.get("data", {}).get("productCreate", {}).get("userErrors", [])
-        if errors:
-            print(f"  ✗ {title}: {errors[0]['message']}")
+        result = shopify_graphql(create_mutation, create_vars)
+
+        # Check for GraphQL-level errors
+        if "errors" in result:
+            print(f"  ✗ {title}: {result['errors'][0].get('message', 'Unknown error')}")
             return False
+
+        product_data = result.get("data", {}).get("productCreate", {})
+        user_errors = product_data.get("userErrors", [])
+        if user_errors:
+            print(f"  ✗ {title}: {user_errors[0]['message']}")
+            return False
+
+        product = product_data.get("product")
+        if not product:
+            print(f"  ✗ {title}: No product returned")
+            return False
+
+        product_id = product["id"]
+        variant_edges = product.get("variants", {}).get("edges", [])
+        if not variant_edges:
+            print(f"  ✗ {title}: No default variant")
+            return False
+
+        variant_id = variant_edges[0]["node"]["id"]
+
+        # Step 2: Update the default variant with price and SKU
+        variant_mutation = """
+        mutation productVariantsBulkUpdate($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+          productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+            productVariants { id price sku }
+            userErrors { field message }
+          }
+        }
+        """
+
+        variant_vars = {
+            "productId": product_id,
+            "variants": [{
+                "id": variant_id,
+                "price": str(sell_price),
+                "inventoryItem": {"sku": f"PKM-{set_id}-{card_number}"},
+            }],
+        }
+
+        variant_result = shopify_graphql(variant_mutation, variant_vars)
+        variant_errors = variant_result.get("data", {}).get("productVariantsBulkUpdate", {}).get("userErrors", [])
+        if variant_errors:
+            print(f"  ⚡ {title}: created but variant update failed: {variant_errors[0]['message']}")
+            return True  # Product still created
+
         print(f"  ✓ {title} — ${sell_price:.2f}")
         return True
     except Exception as e:
@@ -380,43 +424,66 @@ def import_sealed_products(csv_path: str, dry_run: bool = False) -> dict:
                 results["created"] += 1
                 continue
 
-            mutation = """
-            mutation productCreate($input: ProductInput!, $media: [CreateMediaInput!]) {
-              productCreate(input: $input, media: $media) {
-                product { id title }
+            sku = f"PKM-SEALED-{name[:20].replace(' ', '-').upper()}"
+            product_type = f"Pokemon {category.replace('-', ' ').title()}"
+
+            create_mutation = """
+            mutation productCreate($product: ProductCreateInput!, $media: [CreateMediaInput!]) {
+              productCreate(product: $product, media: $media) {
+                product {
+                  id
+                  variants(first: 1) { edges { node { id } } }
+                }
                 userErrors { field message }
               }
             }
             """
 
-            variables = {
-                "input": {
+            create_vars = {
+                "product": {
                     "title": name,
                     "descriptionHtml": GENERIC_DESCRIPTION,
-                    "productType": f"Pokemon {category.replace('-', ' ').title()}",
+                    "productType": product_type,
                     "vendor": "Pokémon",
                     "tags": tags,
                     "status": "DRAFT",
-                    "variants": [{
-                        "price": str(sell_price),
-                        "sku": f"PKM-SEALED-{name[:20].replace(' ', '-').upper()}",
-                        "inventoryManagement": None,
-                        "requiresShipping": True,
-                    }],
                 },
                 "media": [{"originalSource": image_url, "mediaContentType": "IMAGE", "alt": name}]
                     if image_url else [],
             }
 
             try:
-                result = shopify_graphql(mutation, variables)
-                errors = result.get("data", {}).get("productCreate", {}).get("userErrors", [])
-                if errors:
-                    print(f"  ✗ {name}: {errors[0]['message']}")
+                result = shopify_graphql(create_mutation, create_vars)
+                if "errors" in result:
+                    print(f"  ✗ {name}: {result['errors'][0].get('message', 'Unknown')}")
                     results["failed"] += 1
-                else:
-                    print(f"  ✓ {name} — ${sell_price:.2f}")
-                    results["created"] += 1
+                    continue
+
+                product_data = result.get("data", {}).get("productCreate", {})
+                if product_data.get("userErrors"):
+                    print(f"  ✗ {name}: {product_data['userErrors'][0]['message']}")
+                    results["failed"] += 1
+                    continue
+
+                product_id_sealed = product_data["product"]["id"]
+                variant_id = product_data["product"]["variants"]["edges"][0]["node"]["id"]
+
+                # Update variant with price and SKU
+                variant_mutation = """
+                mutation productVariantsBulkUpdate($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+                  productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+                    productVariants { id }
+                    userErrors { field message }
+                  }
+                }
+                """
+                shopify_graphql(variant_mutation, {
+                    "productId": product_id_sealed,
+                    "variants": [{"id": variant_id, "price": str(sell_price), "inventoryItem": {"sku": sku}}],
+                })
+
+                print(f"  ✓ {name} — ${sell_price:.2f}")
+                results["created"] += 1
             except Exception as e:
                 print(f"  ✗ {name}: {e}")
                 results["failed"] += 1
