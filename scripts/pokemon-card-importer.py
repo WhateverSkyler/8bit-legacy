@@ -80,9 +80,7 @@ ROUND_TO = PRICING_CONFIG.get("round_to", 0.99)
 TCG_API_DELAY = 0.5   # seconds between Pokemon TCG API requests
 SHOPIFY_DELAY = 0.25   # seconds between Shopify mutations
 
-GENERIC_DESCRIPTION = """This card is in Near Mint condition unless otherwise stated. Card ships in a protective sleeve and toploader.
-
-All cards are sourced from trusted sellers and quality-checked before shipping. If you have any questions about condition or availability, feel free to reach out!
+GENERIC_DESCRIPTION = """This card is in great condition. If you have any questions, feel free to reach out!
 
 Shop more Pokemon cards at 8bitlegacy.com"""
 
