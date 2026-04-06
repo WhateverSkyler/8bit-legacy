@@ -58,6 +58,7 @@ ALL_CONSOLES = [
     "nes", "super-nintendo", "nintendo-64", "gamecube", "wii", "wii-u",
     "gameboy", "gameboy-color", "gameboy-advance", "nintendo-ds", "nintendo-3ds",
     "sega-genesis", "sega-saturn", "sega-dreamcast", "sega-cd", "sega-game-gear",
+    "sega-master-system", "sega-32x",
     "playstation", "playstation-2", "playstation-3", "psp",
     "xbox", "xbox-360",
     "atari-2600", "turbografx-16", "neo-geo",
@@ -285,12 +286,16 @@ def match_and_update(pc_items, shopify_products, apply=False, initial_run=False)
         if key not in pc_by_title:
             pc_by_title[key] = item
 
-    # Console slug mapping: Shopify tag -> PriceCharting console slug
+    # Console slug mapping: Shopify tag (lowercased) -> PriceCharting console slug
+    # Covers actual tag formats found in the store (e.g., "NES (Nintendo Entertainment System)")
     TAG_TO_SLUG = {
         "nes": "nes", "nintendo": "nes",
+        "nes (nintendo entertainment system)": "nes",
         "snes": "super-nintendo", "super nintendo": "super-nintendo",
+        "snes (super nintendo entertainment system)": "super-nintendo",
         "n64": "nintendo-64", "nintendo 64": "nintendo-64",
         "gamecube": "gamecube", "nintendo gamecube": "gamecube",
+        "nintendo gamecube > gamecube": "gamecube",
         "wii": "wii", "wii u": "wii-u",
         "gameboy": "gameboy", "game boy": "gameboy",
         "gameboy color": "gameboy-color", "gbc": "gameboy-color",
@@ -300,12 +305,17 @@ def match_and_update(pc_items, shopify_products, apply=False, initial_run=False)
         "genesis": "sega-genesis", "sega genesis": "sega-genesis",
         "saturn": "sega-saturn", "sega saturn": "sega-saturn",
         "dreamcast": "sega-dreamcast", "sega dreamcast": "sega-dreamcast",
+        "sega master system": "sega-master-system",
+        "sega cd": "sega-cd",
+        "sega 32x": "sega-32x",
+        "sega game gear": "sega-game-gear",
         "playstation": "playstation", "ps1": "playstation",
-        "ps2": "playstation-2", "playstation 2": "playstation-2",
-        "ps3": "playstation-3", "playstation 3": "playstation-3",
+        "playstation 2": "playstation-2", "ps2": "playstation-2",
+        "playstation 3": "playstation-3", "ps3": "playstation-3",
         "psp": "psp",
         "xbox": "xbox", "xbox 360": "xbox-360",
         "atari 2600": "atari-2600", "atari": "atari-2600",
+        "turbografx-16": "turbografx-16",
     }
 
     matched = 0
@@ -329,23 +339,19 @@ def match_and_update(pc_items, shopify_products, apply=False, initial_run=False)
                 sp_console_slug = slug
                 break
 
-        # Try console-specific match first (most accurate)
+        # Console-specific match only — never cross-match consoles
         pc_item = None
         if sp_console_slug:
             pc_item = pc_lookup.get((sp_norm, sp_console_slug))
 
-        # Fall back to title-only match
-        if not pc_item:
-            pc_item = pc_by_title.get(sp_norm)
-
-        # Try fuzzy: PriceCharting title in Shopify title or vice versa (console-aware)
-        if not pc_item:
-            for (pc_key, pc_console), pc_val in pc_lookup.items():
-                if sp_console_slug and pc_console != sp_console_slug:
-                    continue  # Don't cross-match consoles
-                if pc_key in sp_norm or sp_norm in pc_key:
-                    pc_item = pc_val
-                    break
+            # Try fuzzy within same console only
+            if not pc_item:
+                for (pc_key, pc_console), pc_val in pc_lookup.items():
+                    if pc_console != sp_console_slug:
+                        continue
+                    if pc_key in sp_norm or sp_norm in pc_key:
+                        pc_item = pc_val
+                        break
 
         if not pc_item:
             skipped_no_match += 1
