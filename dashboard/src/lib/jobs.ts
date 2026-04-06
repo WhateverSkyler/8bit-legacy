@@ -3,9 +3,10 @@ import { getShopifyConfig, getGoogleAdsConfig } from "./config";
 import { fetchAllProducts, fetchUnfulfilledOrders } from "./shopify";
 import { isGoogleAdsConfigured } from "./google-ads";
 import { validateOrderPrices } from "./order-validator";
+import { refreshPokemonCardPrices } from "./pokemon-price-sync";
 import { db } from "@db/index";
 import { products, variants, orders, orderLineItems } from "@db/schema";
-import { eq } from "drizzle-orm";
+import { eq, like } from "drizzle-orm";
 
 /**
  * Register all automation jobs. Called once at server startup.
@@ -179,6 +180,41 @@ export function registerAllJobs(): void {
         itemsProcessed: data.summary?.totalMatched ?? 0,
         itemsChanged: data.summary?.autoApplied ?? 0,
         metadata: data.summary,
+      };
+    },
+  });
+
+  // ── Pokemon Card Price Refresh ────────────────────────────────────
+  registerJob({
+    name: "pokemon-price-sync",
+    cron: "0 3,15 * * *", // twice daily at 3 AM and 3 PM ET
+    enabled: true,
+    description: "Refresh Pokemon card prices from TCGPlayer via Pokemon TCG API",
+    handler: async () => {
+      // Only run if we have Pokemon cards in the DB
+      const pokemonCount = db
+        .select({ count: variants.shopifyVariantId })
+        .from(variants)
+        .where(like(variants.sku, "PKM-%"))
+        .all().length;
+
+      if (pokemonCount === 0) {
+        return { itemsProcessed: 0, itemsChanged: 0, metadata: { skipped: "no pokemon cards in DB" } };
+      }
+
+      const result = await refreshPokemonCardPrices();
+
+      return {
+        itemsProcessed: result.cardsChecked,
+        itemsChanged: result.pricesUpdated,
+        metadata: {
+          setsChecked: result.setsChecked,
+          cardsChecked: result.cardsChecked,
+          pricesUpdated: result.pricesUpdated,
+          needsReview: result.needsReview,
+          rejected: result.rejected,
+          errors: result.errors,
+        },
       };
     },
   });
