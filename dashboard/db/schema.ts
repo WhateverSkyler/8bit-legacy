@@ -2,10 +2,10 @@ import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
 
 // Cached Shopify products
 export const products = sqliteTable("products", {
-  id: text("id").primaryKey(), // Shopify product GID
+  shopifyId: text("id").primaryKey(), // Shopify product GID
   title: text("title").notNull(),
   handle: text("handle").notNull(),
-  tags: text("tags").notNull().default("[]"), // JSON array
+  tags: text("tags").notNull().default("[]"), // comma-separated string
   imageUrl: text("image_url"),
   createdAt: text("created_at"),
   updatedAt: text("updated_at"),
@@ -14,15 +14,17 @@ export const products = sqliteTable("products", {
 
 // Cached Shopify variants
 export const variants = sqliteTable("variants", {
-  id: text("id").primaryKey(), // Shopify variant GID
-  productId: text("product_id")
+  shopifyVariantId: text("id").primaryKey(), // Shopify variant GID
+  productShopifyId: text("product_id")
     .notNull()
-    .references(() => products.id),
+    .references(() => products.shopifyId),
   title: text("title").notNull(),
   sku: text("sku").notNull().default(""),
   price: real("price").notNull(),
   barcode: text("barcode").notNull().default(""),
   syncedAt: text("synced_at").notNull(),
+  lastPriceCheck: text("last_price_check"), // ISO timestamp of last price validation
+  lastMarketPrice: real("last_market_price"), // most recent market price from PriceCharting
 });
 
 // Cached Shopify orders
@@ -163,7 +165,7 @@ export const fulfillmentTasks = sqliteTable("fulfillment_tasks", {
 export const fulfillmentAlerts = sqliteTable("fulfillment_alerts", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   taskId: integer("task_id"),
-  type: text("type").notNull(), // pending_too_long, no_tracking, delivery_exception, cost_overrun
+  type: text("type").notNull(), // pending_too_long, no_tracking, delivery_exception, cost_overrun, thin_margin
   message: text("message").notNull(),
   severity: text("severity").notNull().default("warning"), // info, warning, critical
   acknowledged: integer("acknowledged").notNull().default(0),

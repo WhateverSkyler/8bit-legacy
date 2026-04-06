@@ -49,9 +49,14 @@ HEADERS = {
 REQUEST_DELAY = 2.0  # seconds between requests
 
 
-def search_pricecharting(query: str) -> list[dict]:
-    """Search PriceCharting for items matching a query."""
-    url = f"https://www.pricecharting.com/search-products?q={quote_plus(query)}&type=videogames"
+def search_pricecharting(query: str, product_type: str = "videogames") -> list[dict]:
+    """Search PriceCharting for items matching a query.
+
+    Args:
+        query: Search term
+        product_type: "videogames" for games/consoles, "trading-cards" for Pokemon/TCG cards
+    """
+    url = f"https://www.pricecharting.com/search-products?q={quote_plus(query)}&type={product_type}"
 
     resp = requests.get(url, headers=HEADERS)
     resp.raise_for_status()
@@ -217,11 +222,13 @@ def main():
 
     parser.add_argument("--pages", type=int, default=5, help="Max pages to scrape per console (default: 5)")
     parser.add_argument("--save", action="store_true", help="Save results to CSV")
+    parser.add_argument("--type", default="videogames",
+                        help="Product type: 'videogames' or 'trading-cards' (for Pokemon/TCG)")
     args = parser.parse_args()
 
     if args.search:
         print(f"\nSearching PriceCharting for: {args.search}")
-        results = search_pricecharting(args.search)
+        results = search_pricecharting(args.search, product_type=args.type)
         if results:
             print(f"\n  {'Item':<45} {'Console':<20} {'Loose':>8} {'CIB':>8} {'New':>8}")
             print(f"  {'-' * 45} {'-' * 20} {'-' * 8} {'-' * 8} {'-' * 8}")
@@ -256,7 +263,7 @@ def main():
 
         for i, item_name in enumerate(items):
             print(f"  [{i + 1}/{len(items)}] Searching: {item_name}")
-            results = search_pricecharting(item_name)
+            results = search_pricecharting(item_name, product_type=args.type)
             if results:
                 all_results.append(results[0])  # Take best match
                 print(f"    Found: {results[0]['name']} — loose: ${results[0]['loose_price']:.2f}")

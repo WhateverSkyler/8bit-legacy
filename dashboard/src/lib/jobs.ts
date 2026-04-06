@@ -2,6 +2,7 @@ import { registerJob } from "./scheduler";
 import { getShopifyConfig, getGoogleAdsConfig } from "./config";
 import { fetchAllProducts, fetchUnfulfilledOrders } from "./shopify";
 import { isGoogleAdsConfigured } from "./google-ads";
+import { validateOrderPrices } from "./order-validator";
 import { db } from "@db/index";
 import { products, variants, orders, orderLineItems } from "@db/schema";
 import { eq } from "drizzle-orm";
@@ -27,58 +28,72 @@ export function registerAllJobs(): void {
         fetchUnfulfilledOrders(config),
       ]);
 
+      // fetchAllProducts returns flat per-variant entries — group by product first
+      const productMap = new Map<string, typeof shopifyProducts>();
+      for (const sp of shopifyProducts) {
+        const group = productMap.get(sp.productId) ?? [];
+        group.push(sp);
+        productMap.set(sp.productId, group);
+      }
+
       // Upsert products + variants
       let changed = 0;
-      for (const sp of shopifyProducts) {
-        const existing = db.select().from(products).where(eq(products.shopifyId, sp.id)).get();
+      const now = new Date().toISOString();
+
+      for (const [productId, entries] of productMap) {
+        const first = entries[0];
+        const existing = db.select().from(products).where(eq(products.shopifyId, productId)).get();
+
         if (!existing) {
           db.insert(products).values({
-            shopifyId: sp.id,
-            title: sp.title,
-            handle: sp.handle ?? "",
-            vendor: sp.vendor ?? "",
-            productType: sp.productType ?? "",
-            tags: sp.productTags?.join(", ") ?? "",
-            status: sp.status ?? "active",
-            syncedAt: new Date().toISOString(),
+            shopifyId: productId,
+            title: first.productTitle,
+            handle: first.productHandle,
+            tags: first.productTags?.join(", ") ?? "",
+            syncedAt: now,
           }).run();
           changed++;
         } else {
           db.update(products)
-            .set({ title: sp.title, tags: sp.productTags?.join(", ") ?? "", syncedAt: new Date().toISOString() })
-            .where(eq(products.shopifyId, sp.id))
+            .set({
+              title: first.productTitle,
+              tags: first.productTags?.join(", ") ?? "",
+              syncedAt: now,
+            })
+            .where(eq(products.shopifyId, productId))
             .run();
         }
 
-        for (const v of sp.variants ?? []) {
-          const existingV = db.select().from(variants).where(eq(variants.shopifyVariantId, v.id)).get();
+        // Upsert each variant
+        for (const sp of entries) {
+          const existingV = db.select().from(variants).where(eq(variants.shopifyVariantId, sp.variantId)).get();
           if (!existingV) {
             db.insert(variants).values({
-              shopifyVariantId: v.id,
-              productShopifyId: sp.id,
-              title: v.title,
-              sku: v.sku ?? "",
-              price: parseFloat(v.price),
-              compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) : null,
-              inventoryQuantity: v.inventoryQuantity ?? 0,
+              shopifyVariantId: sp.variantId,
+              productShopifyId: productId,
+              title: sp.variantTitle,
+              sku: sp.sku,
+              price: sp.currentPrice,
+              barcode: sp.barcode,
+              syncedAt: now,
             }).run();
           } else {
             db.update(variants)
               .set({
-                price: parseFloat(v.price),
-                compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) : null,
-                inventoryQuantity: v.inventoryQuantity ?? 0,
+                price: sp.currentPrice,
+                barcode: sp.barcode,
+                syncedAt: now,
               })
-              .where(eq(variants.shopifyVariantId, v.id))
+              .where(eq(variants.shopifyVariantId, sp.variantId))
               .run();
           }
         }
       }
 
       return {
-        itemsProcessed: shopifyProducts.length,
+        itemsProcessed: productMap.size,
         itemsChanged: changed,
-        metadata: { products: shopifyProducts.length, orders: shopifyOrders.length },
+        metadata: { products: productMap.size, variants: shopifyProducts.length, orders: shopifyOrders.length },
       };
     },
   });
@@ -107,12 +122,12 @@ export function registerAllJobs(): void {
     },
   });
 
-  // ── Fulfillment Check ─────────────────────────────────────────────
+  // ── Fulfillment Check + Order Price Validation ────────────────────
   registerJob({
     name: "fulfillment-check",
     cron: "*/30 * * * *", // every 30 minutes
     enabled: true,
-    description: "Check for new unfulfilled Shopify orders",
+    description: "Check for new unfulfilled orders and validate prices against market",
     handler: async () => {
       const config = getShopifyConfig();
       if (!config.storeUrl || !config.accessToken) {
@@ -121,10 +136,49 @@ export function registerAllJobs(): void {
 
       const shopifyOrders = await fetchUnfulfilledOrders(config);
 
+      // Validate order prices against current market data
+      const validation = validateOrderPrices(shopifyOrders);
+
+      if (validation.losses > 0) {
+        console.warn(
+          `[Fulfillment] WARNING: ${validation.losses} order items would be sold at a LOSS!`
+        );
+      }
+
       return {
         itemsProcessed: shopifyOrders.length,
-        itemsChanged: 0,
-        metadata: { unfulfilledOrders: shopifyOrders.length },
+        itemsChanged: validation.alertsCreated,
+        metadata: {
+          unfulfilledOrders: shopifyOrders.length,
+          itemsValidated: validation.validated,
+          losses: validation.losses,
+          thinMargins: validation.thinMargins,
+          alertsCreated: validation.alertsCreated,
+        },
+      };
+    },
+  });
+
+  // ── Automated Price Sync ──────────────────────────────────────────
+  registerJob({
+    name: "price-sync",
+    cron: "0 */6 * * *", // every 6 hours
+    enabled: true,
+    description: "Sync prices from PriceCharting and auto-apply safe changes",
+    handler: async () => {
+      const resp = await fetch("http://localhost:3001/api/automation/price-sync/run", {
+        method: "POST",
+      });
+      const data = await resp.json();
+
+      if (!data.success && data.error) {
+        throw new Error(data.error);
+      }
+
+      return {
+        itemsProcessed: data.summary?.totalMatched ?? 0,
+        itemsChanged: data.summary?.autoApplied ?? 0,
+        metadata: data.summary,
       };
     },
   });

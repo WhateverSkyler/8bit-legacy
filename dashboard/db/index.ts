@@ -221,4 +221,16 @@ sqlite.exec(`
   );
 `);
 
+// Add new columns for price staleness tracking (safe to run multiple times)
+try {
+  sqlite.exec(`ALTER TABLE variants ADD COLUMN last_price_check TEXT`);
+} catch {
+  // Column already exists
+}
+try {
+  sqlite.exec(`ALTER TABLE variants ADD COLUMN last_market_price REAL`);
+} catch {
+  // Column already exists
+}
+
 export { schema };

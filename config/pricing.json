@@ -11,7 +11,7 @@
     "consoles": 1.30,
     "accessories": 1.40
   },
-  "auto_apply_enabled": false,
+  "auto_apply_enabled": true,
   "auto_apply_threshold_percent": 15,
   "max_price_change_percent": 30,
   "factor_ad_spend": false,

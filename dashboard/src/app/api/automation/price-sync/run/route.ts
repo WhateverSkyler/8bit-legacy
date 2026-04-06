@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@db/index";
-import { priceSnapshots, priceSyncRuns, priceSyncItems, googleAdsPerformance } from "@db/schema";
+import { priceSnapshots, priceSyncRuns, priceSyncItems, googleAdsPerformance, variants } from "@db/schema";
 import { desc, eq, gte, sql } from "drizzle-orm";
 import { getShopifyConfig, getPricingConfig } from "@/lib/config";
 import { fetchAllProducts, updateVariantPrice } from "@/lib/shopify";
@@ -72,18 +72,24 @@ export async function POST() {
       for (const sp of shopifyProducts) {
         for (const tag of sp.productTags) {
           const lower = tag.toLowerCase();
-          if (["nes", "snes", "n64", "gameboy", "genesis", "ps1", "ps2", "gamecube", "dreamcast", "saturn", "gba"].includes(lower)) {
+          if (["nes", "snes", "n64", "gameboy", "genesis", "ps1", "ps2", "gamecube", "dreamcast", "saturn", "gba", "pokemon", "pokemon-cards", "pokemon_cards", "tcg"].includes(lower)) {
             consoles.add(lower);
           }
         }
       }
 
       // Scrape each console (limited pages for speed)
+      const POKEMON_TAGS = new Set(["pokemon", "pokemon-cards", "pokemon_cards", "tcg"]);
       for (const consoleName of consoles) {
         try {
+          const isPokemon = POKEMON_TAGS.has(consoleName);
+          const scraperArgs = ["--console", consoleName, "--pages", "3", "--save"];
+          if (isPokemon) {
+            scraperArgs.push("--type", "trading-cards");
+          }
           const result = await runPython(
             "pricecharting-scraper.py",
-            ["--console", consoleName, "--pages", "3", "--save"],
+            scraperArgs,
             60000
           );
 
@@ -264,6 +270,27 @@ export async function POST() {
           estimatedProfit: change.estimatedProfit,
           status,
         })
+        .run();
+
+      // Update staleness tracking on the variant
+      db.update(variants)
+        .set({
+          lastPriceCheck: new Date().toISOString(),
+          lastMarketPrice: change.marketPrice,
+        })
+        .where(eq(variants.shopifyVariantId, change.variantId))
+        .run();
+    }
+
+    // Also update staleness for no-change items (they were validated too)
+    const now = new Date().toISOString();
+    for (const item of noChange) {
+      db.update(variants)
+        .set({
+          lastPriceCheck: now,
+          lastMarketPrice: item.marketPrice,
+        })
+        .where(eq(variants.shopifyVariantId, item.variantId))
         .run();
     }
 

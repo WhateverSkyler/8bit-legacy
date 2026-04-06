@@ -4,6 +4,30 @@ import { calculateSellPrice, calculateProfit, checkMinimumProfit } from "./prici
 
 export type MatchType = "upc" | "title_exact" | "title_console" | "fuzzy";
 
+const POKEMON_KEYWORDS = ["pokemon", "pokémon", "tcg", "pokemon-cards", "pokemon_cards"];
+const CONSOLE_KEYWORDS = ["console", "system", "hardware"];
+const ACCESSORY_KEYWORDS = ["controller", "adapter", "cable", "memory card", "accessory"];
+
+/**
+ * Detect product category from console name and tags for multiplier selection.
+ */
+export function detectCategory(consoleName: string, tags: string[]): string {
+  const lowerConsole = consoleName.toLowerCase();
+  const lowerTags = tags.map((t) => t.toLowerCase());
+  const allTokens = [lowerConsole, ...lowerTags];
+
+  if (allTokens.some((t) => POKEMON_KEYWORDS.some((pk) => t.includes(pk)))) {
+    return "pokemon_cards";
+  }
+  if (allTokens.some((t) => CONSOLE_KEYWORDS.some((ck) => t.includes(ck)))) {
+    return "consoles";
+  }
+  if (allTokens.some((t) => ACCESSORY_KEYWORDS.some((ak) => t.includes(ak)))) {
+    return "accessories";
+  }
+  return "retro_games";
+}
+
 export interface ShopifyProduct {
   productId: string;
   productTitle: string;
@@ -133,7 +157,9 @@ export function generateDiff(
         marketPrice = pc.loosePrice;
     }
 
-    const newPrice = calculateSellPrice(marketPrice, config);
+    // Detect category for multiplier selection
+    const category = detectCategory(pc.console, shopify.productTags);
+    const newPrice = calculateSellPrice(marketPrice, config, category);
     const currentPrice = shopify.currentPrice;
     const priceDiff = Math.round((newPrice - currentPrice) * 100) / 100;
     const meetsProfit = checkMinimumProfit(newPrice, marketPrice, config);
