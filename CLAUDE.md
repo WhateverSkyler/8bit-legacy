@@ -98,9 +98,11 @@ python3 scripts/pokemon-card-importer.py --sealed data/pokemon-sealed-template.c
 # List all available sets
 python3 scripts/pokemon-card-importer.py --list-sets
 ```
-- Cards priced using TCGPlayer market price × 1.35 (via free Pokemon TCG API)
+- Cards priced using TCGPlayer market price × 1.15 (via free Pokemon TCG API)
 - $500 max price cap — no high-value cards
-- Products created as DRAFT — must manually activate when ready
+- Minimum market price: $5 (below this, fees eat all profit)
+- Condition listed as "Lightly Played" — sourced from eBay USED/LP listings
+- Products created as DRAFT — must manually activate and publish to Online Store when ready
 - Sealed product template: `data/pokemon-sealed-template.csv`
 
 ## Key APIs
@@ -129,8 +131,19 @@ python3 scripts/pokemon-card-importer.py --list-sets
 All API keys and tokens go in `config/.env` and `dashboard/.env.local` (both gitignored). Never commit secrets.
 
 ## Remaining Work
-- Install Google & YouTube Shopify app → connect product feed to Merchant Center
-- Set up first Google Ads campaign (account ready, needs Merchant Center)
 - Deploy dashboard to VPS for 24/7 scheduler operation
-- Import first Pokemon card sets to Shopify (script ready)
-- Record first podcast episode (scheduled for this week)
+- Plan and launch first Google Ads campaign (Ads connected, Merchant Center live with 12K+ products)
+- Set up conversion tracking (Google Ads tag on Shopify checkout) before running ads
+- Import newest Pokemon sets when TCGPlayer pricing becomes available (me3 Perfect Order, me2pt5 Ascended Heroes)
+- Website frontend revamp (banners, styling consistency, homepage updates)
+- YouTube Shopping — unlocks at 1,000 subscribers
+
+## Completed
+- Google & YouTube Shopify app installed, Merchant Center connected (ID: 5296797260, 12K products approved)
+- Google Ads account linked (822-210-2291)
+- Pokemon cards live — 1,176+ cards at 1.15x TCGPlayer market, 9 collections, nav added
+- All CIB variants purchasable (6,112 fixed)
+- Full price refresh completed — 6,121 products scanned, 5,000+ prices updated
+- Inventory API scopes (read + write) added
+- Automation hardened — retry logic, title matching safety, price caps, timeouts
+- First podcast episode recorded April 9, 2026
