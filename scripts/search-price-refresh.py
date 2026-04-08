@@ -129,6 +129,42 @@ def parse_price_text(text):
     match = re.search(r"[\$]?([\d,]+\.?\d*)", text.replace(",", ""))
     return float(match.group(1)) if match else 0.0
 
+def title_similarity(query_title, result_title):
+    """Check how well a PriceCharting result title matches the search query.
+    Returns a score from 0 to 1. Higher is better."""
+    qt = re.sub(r'[^a-z0-9 ]', '', query_title.lower()).split()
+    # Strip console suffix from result (PriceCharting appends it)
+    rt_clean = re.sub(r'(NES|SNES|Nintendo 64|Gamecube|Gameboy|Genesis|Playstation|PS[123]|'
+                      r'Dreamcast|Saturn|GBA|Xbox|Wii|Sega|Atari|TurboGrafx|GameBoy|Game Boy).*$',
+                      '', result_title, flags=re.IGNORECASE).strip()
+    rt = re.sub(r'[^a-z0-9 ]', '', rt_clean.lower()).split()
+
+    if not qt or not rt:
+        return 0.0
+
+    # Check if result has extra words not in query (sequels, variants, editions)
+    query_set = set(qt)
+    result_set = set(rt)
+    extra_words = result_set - query_set
+    # Penalize heavily for sequel numbers, "part", "math", "second", etc.
+    sequel_indicators = {'2', '3', '4', '5', '6', '7', '8', '9', 'ii', 'iii', 'iv',
+                         'part', 'second', 'math', 'assassin', 'case', 'screw', 'attack',
+                         'special', 'edition', 'deluxe', 'bundle', 'collection'}
+    if extra_words & sequel_indicators:
+        return 0.1
+
+    # Simple word overlap ratio
+    common = query_set & result_set
+    score = len(common) / max(len(query_set), len(result_set))
+    # Penalize for extra words in result
+    if len(extra_words) > 0:
+        score *= max(0.5, 1.0 - len(extra_words) * 0.2)
+    return score
+
+
+# Max market price cap — anything above this needs manual review
+MAX_MARKET_PRICE = 800.0
+
 def search_pricecharting(game_title, console_name):
     """Search PriceCharting for a specific game + console combo."""
     query = f"{game_title} {console_name}"
@@ -153,10 +189,11 @@ def search_pricecharting(game_title, console_name):
     if not rows:
         return None
 
-    # Check top results for a console match
+    # Check top results for a console match, score by title similarity
     target_console = console_name.lower().strip()
+    candidates = []
 
-    for row in rows[:5]:  # Check top 5 results
+    for row in rows[:8]:  # Check top 8 results
         cols = row.find_all("td")
         if len(cols) < 5:
             continue
@@ -165,6 +202,7 @@ def search_pricecharting(game_title, console_name):
         if not title_link:
             continue
 
+        result_title = title_link.get_text(strip=True)
         result_console = cols[2].get_text(strip=True).lower().strip() if len(cols) > 2 else ""
 
         # Skip PAL/JP versions — we want NTSC (US) prices
@@ -175,15 +213,36 @@ def search_pricecharting(game_title, console_name):
         if target_console not in result_console and result_console not in target_console:
             continue
 
-        return {
-            "title": title_link.get_text(strip=True),
-            "console": cols[2].get_text(strip=True),
-            "loose": parse_price_text(cols[3].get_text(strip=True)) if len(cols) > 3 else 0,
-            "cib": parse_price_text(cols[4].get_text(strip=True)) if len(cols) > 4 else 0,
-            "new": parse_price_text(cols[5].get_text(strip=True)) if len(cols) > 5 else 0,
-        }
+        similarity = title_similarity(game_title, result_title)
+        loose = parse_price_text(cols[3].get_text(strip=True)) if len(cols) > 3 else 0
+        cib = parse_price_text(cols[4].get_text(strip=True)) if len(cols) > 4 else 0
 
-    return None
+        candidates.append({
+            "title": result_title,
+            "console": cols[2].get_text(strip=True),
+            "loose": loose,
+            "cib": cib,
+            "new": parse_price_text(cols[5].get_text(strip=True)) if len(cols) > 5 else 0,
+            "similarity": similarity,
+        })
+
+    if not candidates:
+        return None
+
+    # Pick the best title match (minimum 0.3 similarity)
+    best = max(candidates, key=lambda c: c["similarity"])
+    if best["similarity"] < 0.3:
+        return None
+
+    # Cap extremely high prices — likely bad matches or ultra-rare variants
+    if best["loose"] > MAX_MARKET_PRICE or best["cib"] > MAX_MARKET_PRICE:
+        log(f"  CAPPED: {game_title} — market loose=${best['loose']:.2f}, cib=${best['cib']:.2f} (>{MAX_MARKET_PRICE})")
+        if best["loose"] > MAX_MARKET_PRICE:
+            best["loose"] = 0  # Skip this variant
+        if best["cib"] > MAX_MARKET_PRICE:
+            best["cib"] = 0  # Skip this variant
+
+    return best
 
 
 # ── Shopify ───────────────────────────────────────────────────────────

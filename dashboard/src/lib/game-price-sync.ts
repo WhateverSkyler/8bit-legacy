@@ -9,12 +9,48 @@ import { checkPriceChangeSafety, isCircuitBreakerTripped } from "./safety";
 const PRICECHARTING_SEARCH = "https://www.pricecharting.com/search-products";
 const SEARCH_DELAY = 2500; // 2.5s between searches (respectful)
 const BATCH_SIZE = 100; // Products per scheduler run (~4 min)
+const MAX_MARKET_PRICE = 800; // Skip results above this (likely bad matches or ultra-rare variants)
 
 interface SearchResult {
   title: string;
   console: string;
   loose: number;
   cib: number;
+}
+
+/**
+ * Score how well a PriceCharting result title matches the search query.
+ * Returns 0-1, higher is better. Penalizes sequels and variants.
+ */
+function titleSimilarity(queryTitle: string, resultTitle: string): number {
+  const normalize = (s: string) =>
+    s.toLowerCase().replace(/[^a-z0-9 ]/g, "").split(/\s+/).filter(Boolean);
+
+  const queryWords = new Set(normalize(queryTitle));
+  // Strip console suffix from result title
+  const cleanResult = resultTitle
+    .replace(/(NES|SNES|Nintendo 64|Gamecube|Gameboy|Genesis|Playstation|PS[123]|Dreamcast|Saturn|GBA|Xbox|Wii|Sega|Atari|TurboGrafx|GameBoy|Game Boy).*$/i, "")
+    .trim();
+  const resultWords = new Set(normalize(cleanResult));
+
+  if (queryWords.size === 0 || resultWords.size === 0) return 0;
+
+  const extraWords = new Set([...resultWords].filter((w) => !queryWords.has(w)));
+  const sequelIndicators = new Set([
+    "2", "3", "4", "5", "6", "7", "8", "9",
+    "ii", "iii", "iv", "part", "second", "math",
+    "assassin", "case", "screw", "attack", "special",
+    "edition", "deluxe", "bundle", "collection",
+  ]);
+
+  for (const word of extraWords) {
+    if (sequelIndicators.has(word)) return 0.1;
+  }
+
+  const common = [...queryWords].filter((w) => resultWords.has(w));
+  let score = common.length / Math.max(queryWords.size, resultWords.size);
+  if (extraWords.size > 0) score *= Math.max(0.5, 1.0 - extraWords.size * 0.2);
+  return score;
 }
 
 /**
@@ -223,41 +259,53 @@ async function searchPriceCharting(gameTitle: string, consoleName: string): Prom
     if (!rows) return null;
 
     const targetConsole = consoleName.toLowerCase();
+    const extractPrice = (cell: string): number => {
+      const m = cell.replace(/<[^>]+>/g, "").replace(/[$,]/g, "").trim().match(/([\d.]+)/);
+      return m ? parseFloat(m[1]) : 0;
+    };
 
-    for (const row of rows.slice(0, 5)) {
+    // Collect candidates and pick best title match
+    const candidates: (SearchResult & { similarity: number })[] = [];
+
+    for (const row of rows.slice(0, 8)) {
       const cells = row.match(/<td[\s\S]*?<\/td>/gi);
       if (!cells || cells.length < 5) continue;
 
-      // Extract console from cell[2]
       const consoleText = cells[2].replace(/<[^>]+>/g, "").trim().toLowerCase();
 
-      // Skip PAL/JP
       if (consoleText.includes("pal") || consoleText.includes("jp ") || consoleText.includes("japanese")) {
         continue;
       }
 
-      // Verify console match
       if (!consoleText.includes(targetConsole) && !targetConsole.includes(consoleText)) {
         continue;
       }
 
-      // Extract title
       const titleMatch = cells[1].match(/<a[^>]*>([^<]+)<\/a>/i);
       const title = titleMatch ? titleMatch[1].trim() : "";
 
-      // Extract prices
-      const extractPrice = (cell: string): number => {
-        const m = cell.replace(/<[^>]+>/g, "").replace(/[$,]/g, "").trim().match(/([\d.]+)/);
-        return m ? parseFloat(m[1]) : 0;
-      };
-
-      return {
+      candidates.push({
         title,
         console: consoleText,
         loose: extractPrice(cells[3]),
         cib: extractPrice(cells[4]),
-      };
+        similarity: titleSimilarity(gameTitle, title),
+      });
     }
+
+    if (candidates.length === 0) return null;
+
+    // Pick best title match (minimum 0.3 similarity)
+    const best = candidates.reduce((a, b) => (a.similarity > b.similarity ? a : b));
+    if (best.similarity < 0.3) return null;
+
+    // Cap extremely high prices
+    return {
+      title: best.title,
+      console: best.console,
+      loose: best.loose > MAX_MARKET_PRICE ? 0 : best.loose,
+      cib: best.cib > MAX_MARKET_PRICE ? 0 : best.cib,
+    };
   } catch (err) {
     console.error(`[Game Price Sync] Search failed for "${gameTitle}":`, err);
   }

@@ -59,13 +59,13 @@ cd dashboard && npm install && npm run dev -- --port 3001
 - Automated Pricing Engine — scrape PriceCharting → match → safety check → auto-apply
 - Smart Margin Engine — factors ad cost/order into profit calculations
 
-**Scheduled Jobs (6 total):**
+**Scheduled Jobs (5 total):**
 | Job | Cron | Description |
 |-----|------|-------------|
 | shopify-product-sync | Every 4 hours | Sync products and orders from Shopify into local DB |
 | google-ads-sync | Daily 1 AM ET | Pull campaign performance data from Google Ads |
 | fulfillment-check | Every 30 min | Check unfulfilled orders + validate prices against market |
-| price-sync | Every 6 hours | Sync game prices from PriceCharting, auto-apply safe changes |
+| price-sync | Every 4 hours | Sync game prices from PriceCharting, auto-apply safe changes |
 | pokemon-price-sync | 3 AM + 3 PM ET | Refresh Pokemon card prices from TCGPlayer API |
 
 **DB tables (16 total):** products, variants, orders, orderLineItems, priceSyncRuns, priceSyncItems, ebaySearches, socialPosts, settings, automationRuns, fulfillmentTasks, fulfillmentAlerts, priceSnapshots, googleAdsPerformance, googleAdsSearchTerms, googleAdsActions

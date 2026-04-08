@@ -67,8 +67,26 @@ export async function runJobNow(
   return executeJob(job);
 }
 
+const MAX_RETRIES = 2; // Retry up to 2 times (3 total attempts)
+
+function isTransientError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return (
+    msg.includes("ETIMEDOUT") ||
+    msg.includes("ECONNRESET") ||
+    msg.includes("ECONNREFUSED") ||
+    msg.includes("fetch failed") ||
+    msg.includes("network") ||
+    msg.includes("timeout") ||
+    msg.includes("AbortError") ||
+    msg.includes("503") ||
+    msg.includes("429") ||
+    msg.includes("502")
+  );
+}
+
 /**
- * Core job execution with locking, logging, and error handling.
+ * Core job execution with locking, logging, retry, and error handling.
  */
 async function executeJob(
   job: ScheduledJob
@@ -87,38 +105,58 @@ async function executeJob(
     .returning()
     .get();
 
-  try {
-    const result = await job.handler();
+  let lastError: unknown = null;
 
-    db.update(automationRuns)
-      .set({
-        finishedAt: new Date().toISOString(),
-        status: "success",
-        itemsProcessed: result.itemsProcessed,
-        itemsChanged: result.itemsChanged,
-        metadataJson: result.metadata ? JSON.stringify(result.metadata) : null,
-      })
-      .where(eq(automationRuns.id, run.id))
-      .run();
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      if (attempt > 0) {
+        const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
+        console.log(`[Scheduler] Retrying "${job.name}" (attempt ${attempt + 1}) after ${Math.round(delay)}ms`);
+        await new Promise((r) => setTimeout(r, delay));
+      }
 
-    return { success: true, runId: run.id };
-  } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : String(err);
-    console.error(`[Scheduler] Job "${job.name}" failed:`, errorMessage);
+      const result = await job.handler();
 
-    db.update(automationRuns)
-      .set({
-        finishedAt: new Date().toISOString(),
-        status: "failed",
-        errorMessage,
-      })
-      .where(eq(automationRuns.id, run.id))
-      .run();
+      db.update(automationRuns)
+        .set({
+          finishedAt: new Date().toISOString(),
+          status: "success",
+          itemsProcessed: result.itemsProcessed,
+          itemsChanged: result.itemsChanged,
+          metadataJson: result.metadata
+            ? JSON.stringify({ ...result.metadata, attempts: attempt + 1 })
+            : null,
+        })
+        .where(eq(automationRuns.id, run.id))
+        .run();
 
-    return { success: false, runId: run.id, error: errorMessage };
-  } finally {
-    runningJobs.set(job.name, false);
+      runningJobs.set(job.name, false);
+      return { success: true, runId: run.id };
+    } catch (err) {
+      lastError = err;
+      if (attempt < MAX_RETRIES && isTransientError(err)) {
+        console.warn(`[Scheduler] Job "${job.name}" failed (transient), will retry:`,
+          err instanceof Error ? err.message : String(err));
+        continue;
+      }
+      break;
+    }
   }
+
+  const errorMessage = lastError instanceof Error ? lastError.message : String(lastError);
+  console.error(`[Scheduler] Job "${job.name}" failed after ${MAX_RETRIES + 1} attempts:`, errorMessage);
+
+  db.update(automationRuns)
+    .set({
+      finishedAt: new Date().toISOString(),
+      status: "failed",
+      errorMessage,
+    })
+    .where(eq(automationRuns.id, run.id))
+    .run();
+
+  runningJobs.set(job.name, false);
+  return { success: false, runId: run.id, error: errorMessage };
 }
 
 /**

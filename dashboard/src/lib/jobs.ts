@@ -112,13 +112,23 @@ export function registerAllJobs(): void {
         return { itemsProcessed: 0, itemsChanged: 0, metadata: { skipped: "not configured" } };
       }
 
-      // Call the sync endpoint internally
-      const resp = await fetch("http://localhost:3001/api/google-ads/sync", { method: "POST" });
+      const resp = await fetch("http://localhost:3001/api/google-ads/sync", {
+        method: "POST",
+        signal: AbortSignal.timeout(60_000),
+      });
+
+      if (!resp.ok) {
+        throw new Error(`Google Ads sync API returned ${resp.status}: ${resp.statusText}`);
+      }
+
       const data = await resp.json();
+      if (!data.synced) {
+        throw new Error("Google Ads sync response missing 'synced' data");
+      }
 
       return {
-        itemsProcessed: (data.synced?.campaigns ?? 0) + (data.synced?.products ?? 0),
-        itemsChanged: data.synced?.searchTerms ?? 0,
+        itemsProcessed: (data.synced.campaigns ?? 0) + (data.synced.products ?? 0),
+        itemsChanged: data.synced.searchTerms ?? 0,
         metadata: data.synced,
       };
     },

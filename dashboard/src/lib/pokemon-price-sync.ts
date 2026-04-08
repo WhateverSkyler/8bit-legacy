@@ -9,6 +9,7 @@ import { checkPriceChangeSafety, isCircuitBreakerTripped, tripCircuitBreaker } f
 const POKEMON_TCG_API = "https://api.pokemontcg.io/v2";
 const API_KEY = process.env.POKEMON_TCG_API_KEY ?? "";
 const API_DELAY = 500; // ms between API requests
+const POKEMON_MAX_MARKET_PRICE = 500; // Skip cards with market price above this
 
 interface TCGPlayerPrices {
   [variant: string]: {
@@ -113,6 +114,12 @@ export async function refreshPokemonCardPrices(): Promise<{
 
         const marketPrice = extractMarketPrice(card.tcgplayer?.prices);
         if (!marketPrice) continue;
+
+        // Skip cards above max price cap (high liability, availability issues)
+        if (marketPrice > POKEMON_MAX_MARKET_PRICE) {
+          needsReview++;
+          continue;
+        }
 
         // Calculate new sell price
         const rawSellPrice = marketPrice * multiplier;
@@ -222,7 +229,7 @@ async function fetchSetCards(setId: string): Promise<any[]> {
 
   while (true) {
     const url = `${POKEMON_TCG_API}/cards?q=set.id:${setId}&pageSize=250&page=${page}`;
-    const resp = await fetch(url, { headers });
+    const resp = await fetch(url, { headers, signal: AbortSignal.timeout(30_000) });
 
     if (!resp.ok) {
       throw new Error(`Pokemon TCG API error: ${resp.status}`);
