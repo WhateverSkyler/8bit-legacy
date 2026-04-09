@@ -1,0 +1,76 @@
+set_id,set_name,card_name,card_number,rarity,market_price,sell_price,profit,image_url
+sv8pt5,Prismatic Evolutions,Leafeon ex,6,Double Rare,3.18,4.99,1.37,https://images.pokemontcg.io/sv8pt5/6_hires.png
+sv8pt5,Prismatic Evolutions,Hydrapple ex,11,Double Rare,0.64,0.99,0.02,https://images.pokemontcg.io/sv8pt5/11_hires.png
+sv8pt5,Prismatic Evolutions,Flareon ex,14,Double Rare,4.32,5.99,1.2,https://images.pokemontcg.io/sv8pt5/14_hires.png
+sv8pt5,Prismatic Evolutions,Teal Mask Ogerpon ex,12,Double Rare,4.09,5.99,1.43,https://images.pokemontcg.io/sv8pt5/12_hires.png
+sv8pt5,Prismatic Evolutions,Vaporeon ex,23,Double Rare,2.5,3.99,1.07,https://images.pokemontcg.io/sv8pt5/23_hires.png
+sv8pt5,Prismatic Evolutions,Iron Hands ex,31,Double Rare,0.59,0.99,0.07,https://images.pokemontcg.io/sv8pt5/31_hires.png
+sv8pt5,Prismatic Evolutions,Iron Thorns ex,32,Double Rare,0.69,0.99,-0.03,https://images.pokemontcg.io/sv8pt5/32_hires.png
+sv8pt5,Prismatic Evolutions,Jolteon ex,30,Double Rare,3.1,4.99,1.45,https://images.pokemontcg.io/sv8pt5/30_hires.png
+sv8pt5,Prismatic Evolutions,Glaceon ex,26,Double Rare,2.07,2.99,0.53,https://images.pokemontcg.io/sv8pt5/26_hires.png
+sv8pt5,Prismatic Evolutions,Pikachu ex,28,Double Rare,1.8,2.99,0.8,https://images.pokemontcg.io/sv8pt5/28_hires.png
+sv8pt5,Prismatic Evolutions,Hearthflame Mask Ogerpon ex,17,Double Rare,0.66,0.99,0.0,https://images.pokemontcg.io/sv8pt5/17_hires.png
+sv8pt5,Prismatic Evolutions,Wellspring Mask Ogerpon ex,27,Double Rare,0.74,1.99,0.89,https://images.pokemontcg.io/sv8pt5/27_hires.png
+sv8pt5,Prismatic Evolutions,Espeon ex,34,Double Rare,2.72,3.99,0.85,https://images.pokemontcg.io/sv8pt5/34_hires.png
+sv8pt5,Prismatic Evolutions,Sylveon ex,41,Double Rare,2.15,2.99,0.45,https://images.pokemontcg.io/sv8pt5/41_hires.png
+sv8pt5,Prismatic Evolutions,Sandy Shocks ex,56,Double Rare,0.71,0.99,-0.05,https://images.pokemontcg.io/sv8pt5/56_hires.png
+sv8pt5,Prismatic Evolutions,Lucario ex,51,Double Rare,0.68,0.99,-0.02,https://images.pokemontcg.io/sv8pt5/51_hires.png
+sv8pt5,Prismatic Evolutions,Umbreon ex,60,Double Rare,6.3,8.99,2.13,https://images.pokemontcg.io/sv8pt5/60_hires.png
+sv8pt5,Prismatic Evolutions,Cornerstone Mask Ogerpon ex,58,Double Rare,0.91,1.99,0.72,https://images.pokemontcg.io/sv8pt5/58_hires.png
+sv8pt5,Prismatic Evolutions,Tyranitar ex,64,Double Rare,0.71,0.99,-0.05,https://images.pokemontcg.io/sv8pt5/64_hires.png
+sv8pt5,Prismatic Evolutions,Dragapult ex,73,Double Rare,1.2,1.99,0.43,https://images.pokemontcg.io/sv8pt5/73_hires.png
+sv8pt5,Prismatic Evolutions,Eevee ex,75,Double Rare,5.32,7.99,2.14,https://images.pokemontcg.io/sv8pt5/75_hires.png
+sv8pt5,Prismatic Evolutions,Snorlax ex,76,Double Rare,1.26,1.99,0.37,https://images.pokemontcg.io/sv8pt5/76_hires.png
+sv8pt5,Prismatic Evolutions,Lugia ex,82,Double Rare,1.23,1.99,0.4,https://images.pokemontcg.io/sv8pt5/82_hires.png
+sv8pt5,Prismatic Evolutions,Noivern ex,91,Double Rare,0.66,0.99,0.0,https://images.pokemontcg.io/sv8pt5/91_hires.png
+sv8pt5,Prismatic Evolutions,Terapagos ex,92,Double Rare,0.73,0.99,-0.07,https://images.pokemontcg.io/sv8pt5/92_hires.png
+sv8pt5,Prismatic Evolutions,Prime Catcher,119,ACE SPEC Rare,0.57,0.99,0.09,https://images.pokemontcg.io/sv8pt5/119_hires.png
+sv8pt5,Prismatic Evolutions,Max Rod,116,ACE SPEC Rare,0.74,1.99,0.89,https://images.pokemontcg.io/sv8pt5/116_hires.png
+sv8pt5,Prismatic Evolutions,Brassius,135,Ultra Rare,0.7,0.99,-0.04,https://images.pokemontcg.io/sv8pt5/135_hires.png
+sv8pt5,Prismatic Evolutions,Atticus,133,Ultra Rare,0.71,0.99,-0.05,https://images.pokemontcg.io/sv8pt5/133_hires.png
+sv8pt5,Prismatic Evolutions,Atticus,134,Ultra Rare,0.66,0.99,0.0,https://images.pokemontcg.io/sv8pt5/134_hires.png
+sv8pt5,Prismatic Evolutions,Amarys,132,Ultra Rare,0.74,1.99,0.89,https://images.pokemontcg.io/sv8pt5/132_hires.png
+sv8pt5,Prismatic Evolutions,Friends in Paldea,137,Ultra Rare,1.04,1.99,0.59,https://images.pokemontcg.io/sv8pt5/137_hires.png
+sv8pt5,Prismatic Evolutions,Eri,136,Ultra Rare,1.17,1.99,0.46,https://images.pokemontcg.io/sv8pt5/136_hires.png
+sv8pt5,Prismatic Evolutions,Giacomo,138,Ultra Rare,0.58,0.99,0.08,https://images.pokemontcg.io/sv8pt5/138_hires.png
+sv8pt5,Prismatic Evolutions,Larry's Skill,139,Ultra Rare,0.91,1.99,0.72,https://images.pokemontcg.io/sv8pt5/139_hires.png
+sv8pt5,Prismatic Evolutions,Mela,140,Ultra Rare,0.86,1.99,0.77,https://images.pokemontcg.io/sv8pt5/140_hires.png
+sv8pt5,Prismatic Evolutions,Ortega,141,Ultra Rare,0.65,0.99,0.01,https://images.pokemontcg.io/sv8pt5/141_hires.png
+sv8pt5,Prismatic Evolutions,Raifort,142,Ultra Rare,0.79,1.99,0.84,https://images.pokemontcg.io/sv8pt5/142_hires.png
+sv8pt5,Prismatic Evolutions,Tyme,143,Ultra Rare,0.63,0.99,0.03,https://images.pokemontcg.io/sv8pt5/143_hires.png
+sv8pt5,Prismatic Evolutions,Leafeon ex,144,Special Illustration Rare,275.82,372.99,86.05,https://images.pokemontcg.io/sv8pt5/144_hires.png
+sv8pt5,Prismatic Evolutions,Teal Mask Ogerpon ex,145,Special Illustration Rare,20.98,28.99,6.87,https://images.pokemontcg.io/sv8pt5/145_hires.png
+sv8pt5,Prismatic Evolutions,Ceruledge ex,147,Special Illustration Rare,93.69,126.99,29.32,https://images.pokemontcg.io/sv8pt5/147_hires.png
+sv8pt5,Prismatic Evolutions,Flareon ex,146,Special Illustration Rare,177.81,240.99,55.89,https://images.pokemontcg.io/sv8pt5/146_hires.png
+sv8pt5,Prismatic Evolutions,Palafin ex,151,Special Illustration Rare,42.6,57.99,13.41,https://images.pokemontcg.io/sv8pt5/151_hires.png
+sv8pt5,Prismatic Evolutions,Jolteon ex,153,Special Illustration Rare,161.0,217.99,50.37,https://images.pokemontcg.io/sv8pt5/153_hires.png
+sv8pt5,Prismatic Evolutions,Hearthflame Mask Ogerpon ex,148,Special Illustration Rare,19.61,26.99,6.3,https://images.pokemontcg.io/sv8pt5/148_hires.png
+sv8pt5,Prismatic Evolutions,Glaceon ex,150,Special Illustration Rare,211.46,285.99,65.94,https://images.pokemontcg.io/sv8pt5/150_hires.png
+sv8pt5,Prismatic Evolutions,Wellspring Mask Ogerpon ex,152,Special Illustration Rare,14.24,19.99,4.87,https://images.pokemontcg.io/sv8pt5/152_hires.png
+sv8pt5,Prismatic Evolutions,Vaporeon ex,149,Special Illustration Rare,212.83,287.99,66.51,https://images.pokemontcg.io/sv8pt5/149_hires.png
+sv8pt5,Prismatic Evolutions,Iron Hands ex,154,Special Illustration Rare,35.29,47.99,11.01,https://images.pokemontcg.io/sv8pt5/154_hires.png
+sv8pt5,Prismatic Evolutions,Espeon ex,155,Special Illustration Rare,262.67,354.99,81.73,https://images.pokemontcg.io/sv8pt5/155_hires.png
+sv8pt5,Prismatic Evolutions,Iron Valiant ex,157,Special Illustration Rare,44.0,59.99,13.95,https://images.pokemontcg.io/sv8pt5/157_hires.png
+sv8pt5,Prismatic Evolutions,Sylveon ex,156,Special Illustration Rare,363.0,490.99,113.45,https://images.pokemontcg.io/sv8pt5/156_hires.png
+sv8pt5,Prismatic Evolutions,Iron Crown ex,158,Special Illustration Rare,33.93,45.99,10.43,https://images.pokemontcg.io/sv8pt5/158_hires.png
+sv8pt5,Prismatic Evolutions,Sandy Shocks ex,159,Special Illustration Rare,23.11,31.99,7.65,https://images.pokemontcg.io/sv8pt5/159_hires.png
+sv8pt5,Prismatic Evolutions,Cornerstone Mask Ogerpon ex,160,Special Illustration Rare,14.94,20.99,5.14,https://images.pokemontcg.io/sv8pt5/160_hires.png
+sv8pt5,Prismatic Evolutions,Roaring Moon ex,162,Special Illustration Rare,157.98,213.99,49.5,https://images.pokemontcg.io/sv8pt5/162_hires.png
+sv8pt5,Prismatic Evolutions,Pecharunt ex,163,Special Illustration Rare,30.1,40.99,9.4,https://images.pokemontcg.io/sv8pt5/163_hires.png
+sv8pt5,Prismatic Evolutions,Gholdengo ex,164,Special Illustration Rare,41.17,55.99,12.9,https://images.pokemontcg.io/sv8pt5/164_hires.png
+sv8pt5,Prismatic Evolutions,Dragapult ex,165,Special Illustration Rare,111.99,151.99,35.29,https://images.pokemontcg.io/sv8pt5/165_hires.png
+sv8pt5,Prismatic Evolutions,Raging Bolt ex,166,Special Illustration Rare,62.95,84.99,19.28,https://images.pokemontcg.io/sv8pt5/166_hires.png
+sv8pt5,Prismatic Evolutions,Eevee ex,167,Special Illustration Rare,198.36,267.99,61.56,https://images.pokemontcg.io/sv8pt5/167_hires.png
+sv8pt5,Prismatic Evolutions,Bloodmoon Ursaluna ex,168,Special Illustration Rare,61.69,83.99,19.56,https://images.pokemontcg.io/sv8pt5/168_hires.png
+sv8pt5,Prismatic Evolutions,Terapagos ex,169,Special Illustration Rare,34.97,47.99,11.33,https://images.pokemontcg.io/sv8pt5/169_hires.png
+sv8pt5,Prismatic Evolutions,Amarys,170,Special Illustration Rare,15.31,20.99,4.77,https://images.pokemontcg.io/sv8pt5/170_hires.png
+sv8pt5,Prismatic Evolutions,Crispin,171,Special Illustration Rare,31.34,42.99,10.1,https://images.pokemontcg.io/sv8pt5/171_hires.png
+sv8pt5,Prismatic Evolutions,Iron Leaves ex,176,Hyper Rare,5.27,7.99,2.19,https://images.pokemontcg.io/sv8pt5/176_hires.png
+sv8pt5,Prismatic Evolutions,Kieran,174,Special Illustration Rare,20.94,28.99,6.91,https://images.pokemontcg.io/sv8pt5/174_hires.png
+sv8pt5,Prismatic Evolutions,Teal Mask Ogerpon ex,177,Hyper Rare,7.45,10.99,2.92,https://images.pokemontcg.io/sv8pt5/177_hires.png
+sv8pt5,Prismatic Evolutions,Walking Wake ex,178,Hyper Rare,7.1,9.99,2.3,https://images.pokemontcg.io/sv8pt5/178_hires.png
+sv8pt5,Prismatic Evolutions,Terapagos ex,180,Hyper Rare,9.0,12.99,3.31,https://images.pokemontcg.io/sv8pt5/180_hires.png
+sv8pt5,Prismatic Evolutions,Drayton,172,Special Illustration Rare,17.48,23.99,5.51,https://images.pokemontcg.io/sv8pt5/172_hires.png
+sv8pt5,Prismatic Evolutions,Janine's Secret Art,173,Special Illustration Rare,26.15,35.99,8.5,https://images.pokemontcg.io/sv8pt5/173_hires.png
+sv8pt5,Prismatic Evolutions,Lacey,175,Special Illustration Rare,28.31,38.99,9.25,https://images.pokemontcg.io/sv8pt5/175_hires.png
+sv8pt5,Prismatic Evolutions,Pikachu ex,179,Hyper Rare,60.98,82.99,19.3,https://images.pokemontcg.io/sv8pt5/179_hires.png

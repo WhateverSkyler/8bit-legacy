@@ -1,0 +1,44 @@
+set_id,set_name,card_name,card_number,rarity,market_price,sell_price,profit,image_url
+me2,Phantasmal Flames,Mega Heracross ex,4,Double Rare,0.51,0.99,0.15,https://images.pokemontcg.io/me2/4_hires.png
+me2,Phantasmal Flames,Mega Charizard X ex,13,Double Rare,3.39,4.99,1.16,https://images.pokemontcg.io/me2/13_hires.png
+me2,Phantasmal Flames,Mismagius ex,36,Double Rare,0.54,0.99,0.12,https://images.pokemontcg.io/me2/36_hires.png
+me2,Phantasmal Flames,Mega Diancie ex,41,Double Rare,0.64,0.99,0.02,https://images.pokemontcg.io/me2/41_hires.png
+me2,Phantasmal Flames,Mega Gengar ex,56,Double Rare,2.36,3.99,1.21,https://images.pokemontcg.io/me2/56_hires.png
+me2,Phantasmal Flames,Mega Sharpedo ex,61,Double Rare,0.52,0.99,0.14,https://images.pokemontcg.io/me2/61_hires.png
+me2,Phantasmal Flames,Empoleon ex,70,Double Rare,0.53,0.99,0.13,https://images.pokemontcg.io/me2/70_hires.png
+me2,Phantasmal Flames,Mega Lopunny ex,84,Double Rare,0.57,0.99,0.09,https://images.pokemontcg.io/me2/84_hires.png
+me2,Phantasmal Flames,Ludicolo,95,Illustration Rare,2.43,3.99,1.14,https://images.pokemontcg.io/me2/95_hires.png
+me2,Phantasmal Flames,Nymble,96,Illustration Rare,1.37,1.99,0.26,https://images.pokemontcg.io/me2/96_hires.png
+me2,Phantasmal Flames,Dewgong,97,Illustration Rare,4.25,5.99,1.27,https://images.pokemontcg.io/me2/97_hires.png
+me2,Phantasmal Flames,Piplup,98,Illustration Rare,13.27,17.99,3.9,https://images.pokemontcg.io/me2/98_hires.png
+me2,Phantasmal Flames,Yamper,99,Illustration Rare,2.3,3.99,1.27,https://images.pokemontcg.io/me2/99_hires.png
+me2,Phantasmal Flames,Zacian,100,Illustration Rare,3.22,4.99,1.33,https://images.pokemontcg.io/me2/100_hires.png
+me2,Phantasmal Flames,Flygon,101,Illustration Rare,4.31,5.99,1.21,https://images.pokemontcg.io/me2/101_hires.png
+me2,Phantasmal Flames,Paldean Wooper,102,Illustration Rare,3.14,4.99,1.41,https://images.pokemontcg.io/me2/102_hires.png
+me2,Phantasmal Flames,Toxtricity,103,Illustration Rare,1.79,2.99,0.81,https://images.pokemontcg.io/me2/103_hires.png
+me2,Phantasmal Flames,Togedemaru,104,Illustration Rare,1.92,2.99,0.68,https://images.pokemontcg.io/me2/104_hires.png
+me2,Phantasmal Flames,Wigglytuff,105,Illustration Rare,5.29,7.99,2.17,https://images.pokemontcg.io/me2/105_hires.png
+me2,Phantasmal Flames,Meowth,106,Illustration Rare,19.29,26.99,6.62,https://images.pokemontcg.io/me2/106_hires.png
+me2,Phantasmal Flames,Ambipom,107,Illustration Rare,1.86,2.99,0.74,https://images.pokemontcg.io/me2/107_hires.png
+me2,Phantasmal Flames,Mega Heracross ex,108,Ultra Rare,2.49,3.99,1.08,https://images.pokemontcg.io/me2/108_hires.png
+me2,Phantasmal Flames,Mega Charizard X ex,109,Ultra Rare,34.82,47.99,11.48,https://images.pokemontcg.io/me2/109_hires.png
+me2,Phantasmal Flames,Oricorio ex,110,Ultra Rare,1.84,2.99,0.76,https://images.pokemontcg.io/me2/110_hires.png
+me2,Phantasmal Flames,Rotom ex,111,Ultra Rare,1.77,2.99,0.83,https://images.pokemontcg.io/me2/111_hires.png
+me2,Phantasmal Flames,Mismagius ex,112,Ultra Rare,1.77,2.99,0.83,https://images.pokemontcg.io/me2/112_hires.png
+me2,Phantasmal Flames,Mega Sharpedo ex,113,Ultra Rare,3.01,4.99,1.54,https://images.pokemontcg.io/me2/113_hires.png
+me2,Phantasmal Flames,Empoleon ex,114,Ultra Rare,2.22,3.99,1.35,https://images.pokemontcg.io/me2/114_hires.png
+me2,Phantasmal Flames,Mega Lopunny ex,115,Ultra Rare,2.96,4.99,1.59,https://images.pokemontcg.io/me2/115_hires.png
+me2,Phantasmal Flames,Battle Cage,116,Ultra Rare,2.17,2.99,0.43,https://images.pokemontcg.io/me2/116_hires.png
+me2,Phantasmal Flames,Blowtorch,117,Ultra Rare,0.87,1.99,0.76,https://images.pokemontcg.io/me2/117_hires.png
+me2,Phantasmal Flames,Dawn,118,Ultra Rare,8.65,11.99,2.69,https://images.pokemontcg.io/me2/118_hires.png
+me2,Phantasmal Flames,Firebreather,119,Ultra Rare,1.18,1.99,0.45,https://images.pokemontcg.io/me2/119_hires.png
+me2,Phantasmal Flames,Grimsley's Move,120,Ultra Rare,1.08,1.99,0.55,https://images.pokemontcg.io/me2/120_hires.png
+me2,Phantasmal Flames,Punk Helmet,121,Ultra Rare,0.87,1.99,0.76,https://images.pokemontcg.io/me2/121_hires.png
+me2,Phantasmal Flames,Sacred Charm,122,Ultra Rare,0.77,1.99,0.86,https://images.pokemontcg.io/me2/122_hires.png
+me2,Phantasmal Flames,Switch,123,Ultra Rare,1.68,2.99,0.92,https://images.pokemontcg.io/me2/123_hires.png
+me2,Phantasmal Flames,Ignition Energy,124,Ultra Rare,2.33,3.99,1.24,https://images.pokemontcg.io/me2/124_hires.png
+me2,Phantasmal Flames,Rotom ex,126,Special Illustration Rare,20.48,27.99,6.4,https://images.pokemontcg.io/me2/126_hires.png
+me2,Phantasmal Flames,Mega Sharpedo ex,127,Special Illustration Rare,27.34,36.99,8.28,https://images.pokemontcg.io/me2/127_hires.png
+me2,Phantasmal Flames,Mega Lopunny ex,128,Special Illustration Rare,19.61,26.99,6.3,https://images.pokemontcg.io/me2/128_hires.png
+me2,Phantasmal Flames,Dawn,129,Special Illustration Rare,32.38,43.99,10.03,https://images.pokemontcg.io/me2/129_hires.png
+me2,Phantasmal Flames,Mega Charizard X ex,130,Mega Hyper Rare,339.59,458.99,105.79,https://images.pokemontcg.io/me2/130_hires.png

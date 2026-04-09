@@ -1,0 +1,62 @@
+set_id,set_name,card_name,card_number,rarity,market_price,sell_price,profit,image_url
+base3,Fossil,Aerodactyl,1,Rare Holo,74.03,88.99,12.08,https://images.pokemontcg.io/base3/1_hires.png
+base3,Fossil,Articuno,2,Rare Holo,189.34,227.99,31.74,https://images.pokemontcg.io/base3/2_hires.png
+base3,Fossil,Ditto,3,Rare Holo,107.49,128.99,17.46,https://images.pokemontcg.io/base3/3_hires.png
+base3,Fossil,Dragonite,4,Rare Holo,381.19,457.99,63.22,https://images.pokemontcg.io/base3/4_hires.png
+base3,Fossil,Gengar,5,Rare Holo,355.09,426.99,59.22,https://images.pokemontcg.io/base3/5_hires.png
+base3,Fossil,Haunter,6,Rare Holo,97.63,117.99,16.64,https://images.pokemontcg.io/base3/6_hires.png
+base3,Fossil,Hitmonlee,7,Rare Holo,72.14,86.99,12.03,https://images.pokemontcg.io/base3/7_hires.png
+base3,Fossil,Hypno,8,Rare Holo,58.04,69.99,9.62,https://images.pokemontcg.io/base3/8_hires.png
+base3,Fossil,Kabutops,9,Rare Holo,84.9,101.99,13.83,https://images.pokemontcg.io/base3/9_hires.png
+base3,Fossil,Lapras,10,Rare Holo,106.73,128.99,18.22,https://images.pokemontcg.io/base3/10_hires.png
+base3,Fossil,Magneton,11,Rare Holo,42.98,51.99,7.2,https://images.pokemontcg.io/base3/11_hires.png
+base3,Fossil,Moltres,12,Rare Holo,162.92,195.99,27.09,https://images.pokemontcg.io/base3/12_hires.png
+base3,Fossil,Muk,13,Rare Holo,46.03,55.99,8.04,https://images.pokemontcg.io/base3/13_hires.png
+base3,Fossil,Raichu,14,Rare Holo,108.92,130.99,17.97,https://images.pokemontcg.io/base3/14_hires.png
+base3,Fossil,Zapdos,15,Rare Holo,120.46,144.99,20.03,https://images.pokemontcg.io/base3/15_hires.png
+base3,Fossil,Aerodactyl,16,Rare,15.19,18.99,2.95,https://images.pokemontcg.io/base3/16_hires.png
+base3,Fossil,Articuno,17,Rare,22.35,26.99,3.56,https://images.pokemontcg.io/base3/17_hires.png
+base3,Fossil,Ditto,18,Rare,19.59,23.99,3.4,https://images.pokemontcg.io/base3/18_hires.png
+base3,Fossil,Dragonite,19,Rare,63.58,76.99,10.88,https://images.pokemontcg.io/base3/19_hires.png
+base3,Fossil,Gengar,20,Rare,73.55,88.99,12.56,https://images.pokemontcg.io/base3/20_hires.png
+base3,Fossil,Haunter,21,Rare,20.17,24.99,3.8,https://images.pokemontcg.io/base3/21_hires.png
+base3,Fossil,Hitmonlee,22,Rare,12.95,15.99,2.28,https://images.pokemontcg.io/base3/22_hires.png
+base3,Fossil,Hypno,23,Rare,15.36,18.99,2.78,https://images.pokemontcg.io/base3/23_hires.png
+base3,Fossil,Kabutops,24,Rare,18.21,21.99,2.84,https://images.pokemontcg.io/base3/24_hires.png
+base3,Fossil,Lapras,25,Rare,17.93,21.99,3.12,https://images.pokemontcg.io/base3/25_hires.png
+base3,Fossil,Magneton,26,Rare,12.82,15.99,2.41,https://images.pokemontcg.io/base3/26_hires.png
+base3,Fossil,Moltres,27,Rare,24.96,29.99,3.86,https://images.pokemontcg.io/base3/27_hires.png
+base3,Fossil,Muk,28,Rare,12.67,15.99,2.56,https://images.pokemontcg.io/base3/28_hires.png
+base3,Fossil,Raichu,29,Rare,16.26,19.99,2.85,https://images.pokemontcg.io/base3/29_hires.png
+base3,Fossil,Zapdos,30,Rare,22.46,26.99,3.45,https://images.pokemontcg.io/base3/30_hires.png
+base3,Fossil,Arbok,31,Uncommon,6.04,7.99,1.42,https://images.pokemontcg.io/base3/31_hires.png
+base3,Fossil,Cloyster,32,Uncommon,4.08,4.99,0.47,https://images.pokemontcg.io/base3/32_hires.png
+base3,Fossil,Gastly,33,Uncommon,9.01,10.99,1.36,https://images.pokemontcg.io/base3/33_hires.png
+base3,Fossil,Golbat,34,Uncommon,10.52,12.99,1.79,https://images.pokemontcg.io/base3/34_hires.png
+base3,Fossil,Golduck,35,Uncommon,10.87,13.99,2.41,https://images.pokemontcg.io/base3/35_hires.png
+base3,Fossil,Golem,36,Uncommon,7.9,9.99,1.5,https://images.pokemontcg.io/base3/36_hires.png
+base3,Fossil,Graveler,37,Uncommon,4.64,5.99,0.88,https://images.pokemontcg.io/base3/37_hires.png
+base3,Fossil,Kingler,38,Uncommon,4.39,5.99,1.13,https://images.pokemontcg.io/base3/38_hires.png
+base3,Fossil,Magmar,39,Uncommon,9.16,11.99,2.18,https://images.pokemontcg.io/base3/39_hires.png
+base3,Fossil,Omastar,40,Uncommon,5.44,6.99,1.05,https://images.pokemontcg.io/base3/40_hires.png
+base3,Fossil,Sandslash,41,Uncommon,6.36,7.99,1.1,https://images.pokemontcg.io/base3/41_hires.png
+base3,Fossil,Seadra,42,Uncommon,4.43,5.99,1.09,https://images.pokemontcg.io/base3/42_hires.png
+base3,Fossil,Slowbro,43,Uncommon,17.13,20.99,2.95,https://images.pokemontcg.io/base3/43_hires.png
+base3,Fossil,Tentacruel,44,Uncommon,6.16,7.99,1.3,https://images.pokemontcg.io/base3/44_hires.png
+base3,Fossil,Weezing,45,Uncommon,5.04,6.99,1.45,https://images.pokemontcg.io/base3/45_hires.png
+base3,Fossil,Ekans,46,Common,2.0,2.99,0.6,https://images.pokemontcg.io/base3/46_hires.png
+base3,Fossil,Geodude,47,Common,4.54,5.99,0.98,https://images.pokemontcg.io/base3/47_hires.png
+base3,Fossil,Grimer,48,Common,4.04,4.99,0.51,https://images.pokemontcg.io/base3/48_hires.png
+base3,Fossil,Horsea,49,Common,4.43,5.99,1.09,https://images.pokemontcg.io/base3/49_hires.png
+base3,Fossil,Kabuto,50,Common,22.05,26.99,3.86,https://images.pokemontcg.io/base3/50_hires.png
+base3,Fossil,Krabby,51,Common,2.8,3.99,0.77,https://images.pokemontcg.io/base3/51_hires.png
+base3,Fossil,Omanyte,52,Common,4.91,5.99,0.61,https://images.pokemontcg.io/base3/52_hires.png
+base3,Fossil,Psyduck,53,Common,8.53,10.99,1.84,https://images.pokemontcg.io/base3/53_hires.png
+base3,Fossil,Shellder,54,Common,2.6,3.99,0.97,https://images.pokemontcg.io/base3/54_hires.png
+base3,Fossil,Slowpoke,55,Common,7.4,8.99,1.03,https://images.pokemontcg.io/base3/55_hires.png
+base3,Fossil,Tentacool,56,Common,2.1,2.99,0.5,https://images.pokemontcg.io/base3/56_hires.png
+base3,Fossil,Zubat,57,Common,3.94,4.99,0.61,https://images.pokemontcg.io/base3/57_hires.png
+base3,Fossil,Mr. Fuji,58,Uncommon,3.27,3.99,0.3,https://images.pokemontcg.io/base3/58_hires.png
+base3,Fossil,Energy Search,59,Common,1.19,1.99,0.44,https://images.pokemontcg.io/base3/59_hires.png
+base3,Fossil,Gambler,60,Common,6.79,8.99,1.64,https://images.pokemontcg.io/base3/60_hires.png
+base3,Fossil,Mysterious Fossil,62,Common,1.65,1.99,-0.02,https://images.pokemontcg.io/base3/62_hires.png

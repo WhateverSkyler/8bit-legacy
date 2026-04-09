@@ -1,0 +1,47 @@
+set_id,set_name,card_name,card_number,rarity,market_price,sell_price,profit,image_url
+sv9,Journey Together,Blaziken ex,24,Double Rare,1.41,1.99,0.22,https://images.pokemontcg.io/sv9/24_hires.png
+sv9,Journey Together,Reshiram ex,30,Double Rare,0.69,0.99,-0.03,https://images.pokemontcg.io/sv9/30_hires.png
+sv9,Journey Together,Volcanion ex,31,Double Rare,0.55,0.99,0.11,https://images.pokemontcg.io/sv9/31_hires.png
+sv9,Journey Together,Veluza ex,43,Double Rare,0.5,0.99,0.16,https://images.pokemontcg.io/sv9/43_hires.png
+sv9,Journey Together,Tapu Koko ex,51,Double Rare,0.51,0.99,0.15,https://images.pokemontcg.io/sv9/51_hires.png
+sv9,Journey Together,Iono's Bellibolt ex,53,Double Rare,0.57,0.99,0.09,https://images.pokemontcg.io/sv9/53_hires.png
+sv9,Journey Together,Lillie's Clefairy ex,56,Double Rare,1.58,2.99,1.02,https://images.pokemontcg.io/sv9/56_hires.png
+sv9,Journey Together,Mimikyu ex,69,Double Rare,1.37,1.99,0.26,https://images.pokemontcg.io/sv9/69_hires.png
+sv9,Journey Together,Alcremie ex,75,Double Rare,0.7,0.99,-0.04,https://images.pokemontcg.io/sv9/75_hires.png
+sv9,Journey Together,Mamoswine ex,79,Double Rare,0.64,0.99,0.02,https://images.pokemontcg.io/sv9/79_hires.png
+sv9,Journey Together,Paldean Clodsire ex,94,Double Rare,0.59,0.99,0.07,https://images.pokemontcg.io/sv9/94_hires.png
+sv9,Journey Together,N's Zoroark ex,98,Double Rare,1.89,2.99,0.71,https://images.pokemontcg.io/sv9/98_hires.png
+sv9,Journey Together,Hop's Zacian ex,111,Double Rare,0.79,1.99,0.84,https://images.pokemontcg.io/sv9/111_hires.png
+sv9,Journey Together,Salamence ex,114,Double Rare,0.68,0.99,-0.02,https://images.pokemontcg.io/sv9/114_hires.png
+sv9,Journey Together,Dudunsparce ex,121,Double Rare,0.68,0.99,-0.02,https://images.pokemontcg.io/sv9/121_hires.png
+sv9,Journey Together,Maractus,160,Illustration Rare,2.15,2.99,0.45,https://images.pokemontcg.io/sv9/160_hires.png
+sv9,Journey Together,Articuno,161,Illustration Rare,20.14,27.99,6.74,https://images.pokemontcg.io/sv9/161_hires.png
+sv9,Journey Together,Wailord,162,Illustration Rare,14.04,18.99,4.1,https://images.pokemontcg.io/sv9/162_hires.png
+sv9,Journey Together,Iono's Kilowattrel,163,Illustration Rare,5.21,7.99,2.25,https://images.pokemontcg.io/sv9/163_hires.png
+sv9,Journey Together,Lillie's Ribombee,164,Illustration Rare,5.38,7.99,2.08,https://images.pokemontcg.io/sv9/164_hires.png
+sv9,Journey Together,Swinub,165,Illustration Rare,2.82,3.99,0.75,https://images.pokemontcg.io/sv9/165_hires.png
+sv9,Journey Together,Lycanroc,166,Illustration Rare,2.37,3.99,1.2,https://images.pokemontcg.io/sv9/166_hires.png
+sv9,Journey Together,N's Reshiram,167,Illustration Rare,20.69,27.99,6.19,https://images.pokemontcg.io/sv9/167_hires.png
+sv9,Journey Together,Furret,168,Illustration Rare,5.77,7.99,1.69,https://images.pokemontcg.io/sv9/168_hires.png
+sv9,Journey Together,Noibat,169,Illustration Rare,4.5,6.99,1.99,https://images.pokemontcg.io/sv9/169_hires.png
+sv9,Journey Together,Hop's Wooloo,170,Illustration Rare,3.8,5.99,1.72,https://images.pokemontcg.io/sv9/170_hires.png
+sv9,Journey Together,Volcanion ex,171,Ultra Rare,1.09,1.99,0.54,https://images.pokemontcg.io/sv9/171_hires.png
+sv9,Journey Together,Iono's Bellibolt ex,172,Ultra Rare,2.01,2.99,0.59,https://images.pokemontcg.io/sv9/172_hires.png
+sv9,Journey Together,Lillie's Clefairy ex,173,Ultra Rare,6.41,8.99,2.02,https://images.pokemontcg.io/sv9/173_hires.png
+sv9,Journey Together,Mamoswine ex,174,Ultra Rare,1.04,1.99,0.59,https://images.pokemontcg.io/sv9/174_hires.png
+sv9,Journey Together,N's Zoroark ex,175,Ultra Rare,5.61,7.99,1.85,https://images.pokemontcg.io/sv9/175_hires.png
+sv9,Journey Together,Hop's Zacian ex,176,Ultra Rare,2.12,2.99,0.48,https://images.pokemontcg.io/sv9/176_hires.png
+sv9,Journey Together,Salamence ex,177,Ultra Rare,2.48,3.99,1.09,https://images.pokemontcg.io/sv9/177_hires.png
+sv9,Journey Together,Dudunsparce ex,178,Ultra Rare,1.05,1.99,0.58,https://images.pokemontcg.io/sv9/178_hires.png
+sv9,Journey Together,Brock's Scouting,179,Ultra Rare,2.77,3.99,0.8,https://images.pokemontcg.io/sv9/179_hires.png
+sv9,Journey Together,Iris's Fighting Spirit,180,Ultra Rare,1.78,2.99,0.82,https://images.pokemontcg.io/sv9/180_hires.png
+sv9,Journey Together,Ruffian,181,Ultra Rare,0.73,0.99,-0.07,https://images.pokemontcg.io/sv9/181_hires.png
+sv9,Journey Together,Volcanion ex,182,Special Illustration Rare,19.58,26.99,6.33,https://images.pokemontcg.io/sv9/182_hires.png
+sv9,Journey Together,Iono's Bellibolt ex,183,Special Illustration Rare,43.0,58.99,13.98,https://images.pokemontcg.io/sv9/183_hires.png
+sv9,Journey Together,Lillie's Clefairy ex,184,Special Illustration Rare,125.46,169.99,39.3,https://images.pokemontcg.io/sv9/184_hires.png
+sv9,Journey Together,N's Zoroark ex,185,Special Illustration Rare,50.6,68.99,16.09,https://images.pokemontcg.io/sv9/185_hires.png
+sv9,Journey Together,Hop's Zacian ex,186,Special Illustration Rare,37.55,50.99,11.66,https://images.pokemontcg.io/sv9/186_hires.png
+sv9,Journey Together,Salamence ex,187,Special Illustration Rare,55.74,75.99,17.75,https://images.pokemontcg.io/sv9/187_hires.png
+sv9,Journey Together,Iono's Bellibolt ex,188,Hyper Rare,13.01,17.99,4.16,https://images.pokemontcg.io/sv9/188_hires.png
+sv9,Journey Together,N's Zoroark ex,189,Hyper Rare,15.71,21.99,5.34,https://images.pokemontcg.io/sv9/189_hires.png
+sv9,Journey Together,Spiky Energy,190,Hyper Rare,4.63,6.99,1.86,https://images.pokemontcg.io/sv9/190_hires.png

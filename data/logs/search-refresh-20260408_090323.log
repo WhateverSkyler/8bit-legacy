@@ -1,0 +1,74 @@
+[09:03:23] ============================================================
+[09:03:23] SEARCH-BASED PRICE REFRESH — APPLY
+[09:03:23] Multiplier: 1.35x | Min profit: $3.00
+[09:03:23] Log: /Users/tristanaddi1/Projects/8bit-legacy/data/logs/search-refresh-20260408_090323.log
+[09:03:23] CSV: /Users/tristanaddi1/Projects/8bit-legacy/data/logs/search-refresh-20260408_090323.csv
+[09:03:23] ============================================================
+[09:03:23] Fetching all Shopify products...
+[09:03:40]   Fetched 1000 products (page 20)...
+[09:03:56]   Fetched 2000 products (page 40)...
+[09:04:13]   Fetched 3000 products (page 60)...
+[09:04:30]   Fetched 4000 products (page 80)...
+[09:04:46]   Fetched 5000 products (page 100)...
+[09:05:03]   Fetched 6000 products (page 120)...
+[09:05:20]   Fetched 6121 products (page 140)...
+[09:05:25]   Total: 6121 game products
+[09:05:25] Resuming — 2600 products already done
+[09:10:40]   Progress: 2700/6121 | Matched: 72 | Rate: 1141/hr | ETA: 180min
+[09:17:20]   Checkpoint: 2800/6121 | Matched: 145 | Loose: 66 | CIB: 74 | Rate: 1006/hr | ETA: 198min
+[09:25:06]   Checkpoint: 2900/6121 | Matched: 233 | Loose: 144 | CIB: 161 | Rate: 914/hr | ETA: 212min
+[09:32:51]   Progress: 3000/6121 | Matched: 318 | Rate: 875/hr | ETA: 214min
+[09:40:06]   Checkpoint: 3100/6121 | Matched: 390 | Loose: 285 | CIB: 315 | Rate: 865/hr | ETA: 210min
+[09:47:14]   Checkpoint: 3200/6121 | Matched: 459 | Loose: 347 | CIB: 383 | Rate: 861/hr | ETA: 204min
+[09:50:59]   Progress: 3250/6121 | Matched: 498 | Rate: 856/hr | ETA: 201min
+[09:53:25]   ERROR: NBA 06 - PS2 Game: HTTPSConnectionPool(host='dpxzef-st.myshopify.com', port=443): Max retries exceeded with url: /admin/api/2024-10/graphql.json (Caused by NewConnectionError("HTTPSConnection(host='dpxzef-st.myshopify.com', port=443): Failed to establish a new connection: [Errno 60] Operation timed out"))
+[09:55:36]   Checkpoint: 3300/6121 | Matched: 530 | Loose: 410 | CIB: 449 | Rate: 837/hr | ETA: 202min
+[09:59:20]   Progress: 3350/6121 | Matched: 572 | Rate: 835/hr | ETA: 199min
+[10:01:18]   ERROR: NBA Street Vol 2 - Gamecube Game: ('Connection aborted.', TimeoutError(60, 'Operation timed out'))
+[10:03:02]   Progress: 3400/6121 | Matched: 593 | Rate: 833/hr | ETA: 196min
+[10:10:30]   Checkpoint: 3500/6121 | Matched: 671 | Loose: 537 | CIB: 585 | Rate: 830/hr | ETA: 190min
+[10:17:48]   Checkpoint: 3600/6121 | Matched: 748 | Loose: 606 | CIB: 660 | Rate: 829/hr | ETA: 183min
+[10:25:10]   Checkpoint: 3700/6121 | Matched: 829 | Loose: 682 | CIB: 739 | Rate: 828/hr | ETA: 176min
+[10:32:12]   Checkpoint: 3800/6121 | Matched: 897 | Loose: 746 | CIB: 803 | Rate: 830/hr | ETA: 168min
+[10:36:55]   Progress: 3850/6121 | Matched: 942 | Rate: 820/hr | ETA: 166min
+[10:40:41]   Checkpoint: 3900/6121 | Matched: 982 | Loose: 828 | CIB: 887 | Rate: 819/hr | ETA: 163min
+[10:44:31]   Progress: 3950/6121 | Matched: 1026 | Rate: 817/hr | ETA: 159min
+[10:48:21]   Checkpoint: 4000/6121 | Matched: 1062 | Loose: 903 | CIB: 964 | Rate: 816/hr | ETA: 156min
+[10:56:09]   Checkpoint: 4100/6121 | Matched: 1149 | Loose: 981 | CIB: 1050 | Rate: 813/hr | ETA: 149min
+[11:03:53]   Checkpoint: 4200/6121 | Matched: 1230 | Loose: 1056 | CIB: 1131 | Rate: 810/hr | ETA: 142min
+[11:07:32]   Progress: 4250/6121 | Matched: 1265 | Rate: 811/hr | ETA: 139min
+[11:11:34]   Checkpoint: 4300/6121 | Matched: 1305 | Loose: 1125 | CIB: 1204 | Rate: 808/hr | ETA: 135min
+[11:19:12]   Checkpoint: 4400/6121 | Matched: 1386 | Loose: 1197 | CIB: 1280 | Rate: 807/hr | ETA: 128min
+[11:26:53]   Checkpoint: 4500/6121 | Matched: 1466 | Loose: 1272 | CIB: 1358 | Rate: 806/hr | ETA: 121min
+[11:34:21]   ERROR: South Park Rally - Sega Dreamcast Game: ('Connection aborted.', TimeoutError(60, 'Operation timed out'))
+[11:36:27]   Checkpoint: 4600/6121 | Matched: 1557 | Loose: 1357 | CIB: 1447 | Rate: 794/hr | ETA: 115min
+[11:44:32]   Progress: 4700/6121 | Matched: 1642 | Rate: 792/hr | ETA: 108min
+[11:52:19]   Checkpoint: 4800/6121 | Matched: 1731 | Loose: 1509 | CIB: 1616 | Rate: 791/hr | ETA: 100min
+[11:56:09]   Progress: 4850/6121 | Matched: 1768 | Rate: 791/hr | ETA: 97min
+[11:59:34]   Progress: 4900/6121 | Matched: 1797 | Rate: 792/hr | ETA: 93min
+[12:06:34]   Checkpoint: 5000/6121 | Matched: 1859 | Loose: 1626 | CIB: 1742 | Rate: 795/hr | ETA: 85min
+[12:13:47]   Checkpoint: 5100/6121 | Matched: 1935 | Loose: 1699 | CIB: 1816 | Rate: 796/hr | ETA: 77min
+[12:18:20]   ERROR: Tetris Worlds - Xbox Game: ('Connection aborted.', TimeoutError(60, 'Operation timed out'))
+[12:23:19]   Progress: 5200/6121 | Matched: 2010 | Rate: 788/hr | ETA: 70min
+[12:30:51]   Checkpoint: 5300/6121 | Matched: 2091 | Loose: 1837 | CIB: 1969 | Rate: 789/hr | ETA: 63min
+[12:38:34]   Checkpoint: 5400/6121 | Matched: 2175 | Loose: 1915 | CIB: 2051 | Rate: 788/hr | ETA: 55min
+[12:46:11]   Progress: 5500/6121 | Matched: 2253 | Rate: 788/hr | ETA: 47min
+[12:53:28]   Checkpoint: 5600/6121 | Matched: 2326 | Loose: 2053 | CIB: 2195 | Rate: 789/hr | ETA: 40min
+[13:01:08]   Checkpoint: 5700/6121 | Matched: 2404 | Loose: 2122 | CIB: 2271 | Rate: 789/hr | ETA: 32min
+[13:09:01]   Checkpoint: 5800/6121 | Matched: 2482 | Loose: 2192 | CIB: 2348 | Rate: 788/hr | ETA: 25min
+[13:17:09]   Checkpoint: 5900/6121 | Matched: 2571 | Loose: 2277 | CIB: 2431 | Rate: 787/hr | ETA: 17min
+[13:24:55]   Checkpoint: 6000/6121 | Matched: 2657 | Loose: 2356 | CIB: 2516 | Rate: 786/hr | ETA: 9min
+[13:31:48] 
+============================================================
+[13:31:48] RESULTS
+[13:31:48] ============================================================
+[13:31:48]   Total products:       6121
+[13:31:48]   Searched:             3488
+[13:31:48]   Matched:              2736
+[13:31:48]   No match:             785
+[13:31:48]   Loose prices updated: 2429
+[13:31:48]   CIB prices updated:   2593
+[13:31:48]   No significant change:441
+[13:31:48]   Errors:               4
+[13:31:48]   Time: 266.4 minutes
+[13:31:48]   Match rate: 78.4%

@@ -1,0 +1,84 @@
+set_id,set_name,card_name,card_number,rarity,market_price,sell_price,profit,image_url
+base6,Legendary Collection,Alakazam,1,Rare Holo,57.6,69.99,10.06,https://images.pokemontcg.io/base6/1_hires.png
+base6,Legendary Collection,Articuno,2,Rare Holo,27.05,32.99,4.68,https://images.pokemontcg.io/base6/2_hires.png
+base6,Legendary Collection,Charizard,3,Rare Holo,486.99,584.99,80.74,https://images.pokemontcg.io/base6/3_hires.png
+base6,Legendary Collection,Dark Blastoise,4,Rare Holo,134.5,161.99,22.49,https://images.pokemontcg.io/base6/4_hires.png
+base6,Legendary Collection,Dark Dragonite,5,Rare Holo,204.17,245.99,34.39,https://images.pokemontcg.io/base6/5_hires.png
+base6,Legendary Collection,Dark Persian,6,Rare Holo,33.27,39.99,5.26,https://images.pokemontcg.io/base6/6_hires.png
+base6,Legendary Collection,Dark Raichu,7,Rare Holo,57.71,69.99,9.95,https://images.pokemontcg.io/base6/7_hires.png
+base6,Legendary Collection,Dark Slowbro,8,Rare Holo,35.33,42.99,6.11,https://images.pokemontcg.io/base6/8_hires.png
+base6,Legendary Collection,Dark Vaporeon,9,Rare Holo,104.41,125.99,17.63,https://images.pokemontcg.io/base6/9_hires.png
+base6,Legendary Collection,Flareon,10,Rare Holo,75.16,90.99,12.89,https://images.pokemontcg.io/base6/10_hires.png
+base6,Legendary Collection,Gengar,11,Rare Holo,144.93,173.99,23.71,https://images.pokemontcg.io/base6/11_hires.png
+base6,Legendary Collection,Gyarados,12,Rare Holo,44.53,53.99,7.59,https://images.pokemontcg.io/base6/12_hires.png
+base6,Legendary Collection,Hitmonlee,13,Rare Holo,32.33,38.99,5.23,https://images.pokemontcg.io/base6/13_hires.png
+base6,Legendary Collection,Jolteon,14,Rare Holo,66.24,79.99,11.13,https://images.pokemontcg.io/base6/14_hires.png
+base6,Legendary Collection,Machamp,15,Rare Holo,51.5,61.99,8.39,https://images.pokemontcg.io/base6/15_hires.png
+base6,Legendary Collection,Muk,16,Rare Holo,17.25,20.99,2.83,https://images.pokemontcg.io/base6/16_hires.png
+base6,Legendary Collection,Ninetales,17,Rare Holo,67.49,80.99,10.85,https://images.pokemontcg.io/base6/17_hires.png
+base6,Legendary Collection,Venusaur,18,Rare Holo,90.96,109.99,15.54,https://images.pokemontcg.io/base6/18_hires.png
+base6,Legendary Collection,Zapdos,19,Rare Holo,33.53,40.99,5.97,https://images.pokemontcg.io/base6/19_hires.png
+base6,Legendary Collection,Beedrill,20,Rare,4.91,5.99,0.61,https://images.pokemontcg.io/base6/20_hires.png
+base6,Legendary Collection,Butterfree,21,Rare,6.84,8.99,1.59,https://images.pokemontcg.io/base6/21_hires.png
+base6,Legendary Collection,Electrode,22,Rare,3.35,4.99,1.2,https://images.pokemontcg.io/base6/22_hires.png
+base6,Legendary Collection,Exeggutor,23,Rare,4.03,4.99,0.52,https://images.pokemontcg.io/base6/23_hires.png
+base6,Legendary Collection,Golem,24,Rare,3.68,4.99,0.87,https://images.pokemontcg.io/base6/24_hires.png
+base6,Legendary Collection,Hypno,25,Rare,6.44,7.99,1.02,https://images.pokemontcg.io/base6/25_hires.png
+base6,Legendary Collection,Jynx,26,Rare,5.5,6.99,0.99,https://images.pokemontcg.io/base6/26_hires.png
+base6,Legendary Collection,Kabutops,27,Rare,9.7,11.99,1.64,https://images.pokemontcg.io/base6/27_hires.png
+base6,Legendary Collection,Magneton,28,Rare,2.58,3.99,0.99,https://images.pokemontcg.io/base6/28_hires.png
+base6,Legendary Collection,Mewtwo,29,Rare,41.35,49.99,6.89,https://images.pokemontcg.io/base6/29_hires.png
+base6,Legendary Collection,Moltres,30,Rare,12.67,15.99,2.56,https://images.pokemontcg.io/base6/30_hires.png
+base6,Legendary Collection,Nidoking,31,Rare,12.3,14.99,1.96,https://images.pokemontcg.io/base6/31_hires.png
+base6,Legendary Collection,Nidoqueen,32,Rare,11.91,14.99,2.35,https://images.pokemontcg.io/base6/32_hires.png
+base6,Legendary Collection,Pidgeot,33,Rare,7.53,9.99,1.87,https://images.pokemontcg.io/base6/33_hires.png
+base6,Legendary Collection,Pidgeotto,34,Rare,8.13,9.99,1.27,https://images.pokemontcg.io/base6/34_hires.png
+base6,Legendary Collection,Rhydon,35,Rare,7.82,9.99,1.58,https://images.pokemontcg.io/base6/35_hires.png
+base6,Legendary Collection,Arcanine,36,Uncommon,4.18,5.99,1.34,https://images.pokemontcg.io/base6/36_hires.png
+base6,Legendary Collection,Charmeleon,37,Uncommon,1.66,2.99,0.94,https://images.pokemontcg.io/base6/37_hires.png
+base6,Legendary Collection,Dark Dragonair,38,Uncommon,3.96,4.99,0.59,https://images.pokemontcg.io/base6/38_hires.png
+base6,Legendary Collection,Dark Wartortle,39,Uncommon,2.58,3.99,0.99,https://images.pokemontcg.io/base6/39_hires.png
+base6,Legendary Collection,Dewgong,40,Uncommon,1.64,1.99,-0.01,https://images.pokemontcg.io/base6/40_hires.png
+base6,Legendary Collection,Dodrio,41,Uncommon,1.32,1.99,0.31,https://images.pokemontcg.io/base6/41_hires.png
+base6,Legendary Collection,Fearow,42,Uncommon,1.9,2.99,0.7,https://images.pokemontcg.io/base6/42_hires.png
+base6,Legendary Collection,Golduck,43,Uncommon,2.53,3.99,1.04,https://images.pokemontcg.io/base6/43_hires.png
+base6,Legendary Collection,Graveler,44,Uncommon,1.47,1.99,0.16,https://images.pokemontcg.io/base6/44_hires.png
+base6,Legendary Collection,Growlithe,45,Uncommon,2.55,3.99,1.02,https://images.pokemontcg.io/base6/45_hires.png
+base6,Legendary Collection,Haunter,46,Uncommon,3.47,4.99,1.08,https://images.pokemontcg.io/base6/46_hires.png
+base6,Legendary Collection,Ivysaur,47,Uncommon,4.12,4.99,0.43,https://images.pokemontcg.io/base6/47_hires.png
+base6,Legendary Collection,Kabuto,48,Uncommon,1.47,1.99,0.16,https://images.pokemontcg.io/base6/48_hires.png
+base6,Legendary Collection,Kadabra,49,Uncommon,5.19,6.99,1.3,https://images.pokemontcg.io/base6/49_hires.png
+base6,Legendary Collection,Kakuna,50,Uncommon,1.48,1.99,0.15,https://images.pokemontcg.io/base6/50_hires.png
+base6,Legendary Collection,Machoke,51,Uncommon,1.71,2.99,0.89,https://images.pokemontcg.io/base6/51_hires.png
+base6,Legendary Collection,Magikarp,52,Uncommon,4.64,5.99,0.88,https://images.pokemontcg.io/base6/52_hires.png
+base6,Legendary Collection,Meowth,53,Uncommon,2.11,2.99,0.49,https://images.pokemontcg.io/base6/53_hires.png
+base6,Legendary Collection,Metapod,54,Uncommon,2.11,2.99,0.49,https://images.pokemontcg.io/base6/54_hires.png
+base6,Legendary Collection,Nidorina,55,Uncommon,1.48,1.99,0.15,https://images.pokemontcg.io/base6/55_hires.png
+base6,Legendary Collection,Nidorino,56,Uncommon,3.19,3.99,0.38,https://images.pokemontcg.io/base6/56_hires.png
+base6,Legendary Collection,Omanyte,57,Uncommon,1.66,2.99,0.94,https://images.pokemontcg.io/base6/57_hires.png
+base6,Legendary Collection,Omastar,58,Uncommon,2.17,2.99,0.43,https://images.pokemontcg.io/base6/58_hires.png
+base6,Legendary Collection,Primeape,59,Uncommon,1.55,1.99,0.08,https://images.pokemontcg.io/base6/59_hires.png
+base6,Legendary Collection,Rapidash,60,Uncommon,1.47,1.99,0.16,https://images.pokemontcg.io/base6/60_hires.png
+base6,Legendary Collection,Raticate,61,Uncommon,1.47,1.99,0.16,https://images.pokemontcg.io/base6/61_hires.png
+base6,Legendary Collection,Sandslash,62,Uncommon,1.27,1.99,0.36,https://images.pokemontcg.io/base6/62_hires.png
+base6,Legendary Collection,Seadra,63,Uncommon,1.79,2.99,0.81,https://images.pokemontcg.io/base6/63_hires.png
+base6,Legendary Collection,Snorlax,64,Uncommon,14.34,17.99,2.83,https://images.pokemontcg.io/base6/64_hires.png
+base6,Legendary Collection,Tauros,65,Uncommon,1.23,1.99,0.4,https://images.pokemontcg.io/base6/65_hires.png
+base6,Legendary Collection,Tentacruel,66,Uncommon,1.24,1.99,0.39,https://images.pokemontcg.io/base6/66_hires.png
+base6,Legendary Collection,Bulbasaur,68,Common,3.34,4.99,1.21,https://images.pokemontcg.io/base6/68_hires.png
+base6,Legendary Collection,Caterpie,69,Common,1.0,1.99,0.63,https://images.pokemontcg.io/base6/69_hires.png
+base6,Legendary Collection,Charmander,70,Common,1.57,1.99,0.06,https://images.pokemontcg.io/base6/70_hires.png
+base6,Legendary Collection,Dratini,72,Common,1.02,1.99,0.61,https://images.pokemontcg.io/base6/72_hires.png
+base6,Legendary Collection,Eevee,74,Common,3.89,4.99,0.66,https://images.pokemontcg.io/base6/74_hires.png
+base6,Legendary Collection,Pidgey,85,Common,1.21,1.99,0.42,https://images.pokemontcg.io/base6/85_hires.png
+base6,Legendary Collection,Pikachu,86,Common,3.22,3.99,0.35,https://images.pokemontcg.io/base6/86_hires.png
+base6,Legendary Collection,Psyduck,88,Common,5.51,6.99,0.98,https://images.pokemontcg.io/base6/88_hires.png
+base6,Legendary Collection,Slowpoke,93,Common,1.32,1.99,0.31,https://images.pokemontcg.io/base6/93_hires.png
+base6,Legendary Collection,Squirtle,95,Common,2.18,2.99,0.42,https://images.pokemontcg.io/base6/95_hires.png
+base6,Legendary Collection,Vulpix,98,Common,1.15,1.99,0.48,https://images.pokemontcg.io/base6/98_hires.png
+base6,Legendary Collection,Full Heal Energy,100,Uncommon,1.04,1.99,0.59,https://images.pokemontcg.io/base6/100_hires.png
+base6,Legendary Collection,Potion Energy,101,Uncommon,1.02,1.99,0.61,https://images.pokemontcg.io/base6/101_hires.png
+base6,Legendary Collection,Pokémon Breeder,102,Rare,4.49,5.99,1.03,https://images.pokemontcg.io/base6/102_hires.png
+base6,Legendary Collection,Pokémon Trader,103,Rare,4.38,5.99,1.14,https://images.pokemontcg.io/base6/103_hires.png
+base6,Legendary Collection,Scoop Up,104,Rare,6.94,8.99,1.49,https://images.pokemontcg.io/base6/104_hires.png
+base6,Legendary Collection,Challenge!,106,Uncommon,1.81,2.99,0.79,https://images.pokemontcg.io/base6/106_hires.png

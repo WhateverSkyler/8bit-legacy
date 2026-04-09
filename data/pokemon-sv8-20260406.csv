@@ -1,0 +1,85 @@
+set_id,set_name,card_name,card_number,rarity,market_price,sell_price,profit,image_url
+sv8,Surging Sparks,Durant ex,4,Double Rare,0.56,0.99,0.1,https://images.pokemontcg.io/sv8/4_hires.png
+sv8,Surging Sparks,Ceruledge ex,36,Double Rare,2.47,3.99,1.1,https://images.pokemontcg.io/sv8/36_hires.png
+sv8,Surging Sparks,Scovillain ex,37,Double Rare,0.51,0.99,0.15,https://images.pokemontcg.io/sv8/37_hires.png
+sv8,Surging Sparks,Milotic ex,42,Double Rare,0.7,0.99,-0.04,https://images.pokemontcg.io/sv8/42_hires.png
+sv8,Surging Sparks,Black Kyurem ex,48,Double Rare,0.62,0.99,0.04,https://images.pokemontcg.io/sv8/48_hires.png
+sv8,Surging Sparks,Pikachu ex,57,Double Rare,3.84,5.99,1.68,https://images.pokemontcg.io/sv8/57_hires.png
+sv8,Surging Sparks,Kilowattrel ex,68,Double Rare,0.66,0.99,0.0,https://images.pokemontcg.io/sv8/68_hires.png
+sv8,Surging Sparks,Latias ex,76,Double Rare,3.61,4.99,0.94,https://images.pokemontcg.io/sv8/76_hires.png
+sv8,Surging Sparks,Sylveon ex,86,Double Rare,2.11,2.99,0.49,https://images.pokemontcg.io/sv8/86_hires.png
+sv8,Surging Sparks,Palossand ex,91,Double Rare,0.59,0.99,0.07,https://images.pokemontcg.io/sv8/91_hires.png
+sv8,Surging Sparks,Flygon ex,106,Double Rare,0.72,0.99,-0.06,https://images.pokemontcg.io/sv8/106_hires.png
+sv8,Surging Sparks,Hydreigon ex,119,Double Rare,0.86,1.99,0.77,https://images.pokemontcg.io/sv8/119_hires.png
+sv8,Surging Sparks,Archaludon ex,130,Double Rare,0.53,0.99,0.13,https://images.pokemontcg.io/sv8/130_hires.png
+sv8,Surging Sparks,Alolan Exeggutor ex,133,Double Rare,0.67,0.99,-0.01,https://images.pokemontcg.io/sv8/133_hires.png
+sv8,Surging Sparks,Tatsugiri ex,142,Double Rare,0.63,0.99,0.03,https://images.pokemontcg.io/sv8/142_hires.png
+sv8,Surging Sparks,Slaking ex,147,Double Rare,0.53,0.99,0.13,https://images.pokemontcg.io/sv8/147_hires.png
+sv8,Surging Sparks,Cyclizar ex,159,Double Rare,0.67,0.99,-0.01,https://images.pokemontcg.io/sv8/159_hires.png
+sv8,Surging Sparks,Flamigo ex,160,Double Rare,0.53,0.99,0.13,https://images.pokemontcg.io/sv8/160_hires.png
+sv8,Surging Sparks,Brilliant Blender,164,ACE SPEC Rare,0.5,0.99,0.16,https://images.pokemontcg.io/sv8/164_hires.png
+sv8,Surging Sparks,Energy Search Pro,176,ACE SPEC Rare,0.58,0.99,0.08,https://images.pokemontcg.io/sv8/176_hires.png
+sv8,Surging Sparks,Miracle Headset,183,ACE SPEC Rare,0.52,0.99,0.14,https://images.pokemontcg.io/sv8/183_hires.png
+sv8,Surging Sparks,Precious Trolley,185,ACE SPEC Rare,3.48,4.99,1.07,https://images.pokemontcg.io/sv8/185_hires.png
+sv8,Surging Sparks,Enriching Energy,191,ACE SPEC Rare,2.63,3.99,0.94,https://images.pokemontcg.io/sv8/191_hires.png
+sv8,Surging Sparks,Exeggcute,192,Illustration Rare,5.4,7.99,2.06,https://images.pokemontcg.io/sv8/192_hires.png
+sv8,Surging Sparks,Vivillon,193,Illustration Rare,3.43,4.99,1.12,https://images.pokemontcg.io/sv8/193_hires.png
+sv8,Surging Sparks,Shiinotic,194,Illustration Rare,2.9,3.99,0.67,https://images.pokemontcg.io/sv8/194_hires.png
+sv8,Surging Sparks,Castform Sunny Form,195,Illustration Rare,6.52,8.99,1.91,https://images.pokemontcg.io/sv8/195_hires.png
+sv8,Surging Sparks,Larvesta,196,Illustration Rare,2.24,3.99,1.33,https://images.pokemontcg.io/sv8/196_hires.png
+sv8,Surging Sparks,Ceruledge,197,Illustration Rare,17.45,23.99,5.54,https://images.pokemontcg.io/sv8/197_hires.png
+sv8,Surging Sparks,Feebas,198,Illustration Rare,6.91,9.99,2.49,https://images.pokemontcg.io/sv8/198_hires.png
+sv8,Surging Sparks,Spheal,199,Illustration Rare,6.71,9.99,2.69,https://images.pokemontcg.io/sv8/199_hires.png
+sv8,Surging Sparks,Bruxish,200,Illustration Rare,1.94,2.99,0.66,https://images.pokemontcg.io/sv8/200_hires.png
+sv8,Surging Sparks,Cetitan,201,Illustration Rare,2.24,3.99,1.33,https://images.pokemontcg.io/sv8/201_hires.png
+sv8,Surging Sparks,Stunfisk,202,Illustration Rare,1.49,2.99,1.11,https://images.pokemontcg.io/sv8/202_hires.png
+sv8,Surging Sparks,Latios,203,Illustration Rare,28.19,38.99,9.37,https://images.pokemontcg.io/sv8/203_hires.png
+sv8,Surging Sparks,Mesprit,204,Illustration Rare,9.07,12.99,3.24,https://images.pokemontcg.io/sv8/204_hires.png
+sv8,Surging Sparks,Phanpy,205,Illustration Rare,6.8,9.99,2.6,https://images.pokemontcg.io/sv8/205_hires.png
+sv8,Surging Sparks,Vibrava,206,Illustration Rare,2.51,3.99,1.06,https://images.pokemontcg.io/sv8/206_hires.png
+sv8,Surging Sparks,Clobbopus,207,Illustration Rare,5.07,6.99,1.42,https://images.pokemontcg.io/sv8/207_hires.png
+sv8,Surging Sparks,Alolan Dugtrio,208,Illustration Rare,6.07,8.99,2.36,https://images.pokemontcg.io/sv8/208_hires.png
+sv8,Surging Sparks,Skarmory,209,Illustration Rare,7.65,10.99,2.72,https://images.pokemontcg.io/sv8/209_hires.png
+sv8,Surging Sparks,Flapple,210,Illustration Rare,3.49,4.99,1.06,https://images.pokemontcg.io/sv8/210_hires.png
+sv8,Surging Sparks,Appletun,211,Illustration Rare,5.87,7.99,1.59,https://images.pokemontcg.io/sv8/211_hires.png
+sv8,Surging Sparks,Slakoth,212,Illustration Rare,9.61,12.99,2.7,https://images.pokemontcg.io/sv8/212_hires.png
+sv8,Surging Sparks,Kecleon,213,Illustration Rare,4.92,6.99,1.57,https://images.pokemontcg.io/sv8/213_hires.png
+sv8,Surging Sparks,Braviary,214,Illustration Rare,4.27,5.99,1.25,https://images.pokemontcg.io/sv8/214_hires.png
+sv8,Surging Sparks,Durant ex,215,Ultra Rare,0.89,1.99,0.74,https://images.pokemontcg.io/sv8/215_hires.png
+sv8,Surging Sparks,Scovillain ex,216,Ultra Rare,1.0,1.99,0.63,https://images.pokemontcg.io/sv8/216_hires.png
+sv8,Surging Sparks,Milotic ex,217,Ultra Rare,2.46,3.99,1.11,https://images.pokemontcg.io/sv8/217_hires.png
+sv8,Surging Sparks,Black Kyurem ex,218,Ultra Rare,2.34,3.99,1.23,https://images.pokemontcg.io/sv8/218_hires.png
+sv8,Surging Sparks,Pikachu ex,219,Ultra Rare,26.7,36.99,8.92,https://images.pokemontcg.io/sv8/219_hires.png
+sv8,Surging Sparks,Latias ex,220,Ultra Rare,6.99,9.99,2.41,https://images.pokemontcg.io/sv8/220_hires.png
+sv8,Surging Sparks,Palossand ex,221,Ultra Rare,1.61,2.99,0.99,https://images.pokemontcg.io/sv8/221_hires.png
+sv8,Surging Sparks,Flygon ex,222,Ultra Rare,2.69,3.99,0.88,https://images.pokemontcg.io/sv8/222_hires.png
+sv8,Surging Sparks,Hydreigon ex,223,Ultra Rare,4.67,6.99,1.82,https://images.pokemontcg.io/sv8/223_hires.png
+sv8,Surging Sparks,Archaludon ex,224,Ultra Rare,1.02,1.99,0.61,https://images.pokemontcg.io/sv8/224_hires.png
+sv8,Surging Sparks,Alolan Exeggutor ex,225,Ultra Rare,2.03,2.99,0.57,https://images.pokemontcg.io/sv8/225_hires.png
+sv8,Surging Sparks,Tatsugiri ex,226,Ultra Rare,1.88,2.99,0.72,https://images.pokemontcg.io/sv8/226_hires.png
+sv8,Surging Sparks,Slaking ex,227,Ultra Rare,1.11,1.99,0.52,https://images.pokemontcg.io/sv8/227_hires.png
+sv8,Surging Sparks,Cyclizar ex,228,Ultra Rare,1.88,2.99,0.72,https://images.pokemontcg.io/sv8/228_hires.png
+sv8,Surging Sparks,Clemont's Quick Wit,229,Ultra Rare,1.36,1.99,0.27,https://images.pokemontcg.io/sv8/229_hires.png
+sv8,Surging Sparks,Cyrano,230,Ultra Rare,7.26,9.99,2.14,https://images.pokemontcg.io/sv8/230_hires.png
+sv8,Surging Sparks,Drasna,231,Ultra Rare,1.07,1.99,0.56,https://images.pokemontcg.io/sv8/231_hires.png
+sv8,Surging Sparks,Drayton,232,Ultra Rare,1.21,1.99,0.42,https://images.pokemontcg.io/sv8/232_hires.png
+sv8,Surging Sparks,Jasmine's Gaze,233,Ultra Rare,1.76,2.99,0.84,https://images.pokemontcg.io/sv8/233_hires.png
+sv8,Surging Sparks,Lisia's Appeal,234,Ultra Rare,3.56,4.99,0.99,https://images.pokemontcg.io/sv8/234_hires.png
+sv8,Surging Sparks,Surfer,235,Ultra Rare,1.27,1.99,0.36,https://images.pokemontcg.io/sv8/235_hires.png
+sv8,Surging Sparks,Durant ex,236,Special Illustration Rare,26.74,36.99,8.88,https://images.pokemontcg.io/sv8/236_hires.png
+sv8,Surging Sparks,Milotic ex,237,Special Illustration Rare,102.43,138.99,32.23,https://images.pokemontcg.io/sv8/237_hires.png
+sv8,Surging Sparks,Pikachu ex,238,Special Illustration Rare,295.91,399.99,92.18,https://images.pokemontcg.io/sv8/238_hires.png
+sv8,Surging Sparks,Latias ex,239,Special Illustration Rare,171.03,230.99,52.96,https://images.pokemontcg.io/sv8/239_hires.png
+sv8,Surging Sparks,Hydreigon ex,240,Special Illustration Rare,38.89,52.99,12.26,https://images.pokemontcg.io/sv8/240_hires.png
+sv8,Surging Sparks,Archaludon ex,241,Special Illustration Rare,11.31,15.99,3.92,https://images.pokemontcg.io/sv8/241_hires.png
+sv8,Surging Sparks,Alolan Exeggutor ex,242,Special Illustration Rare,29.04,39.99,9.49,https://images.pokemontcg.io/sv8/242_hires.png
+sv8,Surging Sparks,Clemont's Quick Wit,243,Special Illustration Rare,8.42,11.99,2.92,https://images.pokemontcg.io/sv8/243_hires.png
+sv8,Surging Sparks,Drayton,244,Special Illustration Rare,8.38,11.99,2.96,https://images.pokemontcg.io/sv8/244_hires.png
+sv8,Surging Sparks,Jasmine's Gaze,245,Special Illustration Rare,19.49,26.99,6.42,https://images.pokemontcg.io/sv8/245_hires.png
+sv8,Surging Sparks,Lisia's Appeal,246,Special Illustration Rare,28.38,38.99,9.18,https://images.pokemontcg.io/sv8/246_hires.png
+sv8,Surging Sparks,Pikachu ex,247,Hyper Rare,71.8,96.99,22.08,https://images.pokemontcg.io/sv8/247_hires.png
+sv8,Surging Sparks,Alolan Exeggutor ex,248,Hyper Rare,10.15,13.99,3.13,https://images.pokemontcg.io/sv8/248_hires.png
+sv8,Surging Sparks,Counter Gain,249,Hyper Rare,3.9,5.99,1.62,https://images.pokemontcg.io/sv8/249_hires.png
+sv8,Surging Sparks,Gravity Mountain,250,Hyper Rare,10.29,13.99,2.99,https://images.pokemontcg.io/sv8/250_hires.png
+sv8,Surging Sparks,Night Stretcher,251,Hyper Rare,9.48,12.99,2.83,https://images.pokemontcg.io/sv8/251_hires.png
+sv8,Surging Sparks,Jet Energy,252,Hyper Rare,6.75,9.99,2.65,https://images.pokemontcg.io/sv8/252_hires.png

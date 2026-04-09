@@ -1,0 +1,79 @@
+set_id,set_name,card_name,card_number,rarity,market_price,sell_price,profit,image_url
+sv10,Destined Rivals,Yanmega ex,3,Double Rare,0.61,0.99,0.05,https://images.pokemontcg.io/sv10/3_hires.png
+sv10,Destined Rivals,Arboliva ex,23,Double Rare,0.93,1.99,0.7,https://images.pokemontcg.io/sv10/23_hires.png
+sv10,Destined Rivals,Rabsca ex,25,Double Rare,0.54,0.99,0.12,https://images.pokemontcg.io/sv10/25_hires.png
+sv10,Destined Rivals,Team Rocket's Moltres ex,31,Double Rare,1.03,1.99,0.6,https://images.pokemontcg.io/sv10/31_hires.png
+sv10,Destined Rivals,Ethan's Ho-Oh ex,39,Double Rare,0.66,0.99,0.0,https://images.pokemontcg.io/sv10/39_hires.png
+sv10,Destined Rivals,Cetitan ex,65,Double Rare,0.58,0.99,0.08,https://images.pokemontcg.io/sv10/65_hires.png
+sv10,Destined Rivals,Dondozo ex,66,Double Rare,0.54,0.99,0.12,https://images.pokemontcg.io/sv10/66_hires.png
+sv10,Destined Rivals,Electivire ex,69,Double Rare,0.56,0.99,0.1,https://images.pokemontcg.io/sv10/69_hires.png
+sv10,Destined Rivals,Team Rocket's Mewtwo ex,81,Double Rare,1.18,1.99,0.45,https://images.pokemontcg.io/sv10/81_hires.png
+sv10,Destined Rivals,Regirock ex,101,Double Rare,0.55,0.99,0.11,https://images.pokemontcg.io/sv10/101_hires.png
+sv10,Destined Rivals,Cynthia's Garchomp ex,104,Double Rare,1.38,1.99,0.25,https://images.pokemontcg.io/sv10/104_hires.png
+sv10,Destined Rivals,Team Rocket's Nidoking ex,119,Double Rare,0.8,1.99,0.83,https://images.pokemontcg.io/sv10/119_hires.png
+sv10,Destined Rivals,Team Rocket's Crobat ex,122,Double Rare,0.55,0.99,0.11,https://images.pokemontcg.io/sv10/122_hires.png
+sv10,Destined Rivals,Marnie's Grimmsnarl ex,136,Double Rare,1.02,1.99,0.61,https://images.pokemontcg.io/sv10/136_hires.png
+sv10,Destined Rivals,Arven's Mabosstiff ex,139,Double Rare,0.56,0.99,0.1,https://images.pokemontcg.io/sv10/139_hires.png
+sv10,Destined Rivals,Steven's Metagross ex,145,Double Rare,0.87,1.99,0.76,https://images.pokemontcg.io/sv10/145_hires.png
+sv10,Destined Rivals,Team Rocket's Persian ex,150,Double Rare,0.8,1.99,0.83,https://images.pokemontcg.io/sv10/150_hires.png
+sv10,Destined Rivals,Yanma,183,Illustration Rare,3.81,5.99,1.71,https://images.pokemontcg.io/sv10/183_hires.png
+sv10,Destined Rivals,Cynthia's Roserade,184,Illustration Rare,13.36,18.99,4.78,https://images.pokemontcg.io/sv10/184_hires.png
+sv10,Destined Rivals,Shaymin,185,Illustration Rare,9.7,13.99,3.58,https://images.pokemontcg.io/sv10/185_hires.png
+sv10,Destined Rivals,Crustle,186,Illustration Rare,2.78,3.99,0.79,https://images.pokemontcg.io/sv10/186_hires.png
+sv10,Destined Rivals,Team Rocket's Spidops,187,Illustration Rare,6.07,8.99,2.36,https://images.pokemontcg.io/sv10/187_hires.png
+sv10,Destined Rivals,Hydrapple,188,Illustration Rare,3.49,4.99,1.06,https://images.pokemontcg.io/sv10/188_hires.png
+sv10,Destined Rivals,Rapidash,189,Illustration Rare,8.4,11.99,2.94,https://images.pokemontcg.io/sv10/189_hires.png
+sv10,Destined Rivals,Ethan's Typhlosion,190,Illustration Rare,25.71,34.99,7.97,https://images.pokemontcg.io/sv10/190_hires.png
+sv10,Destined Rivals,Team Rocket's Houndoom,191,Illustration Rare,13.7,18.99,4.44,https://images.pokemontcg.io/sv10/191_hires.png
+sv10,Destined Rivals,Blaziken,192,Illustration Rare,10.66,14.99,3.6,https://images.pokemontcg.io/sv10/192_hires.png
+sv10,Destined Rivals,Misty's Psyduck,193,Illustration Rare,57.87,78.99,18.53,https://images.pokemontcg.io/sv10/193_hires.png
+sv10,Destined Rivals,Misty's Lapras,194,Illustration Rare,32.26,43.99,10.15,https://images.pokemontcg.io/sv10/194_hires.png
+sv10,Destined Rivals,Clamperl,195,Illustration Rare,3.77,5.99,1.75,https://images.pokemontcg.io/sv10/195_hires.png
+sv10,Destined Rivals,Electrike,196,Illustration Rare,3.1,4.99,1.45,https://images.pokemontcg.io/sv10/196_hires.png
+sv10,Destined Rivals,Rotom,197,Illustration Rare,4.17,5.99,1.35,https://images.pokemontcg.io/sv10/197_hires.png
+sv10,Destined Rivals,Team Rocket's Orbeetle,198,Illustration Rare,3.57,4.99,0.98,https://images.pokemontcg.io/sv10/198_hires.png
+sv10,Destined Rivals,Team Rocket's Weezing,199,Illustration Rare,8.0,10.99,2.37,https://images.pokemontcg.io/sv10/199_hires.png
+sv10,Destined Rivals,Team Rocket's Murkrow,200,Illustration Rare,9.49,12.99,2.82,https://images.pokemontcg.io/sv10/200_hires.png
+sv10,Destined Rivals,Zamazenta,201,Illustration Rare,3.76,5.99,1.76,https://images.pokemontcg.io/sv10/201_hires.png
+sv10,Destined Rivals,Team Rocket's Raticate,202,Illustration Rare,6.39,8.99,2.04,https://images.pokemontcg.io/sv10/202_hires.png
+sv10,Destined Rivals,Team Rocket's Meowth,203,Illustration Rare,31.48,42.99,9.96,https://images.pokemontcg.io/sv10/203_hires.png
+sv10,Destined Rivals,Kangaskhan,204,Illustration Rare,9.6,12.99,2.71,https://images.pokemontcg.io/sv10/204_hires.png
+sv10,Destined Rivals,Arven's Greedent,205,Illustration Rare,3.29,4.99,1.26,https://images.pokemontcg.io/sv10/205_hires.png
+sv10,Destined Rivals,Yanmega ex,206,Ultra Rare,1.4,1.99,0.23,https://images.pokemontcg.io/sv10/206_hires.png
+sv10,Destined Rivals,Arboliva ex,207,Ultra Rare,3.5,4.99,1.05,https://images.pokemontcg.io/sv10/207_hires.png
+sv10,Destined Rivals,Team Rocket's Moltres ex,208,Ultra Rare,5.78,7.99,1.68,https://images.pokemontcg.io/sv10/208_hires.png
+sv10,Destined Rivals,Ethan's Ho-Oh ex,209,Ultra Rare,5.16,6.99,1.33,https://images.pokemontcg.io/sv10/209_hires.png
+sv10,Destined Rivals,Cetitan ex,210,Ultra Rare,1.66,2.99,0.94,https://images.pokemontcg.io/sv10/210_hires.png
+sv10,Destined Rivals,Dondozo ex,211,Ultra Rare,1.55,2.99,1.05,https://images.pokemontcg.io/sv10/211_hires.png
+sv10,Destined Rivals,Electivire ex,212,Ultra Rare,1.44,1.99,0.19,https://images.pokemontcg.io/sv10/212_hires.png
+sv10,Destined Rivals,Team Rocket's Mewtwo ex,213,Ultra Rare,18.31,24.99,5.66,https://images.pokemontcg.io/sv10/213_hires.png
+sv10,Destined Rivals,Regirock ex,214,Ultra Rare,1.36,1.99,0.27,https://images.pokemontcg.io/sv10/214_hires.png
+sv10,Destined Rivals,Cynthia's Garchomp ex,215,Ultra Rare,5.27,7.99,2.19,https://images.pokemontcg.io/sv10/215_hires.png
+sv10,Destined Rivals,Team Rocket's Nidoking ex,216,Ultra Rare,4.42,5.99,1.1,https://images.pokemontcg.io/sv10/216_hires.png
+sv10,Destined Rivals,Team Rocket's Crobat ex,217,Ultra Rare,3.34,4.99,1.21,https://images.pokemontcg.io/sv10/217_hires.png
+sv10,Destined Rivals,Arven's Mabosstiff ex,218,Ultra Rare,1.73,2.99,0.87,https://images.pokemontcg.io/sv10/218_hires.png
+sv10,Destined Rivals,Team Rocket's Persian ex,219,Ultra Rare,4.04,5.99,1.48,https://images.pokemontcg.io/sv10/219_hires.png
+sv10,Destined Rivals,Emcee's Hype,220,Ultra Rare,2.6,3.99,0.97,https://images.pokemontcg.io/sv10/220_hires.png
+sv10,Destined Rivals,Ethan's Adventure,221,Ultra Rare,4.07,5.99,1.45,https://images.pokemontcg.io/sv10/221_hires.png
+sv10,Destined Rivals,Judge,222,Ultra Rare,2.83,3.99,0.74,https://images.pokemontcg.io/sv10/222_hires.png
+sv10,Destined Rivals,Team Rocket's Archer,223,Ultra Rare,5.7,7.99,1.76,https://images.pokemontcg.io/sv10/223_hires.png
+sv10,Destined Rivals,Team Rocket's Ariana,224,Ultra Rare,6.34,8.99,2.09,https://images.pokemontcg.io/sv10/224_hires.png
+sv10,Destined Rivals,Team Rocket's Giovanni,225,Ultra Rare,10.06,13.99,3.22,https://images.pokemontcg.io/sv10/225_hires.png
+sv10,Destined Rivals,Team Rocket's Petrel,226,Ultra Rare,13.25,17.99,3.92,https://images.pokemontcg.io/sv10/226_hires.png
+sv10,Destined Rivals,Team Rocket's Proton,227,Ultra Rare,6.07,8.99,2.36,https://images.pokemontcg.io/sv10/227_hires.png
+sv10,Destined Rivals,Yanmega ex,228,Special Illustration Rare,21.91,29.99,6.91,https://images.pokemontcg.io/sv10/228_hires.png
+sv10,Destined Rivals,Team Rocket's Moltres ex,229,Special Illustration Rare,91.03,122.99,28.09,https://images.pokemontcg.io/sv10/229_hires.png
+sv10,Destined Rivals,Ethan's Ho-Oh ex,230,Special Illustration Rare,157.1,212.99,49.41,https://images.pokemontcg.io/sv10/230_hires.png
+sv10,Destined Rivals,Cynthia's Garchomp ex,232,Special Illustration Rare,211.37,285.99,66.03,https://images.pokemontcg.io/sv10/232_hires.png
+sv10,Destined Rivals,Team Rocket's Nidoking ex,233,Special Illustration Rare,97.44,131.99,30.42,https://images.pokemontcg.io/sv10/233_hires.png
+sv10,Destined Rivals,Team Rocket's Crobat ex,234,Special Illustration Rare,66.78,90.99,21.27,https://images.pokemontcg.io/sv10/234_hires.png
+sv10,Destined Rivals,Arven's Mabosstiff ex,235,Special Illustration Rare,27.83,37.99,8.76,https://images.pokemontcg.io/sv10/235_hires.png
+sv10,Destined Rivals,Ethan's Adventure,236,Special Illustration Rare,39.22,52.99,11.93,https://images.pokemontcg.io/sv10/236_hires.png
+sv10,Destined Rivals,Team Rocket's Ariana,237,Special Illustration Rare,27.21,36.99,8.41,https://images.pokemontcg.io/sv10/237_hires.png
+sv10,Destined Rivals,Team Rocket's Giovanni,238,Special Illustration Rare,32.54,43.99,9.87,https://images.pokemontcg.io/sv10/238_hires.png
+sv10,Destined Rivals,Ethan's Ho-Oh ex,239,Hyper Rare,28.26,38.99,9.3,https://images.pokemontcg.io/sv10/239_hires.png
+sv10,Destined Rivals,Team Rocket's Mewtwo ex,240,Hyper Rare,58.08,78.99,18.32,https://images.pokemontcg.io/sv10/240_hires.png
+sv10,Destined Rivals,Cynthia's Garchomp ex,241,Hyper Rare,31.84,42.99,9.6,https://images.pokemontcg.io/sv10/241_hires.png
+sv10,Destined Rivals,Team Rocket's Crobat ex,242,Hyper Rare,17.26,23.99,5.73,https://images.pokemontcg.io/sv10/242_hires.png
+sv10,Destined Rivals,Jamming Tower,243,Hyper Rare,11.78,15.99,3.45,https://images.pokemontcg.io/sv10/243_hires.png
+sv10,Destined Rivals,Levincia,244,Hyper Rare,10.4,14.99,3.86,https://images.pokemontcg.io/sv10/244_hires.png

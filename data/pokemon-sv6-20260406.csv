@@ -1,0 +1,77 @@
+set_id,set_name,card_name,card_number,rarity,market_price,sell_price,profit,image_url
+sv6,Twilight Masquerade,Sinistcha ex,23,Double Rare,0.62,0.99,0.04,https://images.pokemontcg.io/sv6/23_hires.png
+sv6,Twilight Masquerade,Teal Mask Ogerpon ex,25,Double Rare,3.86,5.99,1.66,https://images.pokemontcg.io/sv6/25_hires.png
+sv6,Twilight Masquerade,Magcargo ex,29,Double Rare,0.66,0.99,0.0,https://images.pokemontcg.io/sv6/29_hires.png
+sv6,Twilight Masquerade,Hearthflame Mask Ogerpon ex,40,Double Rare,0.53,0.99,0.13,https://images.pokemontcg.io/sv6/40_hires.png
+sv6,Twilight Masquerade,Palafin ex,61,Double Rare,0.57,0.99,0.09,https://images.pokemontcg.io/sv6/61_hires.png
+sv6,Twilight Masquerade,Wellspring Mask Ogerpon ex,64,Double Rare,0.81,1.99,0.82,https://images.pokemontcg.io/sv6/64_hires.png
+sv6,Twilight Masquerade,Luxray ex,68,Double Rare,0.63,0.99,0.03,https://images.pokemontcg.io/sv6/68_hires.png
+sv6,Twilight Masquerade,Iron Thorns ex,77,Double Rare,0.61,0.99,0.05,https://images.pokemontcg.io/sv6/77_hires.png
+sv6,Twilight Masquerade,Scream Tail ex,94,Double Rare,0.56,0.99,0.1,https://images.pokemontcg.io/sv6/94_hires.png
+sv6,Twilight Masquerade,Greninja ex,106,Double Rare,1.33,1.99,0.3,https://images.pokemontcg.io/sv6/106_hires.png
+sv6,Twilight Masquerade,Cornerstone Mask Ogerpon ex,112,Double Rare,1.25,1.99,0.38,https://images.pokemontcg.io/sv6/112_hires.png
+sv6,Twilight Masquerade,Dragapult ex,130,Double Rare,1.99,2.99,0.61,https://images.pokemontcg.io/sv6/130_hires.png
+sv6,Twilight Masquerade,Blissey ex,134,Double Rare,0.59,0.99,0.07,https://images.pokemontcg.io/sv6/134_hires.png
+sv6,Twilight Masquerade,Bloodmoon Ursaluna ex,141,Double Rare,1.8,2.99,0.8,https://images.pokemontcg.io/sv6/141_hires.png
+sv6,Twilight Masquerade,Secret Box,163,ACE SPEC Rare,9.73,13.99,3.55,https://images.pokemontcg.io/sv6/163_hires.png
+sv6,Twilight Masquerade,Unfair Stamp,165,ACE SPEC Rare,17.07,23.99,5.92,https://images.pokemontcg.io/sv6/165_hires.png
+sv6,Twilight Masquerade,Legacy Energy,167,ACE SPEC Rare,1.98,2.99,0.62,https://images.pokemontcg.io/sv6/167_hires.png
+sv6,Twilight Masquerade,Pinsir,168,Illustration Rare,12.08,16.99,4.12,https://images.pokemontcg.io/sv6/168_hires.png
+sv6,Twilight Masquerade,Sunflora,169,Illustration Rare,6.73,9.99,2.67,https://images.pokemontcg.io/sv6/169_hires.png
+sv6,Twilight Masquerade,Dipplin,170,Illustration Rare,7.82,10.99,2.55,https://images.pokemontcg.io/sv6/170_hires.png
+sv6,Twilight Masquerade,Poltchageist,171,Illustration Rare,3.74,5.99,1.78,https://images.pokemontcg.io/sv6/171_hires.png
+sv6,Twilight Masquerade,Torkoal,172,Illustration Rare,4.41,5.99,1.11,https://images.pokemontcg.io/sv6/172_hires.png
+sv6,Twilight Masquerade,Infernape,173,Illustration Rare,12.32,16.99,3.88,https://images.pokemontcg.io/sv6/173_hires.png
+sv6,Twilight Masquerade,Froslass,174,Illustration Rare,9.09,12.99,3.22,https://images.pokemontcg.io/sv6/174_hires.png
+sv6,Twilight Masquerade,Phione,175,Illustration Rare,7.81,10.99,2.56,https://images.pokemontcg.io/sv6/175_hires.png
+sv6,Twilight Masquerade,Cramorant,176,Illustration Rare,3.58,4.99,0.97,https://images.pokemontcg.io/sv6/176_hires.png
+sv6,Twilight Masquerade,Wattrel,178,Illustration Rare,3.49,4.99,1.06,https://images.pokemontcg.io/sv6/178_hires.png
+sv6,Twilight Masquerade,Chimecho,179,Illustration Rare,4.27,5.99,1.25,https://images.pokemontcg.io/sv6/179_hires.png
+sv6,Twilight Masquerade,Heliolisk,177,Illustration Rare,3.33,4.99,1.22,https://images.pokemontcg.io/sv6/177_hires.png
+sv6,Twilight Masquerade,Enamorus,180,Illustration Rare,6.05,8.99,2.38,https://images.pokemontcg.io/sv6/180_hires.png
+sv6,Twilight Masquerade,Hisuian Growlithe,181,Illustration Rare,23.18,31.99,7.58,https://images.pokemontcg.io/sv6/181_hires.png
+sv6,Twilight Masquerade,Probopass,182,Illustration Rare,3.6,4.99,0.95,https://images.pokemontcg.io/sv6/182_hires.png
+sv6,Twilight Masquerade,Timburr,183,Illustration Rare,4.45,6.99,2.04,https://images.pokemontcg.io/sv6/183_hires.png
+sv6,Twilight Masquerade,Lairon,184,Illustration Rare,4.02,5.99,1.5,https://images.pokemontcg.io/sv6/184_hires.png
+sv6,Twilight Masquerade,Applin,185,Illustration Rare,8.07,10.99,2.3,https://images.pokemontcg.io/sv6/185_hires.png
+sv6,Twilight Masquerade,Tatsugiri,186,Illustration Rare,20.07,27.99,6.81,https://images.pokemontcg.io/sv6/186_hires.png
+sv6,Twilight Masquerade,Chansey,187,Illustration Rare,49.42,66.99,15.33,https://images.pokemontcg.io/sv6/187_hires.png
+sv6,Twilight Masquerade,Eevee,188,Illustration Rare,86.91,117.99,27.36,https://images.pokemontcg.io/sv6/188_hires.png
+sv6,Twilight Masquerade,Sinistcha ex,189,Ultra Rare,1.29,1.99,0.34,https://images.pokemontcg.io/sv6/189_hires.png
+sv6,Twilight Masquerade,Teal Mask Ogerpon ex,190,Ultra Rare,5.04,6.99,1.45,https://images.pokemontcg.io/sv6/190_hires.png
+sv6,Twilight Masquerade,Magcargo ex,191,Ultra Rare,1.7,2.99,0.9,https://images.pokemontcg.io/sv6/191_hires.png
+sv6,Twilight Masquerade,Wellspring Mask Ogerpon ex,194,Ultra Rare,3.39,4.99,1.16,https://images.pokemontcg.io/sv6/194_hires.png
+sv6,Twilight Masquerade,Hearthflame Mask Ogerpon ex,192,Ultra Rare,2.09,2.99,0.51,https://images.pokemontcg.io/sv6/192_hires.png
+sv6,Twilight Masquerade,Palafin ex,193,Ultra Rare,2.11,2.99,0.49,https://images.pokemontcg.io/sv6/193_hires.png
+sv6,Twilight Masquerade,Luxray ex,195,Ultra Rare,2.36,3.99,1.21,https://images.pokemontcg.io/sv6/195_hires.png
+sv6,Twilight Masquerade,Iron Thorns ex,196,Ultra Rare,2.68,3.99,0.89,https://images.pokemontcg.io/sv6/196_hires.png
+sv6,Twilight Masquerade,Scream Tail ex,197,Ultra Rare,2.22,3.99,1.35,https://images.pokemontcg.io/sv6/197_hires.png
+sv6,Twilight Masquerade,Greninja ex,198,Ultra Rare,12.12,16.99,4.08,https://images.pokemontcg.io/sv6/198_hires.png
+sv6,Twilight Masquerade,Cornerstone Mask Ogerpon ex,199,Ultra Rare,4.46,6.99,2.03,https://images.pokemontcg.io/sv6/199_hires.png
+sv6,Twilight Masquerade,Dragapult ex,200,Ultra Rare,13.37,18.99,4.77,https://images.pokemontcg.io/sv6/200_hires.png
+sv6,Twilight Masquerade,Blissey ex,201,Ultra Rare,3.11,4.99,1.44,https://images.pokemontcg.io/sv6/201_hires.png
+sv6,Twilight Masquerade,Bloodmoon Ursaluna ex,202,Ultra Rare,3.47,4.99,1.08,https://images.pokemontcg.io/sv6/202_hires.png
+sv6,Twilight Masquerade,Caretaker,203,Ultra Rare,0.85,1.99,0.78,https://images.pokemontcg.io/sv6/203_hires.png
+sv6,Twilight Masquerade,Carmine,204,Ultra Rare,8.73,11.99,2.61,https://images.pokemontcg.io/sv6/204_hires.png
+sv6,Twilight Masquerade,Hassel,205,Ultra Rare,1.13,1.99,0.5,https://images.pokemontcg.io/sv6/205_hires.png
+sv6,Twilight Masquerade,Kieran,206,Ultra Rare,2.7,3.99,0.87,https://images.pokemontcg.io/sv6/206_hires.png
+sv6,Twilight Masquerade,Lana's Aid,207,Ultra Rare,4.59,6.99,1.9,https://images.pokemontcg.io/sv6/207_hires.png
+sv6,Twilight Masquerade,Lucian,208,Ultra Rare,1.37,1.99,0.26,https://images.pokemontcg.io/sv6/208_hires.png
+sv6,Twilight Masquerade,Perrin,209,Ultra Rare,3.8,5.99,1.72,https://images.pokemontcg.io/sv6/209_hires.png
+sv6,Twilight Masquerade,Teal Mask Ogerpon ex,211,Special Illustration Rare,22.43,30.99,7.36,https://images.pokemontcg.io/sv6/211_hires.png
+sv6,Twilight Masquerade,Sinistcha ex,210,Special Illustration Rare,21.77,29.99,7.05,https://images.pokemontcg.io/sv6/210_hires.png
+sv6,Twilight Masquerade,Greninja ex,214,Special Illustration Rare,322.95,435.99,100.1,https://images.pokemontcg.io/sv6/214_hires.png
+sv6,Twilight Masquerade,Hearthflame Mask Ogerpon ex,212,Special Illustration Rare,10.8,14.99,3.46,https://images.pokemontcg.io/sv6/212_hires.png
+sv6,Twilight Masquerade,Wellspring Mask Ogerpon ex,213,Special Illustration Rare,19.17,25.99,5.77,https://images.pokemontcg.io/sv6/213_hires.png
+sv6,Twilight Masquerade,Cornerstone Mask Ogerpon ex,215,Special Illustration Rare,14.99,20.99,5.09,https://images.pokemontcg.io/sv6/215_hires.png
+sv6,Twilight Masquerade,Bloodmoon Ursaluna ex,216,Special Illustration Rare,40.86,55.99,13.21,https://images.pokemontcg.io/sv6/216_hires.png
+sv6,Twilight Masquerade,Kieran,218,Special Illustration Rare,29.86,40.99,9.64,https://images.pokemontcg.io/sv6/218_hires.png
+sv6,Twilight Masquerade,Lana's Aid,219,Special Illustration Rare,31.5,42.99,9.94,https://images.pokemontcg.io/sv6/219_hires.png
+sv6,Twilight Masquerade,Carmine,217,Special Illustration Rare,59.96,80.99,18.38,https://images.pokemontcg.io/sv6/217_hires.png
+sv6,Twilight Masquerade,Perrin,220,Special Illustration Rare,141.31,190.99,43.84,https://images.pokemontcg.io/sv6/220_hires.png
+sv6,Twilight Masquerade,Teal Mask Ogerpon ex,221,Hyper Rare,9.29,12.99,3.02,https://images.pokemontcg.io/sv6/221_hires.png
+sv6,Twilight Masquerade,Bloodmoon Ursaluna ex,222,Hyper Rare,8.62,11.99,2.72,https://images.pokemontcg.io/sv6/222_hires.png
+sv6,Twilight Masquerade,Buddy-Buddy Poffin,223,Hyper Rare,14.24,19.99,4.87,https://images.pokemontcg.io/sv6/223_hires.png
+sv6,Twilight Masquerade,Enhanced Hammer,224,Hyper Rare,5.61,7.99,1.85,https://images.pokemontcg.io/sv6/224_hires.png
+sv6,Twilight Masquerade,Rescue Board,225,Hyper Rare,2.81,3.99,0.76,https://images.pokemontcg.io/sv6/225_hires.png
+sv6,Twilight Masquerade,Luminous Energy,226,Hyper Rare,6.49,8.99,1.94,https://images.pokemontcg.io/sv6/226_hires.png

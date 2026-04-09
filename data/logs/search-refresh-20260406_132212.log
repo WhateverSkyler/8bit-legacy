@@ -1,0 +1,55 @@
+[13:22:12] ============================================================
+[13:22:12] SEARCH-BASED PRICE REFRESH — APPLY
+[13:22:12] Multiplier: 1.35x | Min profit: $3.00
+[13:22:12] Log: /Users/tristanaddi1/Projects/8bit-legacy/data/logs/search-refresh-20260406_132212.log
+[13:22:12] CSV: /Users/tristanaddi1/Projects/8bit-legacy/data/logs/search-refresh-20260406_132212.csv
+[13:22:12] ============================================================
+[13:22:12] Fetching all Shopify products...
+[13:22:28]   Fetched 1000 products (page 20)...
+[13:22:44]   Fetched 2000 products (page 40)...
+[13:22:59]   Fetched 3000 products (page 60)...
+[13:23:16]   Fetched 4000 products (page 80)...
+[13:23:31]   Fetched 5000 products (page 100)...
+[13:23:47]   Fetched 6000 products (page 120)...
+[13:24:01]   Total: 6121 game products
+[13:27:09]   Progress: 50/6121 | Matched: 42 | Rate: 958/hr | ETA: 380min
+[13:30:23]   Progress: 100/6121 | Matched: 77 | Rate: 943/hr | ETA: 383min
+[13:33:39]   Progress: 150/6121 | Matched: 111 | Rate: 934/hr | ETA: 384min
+[13:37:05]   Checkpoint: 200/6121 | Matched: 142 | Loose: 38 | CIB: 91 | Rate: 918/hr | ETA: 387min
+[13:44:42]   Progress: 300/6121 | Matched: 222 | Rate: 870/hr | ETA: 401min
+[13:52:39]   Checkpoint: 400/6121 | Matched: 296 | Loose: 144 | CIB: 218 | Rate: 838/hr | ETA: 410min
+[14:01:40]   Progress: 500/6121 | Matched: 375 | Rate: 797/hr | ETA: 423min
+[14:07:41]   ERROR: Black - Xbox Game: ('Connection aborted.', TimeoutError(60, 'Operation timed out'))
+[14:10:02]   Progress: 600/6121 | Matched: 449 | Rate: 782/hr | ETA: 423min
+[14:14:43]   Progress: 650/6121 | Matched: 492 | Rate: 769/hr | ETA: 427min
+[14:18:34]   Progress: 700/6121 | Matched: 527 | Rate: 770/hr | ETA: 423min
+[14:27:49]   Checkpoint: 800/6121 | Matched: 603 | Loose: 392 | CIB: 502 | Rate: 752/hr | ETA: 424min
+[14:36:09]   Checkpoint: 900/6121 | Matched: 687 | Loose: 469 | CIB: 576 | Rate: 749/hr | ETA: 419min
+[14:43:56]   Progress: 1000/6121 | Matched: 764 | Rate: 751/hr | ETA: 409min
+[14:52:10]   Checkpoint: 1100/6121 | Matched: 844 | Loose: 610 | CIB: 728 | Rate: 749/hr | ETA: 402min
+[14:54:10]   ERROR: Dance Dance Revolution - PS1 Game: ('Connection aborted.', TimeoutError(60, 'Operation timed out'))
+[15:00:43]   Checkpoint: 1200/6121 | Matched: 927 | Loose: 685 | CIB: 807 | Rate: 745/hr | ETA: 397min
+[15:08:46]   Checkpoint: 1300/6121 | Matched: 1006 | Loose: 754 | CIB: 886 | Rate: 745/hr | ETA: 389min
+[15:16:17]   Checkpoint: 1400/6121 | Matched: 1083 | Loose: 822 | CIB: 959 | Rate: 748/hr | ETA: 379min
+[15:24:03]   Checkpoint: 1500/6121 | Matched: 1155 | Loose: 884 | CIB: 1028 | Rate: 750/hr | ETA: 370min
+[15:31:55]   Checkpoint: 1600/6121 | Matched: 1235 | Loose: 957 | CIB: 1104 | Rate: 751/hr | ETA: 361min
+[15:39:41]   Checkpoint: 1700/6121 | Matched: 1319 | Loose: 1034 | CIB: 1185 | Rate: 752/hr | ETA: 353min
+[15:43:29]   Progress: 1750/6121 | Matched: 1361 | Rate: 753/hr | ETA: 348min
+[15:47:13]   Checkpoint: 1800/6121 | Matched: 1399 | Loose: 1109 | CIB: 1259 | Rate: 754/hr | ETA: 344min
+[15:51:06]   Progress: 1850/6121 | Matched: 1431 | Rate: 755/hr | ETA: 340min
+[15:55:20]   Checkpoint: 1900/6121 | Matched: 1475 | Loose: 1180 | CIB: 1331 | Rate: 753/hr | ETA: 336min
+[15:59:32]   Progress: 1950/6121 | Matched: 1516 | Rate: 752/hr | ETA: 333min
+[16:03:22]   Checkpoint: 2000/6121 | Matched: 1560 | Loose: 1261 | CIB: 1413 | Rate: 753/hr | ETA: 328min
+[16:07:36]   Progress: 2050/6121 | Matched: 1604 | Rate: 752/hr | ETA: 325min
+[16:11:26]   Checkpoint: 2100/6121 | Matched: 1642 | Loose: 1337 | CIB: 1488 | Rate: 753/hr | ETA: 321min
+[16:20:03]   Checkpoint: 2200/6121 | Matched: 1716 | Loose: 1405 | CIB: 1558 | Rate: 750/hr | ETA: 314min
+[16:24:05]   Progress: 2250/6121 | Matched: 1758 | Rate: 750/hr | ETA: 310min
+[16:26:30]   ERROR: Iron Soldier 3 - PS1 Game: HTTPSConnectionPool(host='dpxzef-st.myshopify.com', port=443): Max retries exceeded with url: /admin/api/2024-10/graphql.json (Caused by NewConnectionError("HTTPSConnection(host='dpxzef-st.myshopify.com', port=443): Failed to establish a new connection: [Errno 60] Operation timed out"))
+[16:28:07]   Checkpoint: 2300/6121 | Matched: 1797 | Loose: 1478 | CIB: 1637 | Rate: 750/hr | ETA: 306min
+[16:33:03]   ERROR: Jumping Flash - PS1 Game: ('Connection aborted.', TimeoutError(60, 'Operation timed out'))
+[16:36:38]   Checkpoint: 2400/6121 | Matched: 1872 | Loose: 1539 | CIB: 1710 | Rate: 748/hr | ETA: 299min
+[16:40:39]   Progress: 2450/6121 | Matched: 1909 | Rate: 748/hr | ETA: 295min
+[16:44:25]   Progress: 2500/6121 | Matched: 1942 | Rate: 748/hr | ETA: 290min
+[16:48:26]   Progress: 2550/6121 | Matched: 1978 | Rate: 748/hr | ETA: 286min
+[16:52:43]   Checkpoint: 2600/6121 | Matched: 2026 | Loose: 1676 | CIB: 1860 | Rate: 747/hr | ETA: 283min
+[17:00:35]   Progress: 2700/6121 | Matched: 2098 | Rate: 748/hr | ETA: 274min

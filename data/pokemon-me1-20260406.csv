@@ -1,0 +1,67 @@
+set_id,set_name,card_name,card_number,rarity,market_price,sell_price,profit,image_url
+me1,Mega Evolution,Mega Venusaur ex,3,Double Rare,0.86,1.99,0.77,https://images.pokemontcg.io/me1/3_hires.png
+me1,Mega Evolution,Mega Camerupt ex,22,Double Rare,0.52,0.99,0.14,https://images.pokemontcg.io/me1/22_hires.png
+me1,Mega Evolution,Mega Abomasnow ex,36,Double Rare,0.56,0.99,0.1,https://images.pokemontcg.io/me1/36_hires.png
+me1,Mega Evolution,Mega Manectric ex,50,Double Rare,0.61,0.99,0.05,https://images.pokemontcg.io/me1/50_hires.png
+me1,Mega Evolution,Mega Gardevoir ex,60,Double Rare,0.66,0.99,0.0,https://images.pokemontcg.io/me1/60_hires.png
+me1,Mega Evolution,Mega Lucario ex,77,Double Rare,1.25,1.99,0.38,https://images.pokemontcg.io/me1/77_hires.png
+me1,Mega Evolution,Mega Absol ex,86,Double Rare,0.71,0.99,-0.05,https://images.pokemontcg.io/me1/86_hires.png
+me1,Mega Evolution,Mega Mawile ex,94,Double Rare,0.6,0.99,0.06,https://images.pokemontcg.io/me1/94_hires.png
+me1,Mega Evolution,Mega Latias ex,100,Double Rare,0.57,0.99,0.09,https://images.pokemontcg.io/me1/100_hires.png
+me1,Mega Evolution,Mega Kangaskhan ex,104,Double Rare,0.86,1.99,0.77,https://images.pokemontcg.io/me1/104_hires.png
+me1,Mega Evolution,Bulbasaur,133,Illustration Rare,20.45,27.99,6.43,https://images.pokemontcg.io/me1/133_hires.png
+me1,Mega Evolution,Ivysaur,134,Illustration Rare,19.68,26.99,6.23,https://images.pokemontcg.io/me1/134_hires.png
+me1,Mega Evolution,Exeggutor,135,Illustration Rare,3.93,5.99,1.59,https://images.pokemontcg.io/me1/135_hires.png
+me1,Mega Evolution,Shuckle,136,Illustration Rare,4.46,6.99,2.03,https://images.pokemontcg.io/me1/136_hires.png
+me1,Mega Evolution,Ninjask,137,Illustration Rare,2.94,3.99,0.63,https://images.pokemontcg.io/me1/137_hires.png
+me1,Mega Evolution,Vulpix,138,Illustration Rare,13.87,18.99,4.27,https://images.pokemontcg.io/me1/138_hires.png
+me1,Mega Evolution,Litleo,139,Illustration Rare,3.06,4.99,1.49,https://images.pokemontcg.io/me1/139_hires.png
+me1,Mega Evolution,Snover,140,Illustration Rare,1.86,2.99,0.74,https://images.pokemontcg.io/me1/140_hires.png
+me1,Mega Evolution,Clawitzer,141,Illustration Rare,1.56,2.99,1.04,https://images.pokemontcg.io/me1/141_hires.png
+me1,Mega Evolution,Inteleon,142,Illustration Rare,2.25,3.99,1.32,https://images.pokemontcg.io/me1/142_hires.png
+me1,Mega Evolution,Helioptile,143,Illustration Rare,2.56,3.99,1.01,https://images.pokemontcg.io/me1/143_hires.png
+me1,Mega Evolution,Shedinja,144,Illustration Rare,2.74,3.99,0.83,https://images.pokemontcg.io/me1/144_hires.png
+me1,Mega Evolution,Houndstone,145,Illustration Rare,2.0,2.99,0.6,https://images.pokemontcg.io/me1/145_hires.png
+me1,Mega Evolution,Marshadow,146,Illustration Rare,13.52,18.99,4.62,https://images.pokemontcg.io/me1/146_hires.png
+me1,Mega Evolution,Garganacl,147,Illustration Rare,1.39,1.99,0.24,https://images.pokemontcg.io/me1/147_hires.png
+me1,Mega Evolution,Spiritomb,148,Illustration Rare,2.29,3.99,1.28,https://images.pokemontcg.io/me1/148_hires.png
+me1,Mega Evolution,Shroodle,149,Illustration Rare,1.91,2.99,0.69,https://images.pokemontcg.io/me1/149_hires.png
+me1,Mega Evolution,Steelix,150,Illustration Rare,6.8,9.99,2.6,https://images.pokemontcg.io/me1/150_hires.png
+me1,Mega Evolution,Spearow,151,Illustration Rare,3.06,4.99,1.49,https://images.pokemontcg.io/me1/151_hires.png
+me1,Mega Evolution,Delibird,152,Illustration Rare,2.0,2.99,0.6,https://images.pokemontcg.io/me1/152_hires.png
+me1,Mega Evolution,Gumshoos,153,Illustration Rare,4.09,5.99,1.43,https://images.pokemontcg.io/me1/153_hires.png
+me1,Mega Evolution,Stufful,154,Illustration Rare,3.95,5.99,1.57,https://images.pokemontcg.io/me1/154_hires.png
+me1,Mega Evolution,Mega Venusaur ex,155,Ultra Rare,12.52,16.99,3.68,https://images.pokemontcg.io/me1/155_hires.png
+me1,Mega Evolution,Mega Camerupt ex,156,Ultra Rare,1.96,2.99,0.64,https://images.pokemontcg.io/me1/156_hires.png
+me1,Mega Evolution,Mega Gardevoir ex,159,Ultra Rare,5.33,7.99,2.13,https://images.pokemontcg.io/me1/159_hires.png
+me1,Mega Evolution,Mega Lucario ex,160,Ultra Rare,15.69,21.99,5.36,https://images.pokemontcg.io/me1/160_hires.png
+me1,Mega Evolution,Mega Abomasnow ex,157,Ultra Rare,2.24,3.99,1.33,https://images.pokemontcg.io/me1/157_hires.png
+me1,Mega Evolution,Mega Absol ex,161,Ultra Rare,5.42,7.99,2.04,https://images.pokemontcg.io/me1/161_hires.png
+me1,Mega Evolution,Mega Manectric ex,158,Ultra Rare,2.29,3.99,1.28,https://images.pokemontcg.io/me1/158_hires.png
+me1,Mega Evolution,Mega Mawile ex,162,Ultra Rare,2.54,3.99,1.03,https://images.pokemontcg.io/me1/162_hires.png
+me1,Mega Evolution,Acerola's Mischief,165,Ultra Rare,2.2,2.99,0.4,https://images.pokemontcg.io/me1/165_hires.png
+me1,Mega Evolution,Air Balloon,166,Ultra Rare,2.55,3.99,1.02,https://images.pokemontcg.io/me1/166_hires.png
+me1,Mega Evolution,Buddy-Buddy Poffin,167,Ultra Rare,5.6,7.99,1.86,https://images.pokemontcg.io/me1/167_hires.png
+me1,Mega Evolution,Mega Latias ex,163,Ultra Rare,5.07,6.99,1.42,https://images.pokemontcg.io/me1/163_hires.png
+me1,Mega Evolution,Mega Kangaskhan ex,164,Ultra Rare,4.75,6.99,1.74,https://images.pokemontcg.io/me1/164_hires.png
+me1,Mega Evolution,Fighting Gong,168,Ultra Rare,3.62,4.99,0.93,https://images.pokemontcg.io/me1/168_hires.png
+me1,Mega Evolution,Lillie's Determination,169,Ultra Rare,22.1,29.99,6.72,https://images.pokemontcg.io/me1/169_hires.png
+me1,Mega Evolution,Lt. Surge's Bargain,170,Ultra Rare,1.24,1.99,0.39,https://images.pokemontcg.io/me1/170_hires.png
+me1,Mega Evolution,Mega Signal,171,Ultra Rare,1.19,1.99,0.44,https://images.pokemontcg.io/me1/171_hires.png
+me1,Mega Evolution,Mystery Garden,172,Ultra Rare,1.37,1.99,0.26,https://images.pokemontcg.io/me1/172_hires.png
+me1,Mega Evolution,Night Stretcher,173,Ultra Rare,5.44,7.99,2.02,https://images.pokemontcg.io/me1/173_hires.png
+me1,Mega Evolution,Rare Candy,175,Ultra Rare,3.78,5.99,1.74,https://images.pokemontcg.io/me1/175_hires.png
+me1,Mega Evolution,Mega Absol ex,180,Special Illustration Rare,62.81,84.99,19.42,https://images.pokemontcg.io/me1/180_hires.png
+me1,Mega Evolution,Lillie's Determination,184,Special Illustration Rare,71.9,97.99,22.95,https://images.pokemontcg.io/me1/184_hires.png
+me1,Mega Evolution,Mega Gardevoir ex,187,Mega Hyper Rare,223.85,302.99,70.05,https://images.pokemontcg.io/me1/187_hires.png
+me1,Mega Evolution,Mega Latias ex,181,Special Illustration Rare,75.25,101.99,23.48,https://images.pokemontcg.io/me1/181_hires.png
+me1,Mega Evolution,Wally's Compassion,186,Special Illustration Rare,23.04,31.99,7.72,https://images.pokemontcg.io/me1/186_hires.png
+me1,Mega Evolution,Premium Power Pro,174,Ultra Rare,3.46,4.99,1.09,https://images.pokemontcg.io/me1/174_hires.png
+me1,Mega Evolution,Wally's Compassion,176,Ultra Rare,2.29,3.99,1.28,https://images.pokemontcg.io/me1/176_hires.png
+me1,Mega Evolution,Mega Venusaur ex,177,Special Illustration Rare,130.95,176.99,40.61,https://images.pokemontcg.io/me1/177_hires.png
+me1,Mega Evolution,Mega Gardevoir ex,178,Special Illustration Rare,189.01,255.99,59.26,https://images.pokemontcg.io/me1/178_hires.png
+me1,Mega Evolution,Mega Kangaskhan ex,182,Special Illustration Rare,61.18,82.99,19.1,https://images.pokemontcg.io/me1/182_hires.png
+me1,Mega Evolution,Mega Lucario ex,179,Special Illustration Rare,156.27,210.99,48.3,https://images.pokemontcg.io/me1/179_hires.png
+me1,Mega Evolution,Acerola's Mischief,183,Special Illustration Rare,33.36,45.99,11.0,https://images.pokemontcg.io/me1/183_hires.png
+me1,Mega Evolution,Lt. Surge's Bargain,185,Special Illustration Rare,18.22,24.99,5.75,https://images.pokemontcg.io/me1/185_hires.png
+me1,Mega Evolution,Mega Lucario ex,188,Mega Hyper Rare,260.15,351.99,81.33,https://images.pokemontcg.io/me1/188_hires.png

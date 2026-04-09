@@ -1,0 +1,93 @@
+set_id,set_name,card_name,card_number,rarity,market_price,sell_price,profit,image_url
+rsv10pt5,White Flare,Whimsicott ex,5,Double Rare,0.52,0.99,0.14,https://images.pokemontcg.io/rsv10pt5/5_hires.png
+rsv10pt5,White Flare,Reshiram ex,20,Double Rare,0.61,0.99,0.05,https://images.pokemontcg.io/rsv10pt5/20_hires.png
+rsv10pt5,White Flare,Keldeo ex,30,Double Rare,0.54,0.99,0.12,https://images.pokemontcg.io/rsv10pt5/30_hires.png
+rsv10pt5,White Flare,Jellicent ex,45,Double Rare,0.61,0.99,0.05,https://images.pokemontcg.io/rsv10pt5/45_hires.png
+rsv10pt5,White Flare,Emboar,98,Illustration Rare,32.42,43.99,9.99,https://images.pokemontcg.io/rsv10pt5/98_hires.png
+rsv10pt5,White Flare,Simisear,100,Illustration Rare,9.19,12.99,3.12,https://images.pokemontcg.io/rsv10pt5/100_hires.png
+rsv10pt5,White Flare,Lampent,102,Illustration Rare,10.75,14.99,3.51,https://images.pokemontcg.io/rsv10pt5/102_hires.png
+rsv10pt5,White Flare,Samurott,107,Illustration Rare,38.69,52.99,12.46,https://images.pokemontcg.io/rsv10pt5/107_hires.png
+rsv10pt5,White Flare,Ducklett,109,Illustration Rare,14.46,19.99,4.65,https://images.pokemontcg.io/rsv10pt5/109_hires.png
+rsv10pt5,White Flare,Vanilluxe,113,Illustration Rare,29.83,40.99,9.67,https://images.pokemontcg.io/rsv10pt5/113_hires.png
+rsv10pt5,White Flare,Blitzle,114,Illustration Rare,6.89,9.99,2.51,https://images.pokemontcg.io/rsv10pt5/114_hires.png
+rsv10pt5,White Flare,Zebstrika,115,Illustration Rare,17.39,23.99,5.6,https://images.pokemontcg.io/rsv10pt5/115_hires.png
+rsv10pt5,White Flare,Sewaddle,87,Illustration Rare,12.42,16.99,3.78,https://images.pokemontcg.io/rsv10pt5/87_hires.png
+rsv10pt5,White Flare,Leavanny,89,Illustration Rare,19.86,26.99,6.05,https://images.pokemontcg.io/rsv10pt5/89_hires.png
+rsv10pt5,White Flare,Cottonee,90,Illustration Rare,6.46,8.99,1.97,https://images.pokemontcg.io/rsv10pt5/90_hires.png
+rsv10pt5,White Flare,Deerling,91,Illustration Rare,14.01,18.99,4.13,https://images.pokemontcg.io/rsv10pt5/91_hires.png
+rsv10pt5,White Flare,Pansear,99,Illustration Rare,8.58,11.99,2.76,https://images.pokemontcg.io/rsv10pt5/99_hires.png
+rsv10pt5,White Flare,Oshawott,105,Illustration Rare,48.41,65.99,15.37,https://images.pokemontcg.io/rsv10pt5/105_hires.png
+rsv10pt5,White Flare,Boldore,128,Illustration Rare,4.98,6.99,1.51,https://images.pokemontcg.io/rsv10pt5/128_hires.png
+rsv10pt5,White Flare,Sawk,130,Illustration Rare,6.79,9.99,2.61,https://images.pokemontcg.io/rsv10pt5/130_hires.png
+rsv10pt5,White Flare,Virizion,95,Illustration Rare,24.04,32.99,7.69,https://images.pokemontcg.io/rsv10pt5/95_hires.png
+rsv10pt5,White Flare,Swanna,110,Illustration Rare,8.99,12.99,3.32,https://images.pokemontcg.io/rsv10pt5/110_hires.png
+rsv10pt5,White Flare,Joltik,116,Illustration Rare,20.95,28.99,6.9,https://images.pokemontcg.io/rsv10pt5/116_hires.png
+rsv10pt5,White Flare,Gigalith,129,Illustration Rare,16.5,22.99,5.52,https://images.pokemontcg.io/rsv10pt5/129_hires.png
+rsv10pt5,White Flare,Hilda,84,Uncommon,1.65,2.99,0.95,https://images.pokemontcg.io/rsv10pt5/84_hires.png
+rsv10pt5,White Flare,Shelmet,93,Illustration Rare,4.41,5.99,1.11,https://images.pokemontcg.io/rsv10pt5/93_hires.png
+rsv10pt5,White Flare,Heatmor,104,Illustration Rare,5.27,7.99,2.19,https://images.pokemontcg.io/rsv10pt5/104_hires.png
+rsv10pt5,White Flare,Basculin,108,Illustration Rare,5.27,7.99,2.19,https://images.pokemontcg.io/rsv10pt5/108_hires.png
+rsv10pt5,White Flare,Yamask,122,Illustration Rare,6.04,8.99,2.39,https://images.pokemontcg.io/rsv10pt5/122_hires.png
+rsv10pt5,White Flare,Gothorita,125,Illustration Rare,10.9,14.99,3.36,https://images.pokemontcg.io/rsv10pt5/125_hires.png
+rsv10pt5,White Flare,Swadloon,88,Illustration Rare,7.52,10.99,2.85,https://images.pokemontcg.io/rsv10pt5/88_hires.png
+rsv10pt5,White Flare,Accelgor,94,Illustration Rare,10.95,14.99,3.31,https://images.pokemontcg.io/rsv10pt5/94_hires.png
+rsv10pt5,White Flare,Pignite,97,Illustration Rare,9.32,12.99,2.99,https://images.pokemontcg.io/rsv10pt5/97_hires.png
+rsv10pt5,White Flare,Chandelure,103,Illustration Rare,45.5,61.99,14.39,https://images.pokemontcg.io/rsv10pt5/103_hires.png
+rsv10pt5,White Flare,Dewott,106,Illustration Rare,14.36,19.99,4.75,https://images.pokemontcg.io/rsv10pt5/106_hires.png
+rsv10pt5,White Flare,Frillish,126,Illustration Rare,12.48,16.99,3.72,https://images.pokemontcg.io/rsv10pt5/126_hires.png
+rsv10pt5,White Flare,Litwick,101,Illustration Rare,16.41,22.99,5.61,https://images.pokemontcg.io/rsv10pt5/101_hires.png
+rsv10pt5,White Flare,Vanillite,111,Illustration Rare,10.07,13.99,3.21,https://images.pokemontcg.io/rsv10pt5/111_hires.png
+rsv10pt5,White Flare,Roggenrola,127,Illustration Rare,6.94,9.99,2.46,https://images.pokemontcg.io/rsv10pt5/127_hires.png
+rsv10pt5,White Flare,Sawsbuck,92,Illustration Rare,23.87,32.99,7.86,https://images.pokemontcg.io/rsv10pt5/92_hires.png
+rsv10pt5,White Flare,Vanillish,112,Illustration Rare,8.34,11.99,3.0,https://images.pokemontcg.io/rsv10pt5/112_hires.png
+rsv10pt5,White Flare,Galvantula,117,Illustration Rare,15.73,21.99,5.32,https://images.pokemontcg.io/rsv10pt5/117_hires.png
+rsv10pt5,White Flare,Stunfisk,118,Illustration Rare,4.19,5.99,1.33,https://images.pokemontcg.io/rsv10pt5/118_hires.png
+rsv10pt5,White Flare,Swoobat,120,Illustration Rare,9.96,13.99,3.32,https://images.pokemontcg.io/rsv10pt5/120_hires.png
+rsv10pt5,White Flare,Cofagrigus,123,Illustration Rare,17.75,23.99,5.24,https://images.pokemontcg.io/rsv10pt5/123_hires.png
+rsv10pt5,White Flare,Tepig,96,Illustration Rare,20.0,27.99,6.88,https://images.pokemontcg.io/rsv10pt5/96_hires.png
+rsv10pt5,White Flare,Woobat,119,Illustration Rare,8.92,12.99,3.39,https://images.pokemontcg.io/rsv10pt5/119_hires.png
+rsv10pt5,White Flare,Sigilyph,121,Illustration Rare,6.99,9.99,2.41,https://images.pokemontcg.io/rsv10pt5/121_hires.png
+rsv10pt5,White Flare,Gothita,124,Illustration Rare,15.47,20.99,4.61,https://images.pokemontcg.io/rsv10pt5/124_hires.png
+rsv10pt5,White Flare,Archen,131,Uncommon,5.58,7.99,1.88,https://images.pokemontcg.io/rsv10pt5/131_hires.png
+rsv10pt5,White Flare,Mienshao,134,Illustration Rare,6.79,9.99,2.61,https://images.pokemontcg.io/rsv10pt5/134_hires.png
+rsv10pt5,White Flare,Archeops,132,Illustration Rare,7.55,10.99,2.82,https://images.pokemontcg.io/rsv10pt5/132_hires.png
+rsv10pt5,White Flare,Mienfoo,133,Illustration Rare,8.44,11.99,2.9,https://images.pokemontcg.io/rsv10pt5/133_hires.png
+rsv10pt5,White Flare,Terrakion,135,Illustration Rare,20.49,27.99,6.39,https://images.pokemontcg.io/rsv10pt5/135_hires.png
+rsv10pt5,White Flare,Purrloin,136,Illustration Rare,13.24,17.99,3.93,https://images.pokemontcg.io/rsv10pt5/136_hires.png
+rsv10pt5,White Flare,Liepard,137,Illustration Rare,27.95,37.99,8.64,https://images.pokemontcg.io/rsv10pt5/137_hires.png
+rsv10pt5,White Flare,Scraggy,138,Illustration Rare,13.38,18.99,4.76,https://images.pokemontcg.io/rsv10pt5/138_hires.png
+rsv10pt5,White Flare,Scrafty,139,Illustration Rare,16.93,22.99,5.09,https://images.pokemontcg.io/rsv10pt5/139_hires.png
+rsv10pt5,White Flare,Trubbish,140,Illustration Rare,10.72,14.99,3.54,https://images.pokemontcg.io/rsv10pt5/140_hires.png
+rsv10pt5,White Flare,Zorua,142,Illustration Rare,23.27,31.99,7.49,https://images.pokemontcg.io/rsv10pt5/142_hires.png
+rsv10pt5,White Flare,Druddigon,151,Illustration Rare,13.16,17.99,4.01,https://images.pokemontcg.io/rsv10pt5/151_hires.png
+rsv10pt5,White Flare,Zoroark,143,Illustration Rare,47.4,63.99,14.43,https://images.pokemontcg.io/rsv10pt5/143_hires.png
+rsv10pt5,White Flare,Durant,150,Illustration Rare,5.69,7.99,1.77,https://images.pokemontcg.io/rsv10pt5/150_hires.png
+rsv10pt5,White Flare,Watchog,153,Illustration Rare,5.73,7.99,1.73,https://images.pokemontcg.io/rsv10pt5/153_hires.png
+rsv10pt5,White Flare,Herdier,155,Illustration Rare,10.0,13.99,3.28,https://images.pokemontcg.io/rsv10pt5/155_hires.png
+rsv10pt5,White Flare,Bouffalant ex,162,Ultra Rare,0.89,1.99,0.74,https://images.pokemontcg.io/rsv10pt5/162_hires.png
+rsv10pt5,White Flare,Mandibuzz,145,Illustration Rare,5.92,8.99,2.51,https://images.pokemontcg.io/rsv10pt5/145_hires.png
+rsv10pt5,White Flare,Ferroseed,148,Illustration Rare,4.62,6.99,1.87,https://images.pokemontcg.io/rsv10pt5/148_hires.png
+rsv10pt5,White Flare,Lillipup,154,Illustration Rare,20.45,27.99,6.43,https://images.pokemontcg.io/rsv10pt5/154_hires.png
+rsv10pt5,White Flare,Stoutland,156,Illustration Rare,23.44,31.99,7.32,https://images.pokemontcg.io/rsv10pt5/156_hires.png
+rsv10pt5,White Flare,Keldeo ex,159,Ultra Rare,1.32,1.99,0.31,https://images.pokemontcg.io/rsv10pt5/159_hires.png
+rsv10pt5,White Flare,Vullaby,144,Illustration Rare,5.63,7.99,1.83,https://images.pokemontcg.io/rsv10pt5/144_hires.png
+rsv10pt5,White Flare,Ferrothorn,149,Illustration Rare,11.02,14.99,3.24,https://images.pokemontcg.io/rsv10pt5/149_hires.png
+rsv10pt5,White Flare,Reshiram ex,158,Ultra Rare,2.49,3.99,1.08,https://images.pokemontcg.io/rsv10pt5/158_hires.png
+rsv10pt5,White Flare,Hydreigon ex,161,Ultra Rare,1.33,1.99,0.3,https://images.pokemontcg.io/rsv10pt5/161_hires.png
+rsv10pt5,White Flare,Garbodor,141,Illustration Rare,14.3,19.99,4.81,https://images.pokemontcg.io/rsv10pt5/141_hires.png
+rsv10pt5,White Flare,Deino,146,Illustration Rare,11.58,15.99,3.65,https://images.pokemontcg.io/rsv10pt5/146_hires.png
+rsv10pt5,White Flare,Patrat,152,Illustration Rare,8.87,11.99,2.47,https://images.pokemontcg.io/rsv10pt5/152_hires.png
+rsv10pt5,White Flare,Whimsicott ex,157,Ultra Rare,1.17,1.99,0.46,https://images.pokemontcg.io/rsv10pt5/157_hires.png
+rsv10pt5,White Flare,Jellicent ex,160,Ultra Rare,1.24,1.99,0.39,https://images.pokemontcg.io/rsv10pt5/160_hires.png
+rsv10pt5,White Flare,Zweilous,147,Illustration Rare,8.13,10.99,2.24,https://images.pokemontcg.io/rsv10pt5/147_hires.png
+rsv10pt5,White Flare,Whimsicott ex,165,Special Illustration Rare,21.87,29.99,6.95,https://images.pokemontcg.io/rsv10pt5/165_hires.png
+rsv10pt5,White Flare,Harlequin,163,Ultra Rare,1.5,2.99,1.1,https://images.pokemontcg.io/rsv10pt5/163_hires.png
+rsv10pt5,White Flare,Hilda,164,Ultra Rare,12.24,16.99,3.96,https://images.pokemontcg.io/rsv10pt5/164_hires.png
+rsv10pt5,White Flare,Keldeo ex,167,Special Illustration Rare,51.19,69.99,16.47,https://images.pokemontcg.io/rsv10pt5/167_hires.png
+rsv10pt5,White Flare,Reshiram ex,166,Special Illustration Rare,161.24,217.99,50.13,https://images.pokemontcg.io/rsv10pt5/166_hires.png
+rsv10pt5,White Flare,Hydreigon ex,169,Special Illustration Rare,69.88,94.99,22.06,https://images.pokemontcg.io/rsv10pt5/169_hires.png
+rsv10pt5,White Flare,Jellicent ex,168,Special Illustration Rare,25.63,34.99,8.05,https://images.pokemontcg.io/rsv10pt5/168_hires.png
+rsv10pt5,White Flare,Bouffalant ex,170,Special Illustration Rare,14.94,20.99,5.14,https://images.pokemontcg.io/rsv10pt5/170_hires.png
+rsv10pt5,White Flare,Hilda,171,Special Illustration Rare,50.55,68.99,16.14,https://images.pokemontcg.io/rsv10pt5/171_hires.png
+rsv10pt5,White Flare,Reshiram ex,173,Black White Rare,367.63,496.99,114.65,https://images.pokemontcg.io/rsv10pt5/173_hires.png
+rsv10pt5,White Flare,Victini,172,Rare,391.37,528.99,121.98,https://images.pokemontcg.io/rsv10pt5/172_hires.png

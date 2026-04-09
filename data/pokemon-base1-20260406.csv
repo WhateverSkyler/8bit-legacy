@@ -1,0 +1,64 @@
+set_id,set_name,card_name,card_number,rarity,market_price,sell_price,profit,image_url
+base1,Base,Alakazam,1,Rare Holo,59.88,71.99,9.72,https://images.pokemontcg.io/base1/1_hires.png
+base1,Base,Blastoise,2,Rare Holo,194.01,232.99,31.92,https://images.pokemontcg.io/base1/2_hires.png
+base1,Base,Chansey,3,Rare Holo,48.79,58.99,8.19,https://images.pokemontcg.io/base1/3_hires.png
+base1,Base,Charizard,4,Rare Holo,497.31,596.99,82.07,https://images.pokemontcg.io/base1/4_hires.png
+base1,Base,Clefairy,5,Rare Holo,30.43,36.99,5.19,https://images.pokemontcg.io/base1/5_hires.png
+base1,Base,Gyarados,6,Rare Holo,42.45,50.99,6.76,https://images.pokemontcg.io/base1/6_hires.png
+base1,Base,Hitmonchan,7,Rare Holo,21.62,25.99,3.32,https://images.pokemontcg.io/base1/7_hires.png
+base1,Base,Magneton,9,Rare Holo,34.64,41.99,5.83,https://images.pokemontcg.io/base1/9_hires.png
+base1,Base,Mewtwo,10,Rare Holo,72.05,86.99,12.12,https://images.pokemontcg.io/base1/10_hires.png
+base1,Base,Nidoking,11,Rare Holo,37.42,44.99,5.97,https://images.pokemontcg.io/base1/11_hires.png
+base1,Base,Ninetales,12,Rare Holo,36.36,43.99,6.05,https://images.pokemontcg.io/base1/12_hires.png
+base1,Base,Poliwrath,13,Rare Holo,29.11,34.99,4.57,https://images.pokemontcg.io/base1/13_hires.png
+base1,Base,Raichu,14,Rare Holo,66.97,80.99,11.37,https://images.pokemontcg.io/base1/14_hires.png
+base1,Base,Venusaur,15,Rare Holo,149.37,179.99,25.1,https://images.pokemontcg.io/base1/15_hires.png
+base1,Base,Zapdos,16,Rare Holo,54.45,65.99,9.33,https://images.pokemontcg.io/base1/16_hires.png
+base1,Base,Beedrill,17,Rare,6.6,7.99,0.86,https://images.pokemontcg.io/base1/17_hires.png
+base1,Base,Dragonair,18,Rare,14.39,17.99,2.78,https://images.pokemontcg.io/base1/18_hires.png
+base1,Base,Dugtrio,19,Rare,9.0,10.99,1.37,https://images.pokemontcg.io/base1/19_hires.png
+base1,Base,Electabuzz,20,Rare,10.5,12.99,1.81,https://images.pokemontcg.io/base1/20_hires.png
+base1,Base,Electrode,21,Rare,7.05,8.99,1.38,https://images.pokemontcg.io/base1/21_hires.png
+base1,Base,Pidgeotto,22,Rare,9.98,11.99,1.36,https://images.pokemontcg.io/base1/22_hires.png
+base1,Base,Arcanine,23,Uncommon,3.31,3.99,0.26,https://images.pokemontcg.io/base1/23_hires.png
+base1,Base,Charmeleon,24,Uncommon,2.27,2.99,0.33,https://images.pokemontcg.io/base1/24_hires.png
+base1,Base,Dewgong,25,Uncommon,2.21,2.99,0.39,https://images.pokemontcg.io/base1/25_hires.png
+base1,Base,Dratini,26,Uncommon,2.43,2.99,0.17,https://images.pokemontcg.io/base1/26_hires.png
+base1,Base,Farfetch'd,27,Uncommon,1.02,1.99,0.61,https://images.pokemontcg.io/base1/27_hires.png
+base1,Base,Haunter,29,Uncommon,1.53,1.99,0.1,https://images.pokemontcg.io/base1/29_hires.png
+base1,Base,Ivysaur,30,Uncommon,3.17,3.99,0.4,https://images.pokemontcg.io/base1/30_hires.png
+base1,Base,Kadabra,32,Uncommon,1.36,1.99,0.27,https://images.pokemontcg.io/base1/32_hires.png
+base1,Base,Kakuna,33,Uncommon,1.33,1.99,0.3,https://images.pokemontcg.io/base1/33_hires.png
+base1,Base,Magikarp,35,Uncommon,3.38,4.99,1.17,https://images.pokemontcg.io/base1/35_hires.png
+base1,Base,Magmar,36,Uncommon,2.19,2.99,0.41,https://images.pokemontcg.io/base1/36_hires.png
+base1,Base,Nidorino,37,Uncommon,1.9,2.99,0.7,https://images.pokemontcg.io/base1/37_hires.png
+base1,Base,Poliwhirl,38,Uncommon,1.09,1.99,0.54,https://images.pokemontcg.io/base1/38_hires.png
+base1,Base,Porygon,39,Uncommon,2.21,2.99,0.39,https://images.pokemontcg.io/base1/39_hires.png
+base1,Base,Raticate,40,Uncommon,2.1,2.99,0.5,https://images.pokemontcg.io/base1/40_hires.png
+base1,Base,Seel,41,Uncommon,1.23,1.99,0.4,https://images.pokemontcg.io/base1/41_hires.png
+base1,Base,Wartortle,42,Uncommon,3.04,3.99,0.53,https://images.pokemontcg.io/base1/42_hires.png
+base1,Base,Abra,43,Common,1.08,1.99,0.55,https://images.pokemontcg.io/base1/43_hires.png
+base1,Base,Bulbasaur,44,Common,3.07,3.99,0.5,https://images.pokemontcg.io/base1/44_hires.png
+base1,Base,Charmander,46,Common,2.12,2.99,0.48,https://images.pokemontcg.io/base1/46_hires.png
+base1,Base,Pidgey,57,Common,1.51,1.99,0.12,https://images.pokemontcg.io/base1/57_hires.png
+base1,Base,Pikachu,58,Common,5.25,6.99,1.24,https://images.pokemontcg.io/base1/58_hires.png
+base1,Base,Squirtle,63,Common,5.82,6.99,0.67,https://images.pokemontcg.io/base1/63_hires.png
+base1,Base,Voltorb,67,Common,3.84,4.99,0.71,https://images.pokemontcg.io/base1/67_hires.png
+base1,Base,Clefairy Doll,70,Rare,6.71,8.99,1.72,https://images.pokemontcg.io/base1/70_hires.png
+base1,Base,Computer Search,71,Rare,3.31,3.99,0.26,https://images.pokemontcg.io/base1/71_hires.png
+base1,Base,Devolution Spray,72,Rare,5.33,6.99,1.16,https://images.pokemontcg.io/base1/72_hires.png
+base1,Base,Impostor Professor Oak,73,Rare,5.49,6.99,1.0,https://images.pokemontcg.io/base1/73_hires.png
+base1,Base,Item Finder,74,Rare,8.92,10.99,1.45,https://images.pokemontcg.io/base1/74_hires.png
+base1,Base,Lass,75,Rare,3.24,3.99,0.33,https://images.pokemontcg.io/base1/75_hires.png
+base1,Base,Pokémon Breeder,76,Rare,5.51,6.99,0.98,https://images.pokemontcg.io/base1/76_hires.png
+base1,Base,Pokémon Trader,77,Rare,5.28,6.99,1.21,https://images.pokemontcg.io/base1/77_hires.png
+base1,Base,Scoop Up,78,Rare,7.58,9.99,1.82,https://images.pokemontcg.io/base1/78_hires.png
+base1,Base,Super Energy Removal,79,Rare,4.84,5.99,0.68,https://images.pokemontcg.io/base1/79_hires.png
+base1,Base,Defender,80,Uncommon,1.32,1.99,0.31,https://images.pokemontcg.io/base1/80_hires.png
+base1,Base,Full Heal,82,Uncommon,1.8,2.99,0.8,https://images.pokemontcg.io/base1/82_hires.png
+base1,Base,Maintenance,83,Uncommon,2.41,2.99,0.19,https://images.pokemontcg.io/base1/83_hires.png
+base1,Base,Pokémon Center,85,Uncommon,1.38,1.99,0.25,https://images.pokemontcg.io/base1/85_hires.png
+base1,Base,Pokémon Flute,86,Uncommon,2.61,3.99,0.96,https://images.pokemontcg.io/base1/86_hires.png
+base1,Base,Professor Oak,88,Uncommon,1.09,1.99,0.54,https://images.pokemontcg.io/base1/88_hires.png
+base1,Base,Revive,89,Uncommon,1.76,2.99,0.84,https://images.pokemontcg.io/base1/89_hires.png
+base1,Base,Double Colorless Energy,96,Uncommon,4.96,5.99,0.56,https://images.pokemontcg.io/base1/96_hires.png

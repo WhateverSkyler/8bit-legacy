@@ -1,0 +1,48 @@
+set_id,set_name,card_name,card_number,rarity,market_price,sell_price,profit,image_url
+sv7,Stellar Crown,Venusaur ex,1,Double Rare,1.12,1.99,0.51,https://images.pokemontcg.io/sv7/1_hires.png
+sv7,Stellar Crown,Hydrapple ex,14,Double Rare,0.75,1.99,0.88,https://images.pokemontcg.io/sv7/14_hires.png
+sv7,Stellar Crown,Cinderace ex,28,Double Rare,0.74,1.99,0.89,https://images.pokemontcg.io/sv7/28_hires.png
+sv7,Stellar Crown,Blastoise ex,30,Double Rare,2.28,3.99,1.29,https://images.pokemontcg.io/sv7/30_hires.png
+sv7,Stellar Crown,Lapras ex,32,Double Rare,1.6,2.99,1.0,https://images.pokemontcg.io/sv7/32_hires.png
+sv7,Stellar Crown,Greninja ex,41,Double Rare,1.13,1.99,0.5,https://images.pokemontcg.io/sv7/41_hires.png
+sv7,Stellar Crown,Galvantula ex,51,Double Rare,0.9,1.99,0.73,https://images.pokemontcg.io/sv7/51_hires.png
+sv7,Stellar Crown,Dachsbun ex,67,Double Rare,0.94,1.99,0.69,https://images.pokemontcg.io/sv7/67_hires.png
+sv7,Stellar Crown,Medicham ex,80,Double Rare,0.58,0.99,0.08,https://images.pokemontcg.io/sv7/80_hires.png
+sv7,Stellar Crown,Lucario ex,82,Double Rare,0.82,1.99,0.81,https://images.pokemontcg.io/sv7/82_hires.png
+sv7,Stellar Crown,Garganacl ex,89,Double Rare,0.54,0.99,0.12,https://images.pokemontcg.io/sv7/89_hires.png
+sv7,Stellar Crown,Melmetal ex,105,Double Rare,0.63,0.99,0.03,https://images.pokemontcg.io/sv7/105_hires.png
+sv7,Stellar Crown,Orthworm ex,110,Double Rare,0.69,0.99,-0.03,https://images.pokemontcg.io/sv7/110_hires.png
+sv7,Stellar Crown,Terapagos ex,128,Double Rare,0.93,1.99,0.7,https://images.pokemontcg.io/sv7/128_hires.png
+sv7,Stellar Crown,Bulbasaur,143,Illustration Rare,102.26,138.99,32.4,https://images.pokemontcg.io/sv7/143_hires.png
+sv7,Stellar Crown,Ledian,144,Illustration Rare,4.77,6.99,1.72,https://images.pokemontcg.io/sv7/144_hires.png
+sv7,Stellar Crown,Lileep,145,Illustration Rare,5.58,7.99,1.88,https://images.pokemontcg.io/sv7/145_hires.png
+sv7,Stellar Crown,Turtonator,146,Illustration Rare,3.36,4.99,1.19,https://images.pokemontcg.io/sv7/146_hires.png
+sv7,Stellar Crown,Raboot,147,Illustration Rare,5.82,7.99,1.64,https://images.pokemontcg.io/sv7/147_hires.png
+sv7,Stellar Crown,Squirtle,148,Illustration Rare,114.94,155.99,36.23,https://images.pokemontcg.io/sv7/148_hires.png
+sv7,Stellar Crown,Joltik,150,Illustration Rare,6.24,8.99,2.19,https://images.pokemontcg.io/sv7/150_hires.png
+sv7,Stellar Crown,Crabominable,149,Illustration Rare,2.56,3.99,1.01,https://images.pokemontcg.io/sv7/149_hires.png
+sv7,Stellar Crown,Zeraora,151,Illustration Rare,9.54,12.99,2.77,https://images.pokemontcg.io/sv7/151_hires.png
+sv7,Stellar Crown,Milcery,152,Illustration Rare,12.68,17.99,4.49,https://images.pokemontcg.io/sv7/152_hires.png
+sv7,Stellar Crown,Gulpin,154,Illustration Rare,10.15,13.99,3.13,https://images.pokemontcg.io/sv7/154_hires.png
+sv7,Stellar Crown,Archaludon,155,Illustration Rare,2.76,3.99,0.81,https://images.pokemontcg.io/sv7/155_hires.png
+sv7,Stellar Crown,Meditite,153,Illustration Rare,6.18,8.99,2.25,https://images.pokemontcg.io/sv7/153_hires.png
+sv7,Stellar Crown,Hydrapple ex,156,Ultra Rare,1.98,2.99,0.62,https://images.pokemontcg.io/sv7/156_hires.png
+sv7,Stellar Crown,Lapras ex,158,Ultra Rare,5.58,7.99,1.88,https://images.pokemontcg.io/sv7/158_hires.png
+sv7,Stellar Crown,Cinderace ex,157,Ultra Rare,3.12,4.99,1.43,https://images.pokemontcg.io/sv7/157_hires.png
+sv7,Stellar Crown,Galvantula ex,159,Ultra Rare,1.73,2.99,0.87,https://images.pokemontcg.io/sv7/159_hires.png
+sv7,Stellar Crown,Dachsbun ex,160,Ultra Rare,3.01,4.99,1.54,https://images.pokemontcg.io/sv7/160_hires.png
+sv7,Stellar Crown,Medicham ex,161,Ultra Rare,1.03,1.99,0.6,https://images.pokemontcg.io/sv7/161_hires.png
+sv7,Stellar Crown,Orthworm ex,162,Ultra Rare,1.04,1.99,0.59,https://images.pokemontcg.io/sv7/162_hires.png
+sv7,Stellar Crown,Briar,163,Ultra Rare,2.16,2.99,0.44,https://images.pokemontcg.io/sv7/163_hires.png
+sv7,Stellar Crown,Crispin,164,Ultra Rare,15.41,20.99,4.67,https://images.pokemontcg.io/sv7/164_hires.png
+sv7,Stellar Crown,Kofu,165,Ultra Rare,0.84,1.99,0.79,https://images.pokemontcg.io/sv7/165_hires.png
+sv7,Stellar Crown,Lacey,166,Ultra Rare,2.47,3.99,1.1,https://images.pokemontcg.io/sv7/166_hires.png
+sv7,Stellar Crown,Hydrapple ex,167,Special Illustration Rare,21.74,29.99,7.08,https://images.pokemontcg.io/sv7/167_hires.png
+sv7,Stellar Crown,Galvantula ex,168,Special Illustration Rare,15.82,21.99,5.23,https://images.pokemontcg.io/sv7/168_hires.png
+sv7,Stellar Crown,Dachsbun ex,169,Special Illustration Rare,46.05,62.99,14.81,https://images.pokemontcg.io/sv7/169_hires.png
+sv7,Stellar Crown,Terapagos ex,170,Special Illustration Rare,33.68,45.99,10.68,https://images.pokemontcg.io/sv7/170_hires.png
+sv7,Stellar Crown,Briar,171,Special Illustration Rare,13.03,17.99,4.14,https://images.pokemontcg.io/sv7/171_hires.png
+sv7,Stellar Crown,Lacey,172,Special Illustration Rare,17.96,24.99,6.01,https://images.pokemontcg.io/sv7/172_hires.png
+sv7,Stellar Crown,Terapagos ex,173,Hyper Rare,10.61,14.99,3.65,https://images.pokemontcg.io/sv7/173_hires.png
+sv7,Stellar Crown,Area Zero Underdepths,174,Hyper Rare,9.71,13.99,3.57,https://images.pokemontcg.io/sv7/174_hires.png
+sv7,Stellar Crown,Bravery Charm,175,Hyper Rare,5.6,7.99,1.86,https://images.pokemontcg.io/sv7/175_hires.png

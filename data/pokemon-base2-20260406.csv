@@ -1,0 +1,65 @@
+set_id,set_name,card_name,card_number,rarity,market_price,sell_price,profit,image_url
+base2,Jungle,Clefable,1,Rare Holo,80.48,96.99,13.4,https://images.pokemontcg.io/base2/1_hires.png
+base2,Jungle,Electrode,2,Rare Holo,52.66,63.99,9.17,https://images.pokemontcg.io/base2/2_hires.png
+base2,Jungle,Flareon,3,Rare Holo,163.71,196.99,27.27,https://images.pokemontcg.io/base2/3_hires.png
+base2,Jungle,Jolteon,4,Rare Holo,170.9,205.99,28.82,https://images.pokemontcg.io/base2/4_hires.png
+base2,Jungle,Kangaskhan,5,Rare Holo,74.92,89.99,12.16,https://images.pokemontcg.io/base2/5_hires.png
+base2,Jungle,Mr. Mime,6,Rare Holo,85.3,102.99,14.4,https://images.pokemontcg.io/base2/6_hires.png
+base2,Jungle,Nidoqueen,7,Rare Holo,94.35,113.99,16.03,https://images.pokemontcg.io/base2/7_hires.png
+base2,Jungle,Pidgeot,8,Rare Holo,131.38,157.99,21.73,https://images.pokemontcg.io/base2/8_hires.png
+base2,Jungle,Pinsir,9,Rare Holo,85.53,102.99,14.17,https://images.pokemontcg.io/base2/9_hires.png
+base2,Jungle,Scyther,10,Rare Holo,124.62,149.99,20.72,https://images.pokemontcg.io/base2/10_hires.png
+base2,Jungle,Snorlax,11,Rare Holo,316.24,379.99,52.43,https://images.pokemontcg.io/base2/11_hires.png
+base2,Jungle,Vaporeon,12,Rare Holo,239.19,287.99,40.15,https://images.pokemontcg.io/base2/12_hires.png
+base2,Jungle,Venomoth,13,Rare Holo,79.12,94.99,12.82,https://images.pokemontcg.io/base2/13_hires.png
+base2,Jungle,Victreebel,14,Rare Holo,96.64,115.99,15.69,https://images.pokemontcg.io/base2/14_hires.png
+base2,Jungle,Vileplume,15,Rare Holo,88.2,105.99,14.42,https://images.pokemontcg.io/base2/15_hires.png
+base2,Jungle,Wigglytuff,16,Rare Holo,74.67,89.99,12.41,https://images.pokemontcg.io/base2/16_hires.png
+base2,Jungle,Clefable,17,Rare,14.74,17.99,2.43,https://images.pokemontcg.io/base2/17_hires.png
+base2,Jungle,Electrode,18,Rare,27.55,33.99,5.15,https://images.pokemontcg.io/base2/18_hires.png
+base2,Jungle,Flareon,19,Rare,27.96,33.99,4.74,https://images.pokemontcg.io/base2/19_hires.png
+base2,Jungle,Jolteon,20,Rare,32.24,38.99,5.32,https://images.pokemontcg.io/base2/20_hires.png
+base2,Jungle,Kangaskhan,21,Rare,12.91,15.99,2.32,https://images.pokemontcg.io/base2/21_hires.png
+base2,Jungle,Mr. Mime,22,Rare,18.36,22.99,3.66,https://images.pokemontcg.io/base2/22_hires.png
+base2,Jungle,Nidoqueen,23,Rare,15.55,18.99,2.59,https://images.pokemontcg.io/base2/23_hires.png
+base2,Jungle,Pidgeot,24,Rare,13.59,16.99,2.61,https://images.pokemontcg.io/base2/24_hires.png
+base2,Jungle,Pinsir,25,Rare,17.75,21.99,3.3,https://images.pokemontcg.io/base2/25_hires.png
+base2,Jungle,Scyther,26,Rare,32.02,38.99,5.54,https://images.pokemontcg.io/base2/26_hires.png
+base2,Jungle,Snorlax,27,Rare,55.17,66.99,9.58,https://images.pokemontcg.io/base2/27_hires.png
+base2,Jungle,Vaporeon,28,Rare,31.45,37.99,5.14,https://images.pokemontcg.io/base2/28_hires.png
+base2,Jungle,Venomoth,29,Rare,12.4,14.99,1.86,https://images.pokemontcg.io/base2/29_hires.png
+base2,Jungle,Victreebel,30,Rare,14.09,16.99,2.11,https://images.pokemontcg.io/base2/30_hires.png
+base2,Jungle,Vileplume,31,Rare,15.96,19.99,3.15,https://images.pokemontcg.io/base2/31_hires.png
+base2,Jungle,Wigglytuff,32,Rare,19.93,23.99,3.06,https://images.pokemontcg.io/base2/32_hires.png
+base2,Jungle,Butterfree,33,Uncommon,10.3,12.99,2.01,https://images.pokemontcg.io/base2/33_hires.png
+base2,Jungle,Dodrio,34,Uncommon,3.85,4.99,0.7,https://images.pokemontcg.io/base2/34_hires.png
+base2,Jungle,Exeggutor,35,Uncommon,4.73,5.99,0.79,https://images.pokemontcg.io/base2/35_hires.png
+base2,Jungle,Fearow,36,Uncommon,3.8,4.99,0.75,https://images.pokemontcg.io/base2/36_hires.png
+base2,Jungle,Gloom,37,Uncommon,4.12,4.99,0.43,https://images.pokemontcg.io/base2/37_hires.png
+base2,Jungle,Lickitung,38,Uncommon,6.74,8.99,1.69,https://images.pokemontcg.io/base2/38_hires.png
+base2,Jungle,Marowak,39,Uncommon,8.96,10.99,1.41,https://images.pokemontcg.io/base2/39_hires.png
+base2,Jungle,Nidorina,40,Uncommon,3.11,3.99,0.46,https://images.pokemontcg.io/base2/40_hires.png
+base2,Jungle,Parasect,41,Uncommon,3.79,4.99,0.76,https://images.pokemontcg.io/base2/41_hires.png
+base2,Jungle,Persian,42,Uncommon,4.99,5.99,0.53,https://images.pokemontcg.io/base2/42_hires.png
+base2,Jungle,Primeape,43,Uncommon,8.99,10.99,1.38,https://images.pokemontcg.io/base2/43_hires.png
+base2,Jungle,Rapidash,44,Uncommon,9.31,11.99,2.03,https://images.pokemontcg.io/base2/44_hires.png
+base2,Jungle,Rhydon,45,Uncommon,15.92,19.99,3.19,https://images.pokemontcg.io/base2/45_hires.png
+base2,Jungle,Seaking,46,Uncommon,4.21,5.99,1.31,https://images.pokemontcg.io/base2/46_hires.png
+base2,Jungle,Tauros,47,Uncommon,7.13,8.99,1.3,https://images.pokemontcg.io/base2/47_hires.png
+base2,Jungle,Weepinbell,48,Uncommon,3.62,4.99,0.93,https://images.pokemontcg.io/base2/48_hires.png
+base2,Jungle,Bellsprout,49,Common,7.31,8.99,1.12,https://images.pokemontcg.io/base2/49_hires.png
+base2,Jungle,Cubone,50,Common,13.45,16.99,2.75,https://images.pokemontcg.io/base2/50_hires.png
+base2,Jungle,Eevee,51,Common,14.77,17.99,2.4,https://images.pokemontcg.io/base2/51_hires.png
+base2,Jungle,Exeggcute,52,Common,3.37,4.99,1.18,https://images.pokemontcg.io/base2/52_hires.png
+base2,Jungle,Goldeen,53,Common,3.74,4.99,0.81,https://images.pokemontcg.io/base2/53_hires.png
+base2,Jungle,Jigglypuff,54,Common,7.26,8.99,1.17,https://images.pokemontcg.io/base2/54_hires.png
+base2,Jungle,Mankey,55,Common,2.8,3.99,0.77,https://images.pokemontcg.io/base2/55_hires.png
+base2,Jungle,Meowth,56,Common,5.65,6.99,0.84,https://images.pokemontcg.io/base2/56_hires.png
+base2,Jungle,Nidoran ♀,57,Common,2.11,2.99,0.49,https://images.pokemontcg.io/base2/57_hires.png
+base2,Jungle,Oddish,58,Common,4.1,4.99,0.45,https://images.pokemontcg.io/base2/58_hires.png
+base2,Jungle,Paras,59,Common,2.64,3.99,0.93,https://images.pokemontcg.io/base2/59_hires.png
+base2,Jungle,Pikachu,60,Common,21.29,25.99,3.65,https://images.pokemontcg.io/base2/60_hires.png
+base2,Jungle,Rhyhorn,61,Common,3.67,4.99,0.88,https://images.pokemontcg.io/base2/61_hires.png
+base2,Jungle,Spearow,62,Common,3.05,3.99,0.52,https://images.pokemontcg.io/base2/62_hires.png
+base2,Jungle,Venonat,63,Common,2.2,2.99,0.4,https://images.pokemontcg.io/base2/63_hires.png
+base2,Jungle,Poké Ball,64,Common,7.01,8.99,1.42,https://images.pokemontcg.io/base2/64_hires.png

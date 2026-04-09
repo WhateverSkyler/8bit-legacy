@@ -1,0 +1,45 @@
+set_id,set_name,card_name,card_number,rarity,market_price,sell_price,profit,image_url
+sv6pt5,Shrouded Fable,Kingdra ex,12,Double Rare,0.61,0.99,0.05,https://images.pokemontcg.io/sv6pt5/12_hires.png
+sv6pt5,Shrouded Fable,Revavroom ex,15,Double Rare,0.57,0.99,0.09,https://images.pokemontcg.io/sv6pt5/15_hires.png
+sv6pt5,Shrouded Fable,Okidogi ex,36,Double Rare,0.65,0.99,0.01,https://images.pokemontcg.io/sv6pt5/36_hires.png
+sv6pt5,Shrouded Fable,Munkidori ex,37,Double Rare,0.68,0.99,-0.02,https://images.pokemontcg.io/sv6pt5/37_hires.png
+sv6pt5,Shrouded Fable,Fezandipiti ex,38,Double Rare,5.3,7.99,2.16,https://images.pokemontcg.io/sv6pt5/38_hires.png
+sv6pt5,Shrouded Fable,Pecharunt ex,39,Double Rare,4.89,6.99,1.6,https://images.pokemontcg.io/sv6pt5/39_hires.png
+sv6pt5,Shrouded Fable,Dangerous Laser,58,ACE SPEC Rare,0.56,0.99,0.1,https://images.pokemontcg.io/sv6pt5/58_hires.png
+sv6pt5,Shrouded Fable,Neutralization Zone,60,ACE SPEC Rare,0.86,1.99,0.77,https://images.pokemontcg.io/sv6pt5/60_hires.png
+sv6pt5,Shrouded Fable,Poké Vital A,62,ACE SPEC Rare,0.67,0.99,-0.01,https://images.pokemontcg.io/sv6pt5/62_hires.png
+sv6pt5,Shrouded Fable,Tapu Bulu,65,Illustration Rare,7.03,9.99,2.37,https://images.pokemontcg.io/sv6pt5/65_hires.png
+sv6pt5,Shrouded Fable,Houndoom,66,Illustration Rare,39.36,53.99,12.76,https://images.pokemontcg.io/sv6pt5/66_hires.png
+sv6pt5,Shrouded Fable,Horsea,67,Illustration Rare,37.59,50.99,11.62,https://images.pokemontcg.io/sv6pt5/67_hires.png
+sv6pt5,Shrouded Fable,Duskull,68,Illustration Rare,52.89,71.99,16.71,https://images.pokemontcg.io/sv6pt5/68_hires.png
+sv6pt5,Shrouded Fable,Dusclops,69,Illustration Rare,41.38,55.99,12.69,https://images.pokemontcg.io/sv6pt5/69_hires.png
+sv6pt5,Shrouded Fable,Dusknoir,70,Illustration Rare,31.53,42.99,9.91,https://images.pokemontcg.io/sv6pt5/70_hires.png
+sv6pt5,Shrouded Fable,Cresselia,71,Illustration Rare,21.07,28.99,6.78,https://images.pokemontcg.io/sv6pt5/71_hires.png
+sv6pt5,Shrouded Fable,Munkidori,72,Illustration Rare,38.25,51.99,11.93,https://images.pokemontcg.io/sv6pt5/72_hires.png
+sv6pt5,Shrouded Fable,Fezandipiti,73,Illustration Rare,7.76,10.99,2.61,https://images.pokemontcg.io/sv6pt5/73_hires.png
+sv6pt5,Shrouded Fable,Okidogi,74,Illustration Rare,10.1,13.99,3.18,https://images.pokemontcg.io/sv6pt5/74_hires.png
+sv6pt5,Shrouded Fable,Zorua,75,Illustration Rare,16.9,22.99,5.12,https://images.pokemontcg.io/sv6pt5/75_hires.png
+sv6pt5,Shrouded Fable,Cufant,76,Illustration Rare,11.5,15.99,3.73,https://images.pokemontcg.io/sv6pt5/76_hires.png
+sv6pt5,Shrouded Fable,Fraxure,77,Illustration Rare,11.01,14.99,3.25,https://images.pokemontcg.io/sv6pt5/77_hires.png
+sv6pt5,Shrouded Fable,Persian,78,Illustration Rare,48.45,65.99,15.33,https://images.pokemontcg.io/sv6pt5/78_hires.png
+sv6pt5,Shrouded Fable,Bewear,79,Illustration Rare,16.76,22.99,5.26,https://images.pokemontcg.io/sv6pt5/79_hires.png
+sv6pt5,Shrouded Fable,Kingdra ex,80,Ultra Rare,3.17,4.99,1.38,https://images.pokemontcg.io/sv6pt5/80_hires.png
+sv6pt5,Shrouded Fable,Revavroom ex,81,Ultra Rare,1.71,2.99,0.89,https://images.pokemontcg.io/sv6pt5/81_hires.png
+sv6pt5,Shrouded Fable,Okidogi ex,82,Ultra Rare,2.87,3.99,0.7,https://images.pokemontcg.io/sv6pt5/82_hires.png
+sv6pt5,Shrouded Fable,Munkidori ex,83,Ultra Rare,2.21,2.99,0.39,https://images.pokemontcg.io/sv6pt5/83_hires.png
+sv6pt5,Shrouded Fable,Fezandipiti ex,84,Ultra Rare,13.85,18.99,4.29,https://images.pokemontcg.io/sv6pt5/84_hires.png
+sv6pt5,Shrouded Fable,Pecharunt ex,85,Ultra Rare,7.59,10.99,2.78,https://images.pokemontcg.io/sv6pt5/85_hires.png
+sv6pt5,Shrouded Fable,Cassiopeia,86,Ultra Rare,4.07,5.99,1.45,https://images.pokemontcg.io/sv6pt5/86_hires.png
+sv6pt5,Shrouded Fable,Colress's Tenacity,87,Ultra Rare,5.1,6.99,1.39,https://images.pokemontcg.io/sv6pt5/87_hires.png
+sv6pt5,Shrouded Fable,Janine's Secret Art,88,Ultra Rare,6.33,8.99,2.1,https://images.pokemontcg.io/sv6pt5/88_hires.png
+sv6pt5,Shrouded Fable,Xerosic's Machinations,89,Ultra Rare,8.53,11.99,2.81,https://images.pokemontcg.io/sv6pt5/89_hires.png
+sv6pt5,Shrouded Fable,Okidogi ex,90,Special Illustration Rare,19.75,26.99,6.16,https://images.pokemontcg.io/sv6pt5/90_hires.png
+sv6pt5,Shrouded Fable,Munkidori ex,91,Special Illustration Rare,15.29,20.99,4.79,https://images.pokemontcg.io/sv6pt5/91_hires.png
+sv6pt5,Shrouded Fable,Fezandipiti ex,92,Special Illustration Rare,45.89,61.99,14.0,https://images.pokemontcg.io/sv6pt5/92_hires.png
+sv6pt5,Shrouded Fable,Pecharunt ex,93,Special Illustration Rare,22.94,30.99,6.85,https://images.pokemontcg.io/sv6pt5/93_hires.png
+sv6pt5,Shrouded Fable,Cassiopeia,94,Special Illustration Rare,38.4,51.99,11.78,https://images.pokemontcg.io/sv6pt5/94_hires.png
+sv6pt5,Shrouded Fable,Pecharunt ex,95,Hyper Rare,18.4,24.99,5.57,https://images.pokemontcg.io/sv6pt5/95_hires.png
+sv6pt5,Shrouded Fable,Earthen Vessel,96,Hyper Rare,26.06,35.99,8.59,https://images.pokemontcg.io/sv6pt5/96_hires.png
+sv6pt5,Shrouded Fable,Powerglass,97,Hyper Rare,21.52,29.99,7.3,https://images.pokemontcg.io/sv6pt5/97_hires.png
+sv6pt5,Shrouded Fable,Basic Darkness Energy,98,Hyper Rare,49.62,66.99,15.13,https://images.pokemontcg.io/sv6pt5/98_hires.png
+sv6pt5,Shrouded Fable,Basic Metal Energy,99,Hyper Rare,29.06,39.99,9.47,https://images.pokemontcg.io/sv6pt5/99_hires.png
