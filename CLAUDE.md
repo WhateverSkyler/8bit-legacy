@@ -21,6 +21,10 @@ scripts/          — Python automation scripts
   ebay-finder.py             — Find cheapest eBay listing for fulfillment
   social-generator.py        — Generate social media post batches
   pokemon-card-importer.py   — Import Pokemon cards from Pokemon TCG API
+  sort-collections.py        — Sort Shopify collections by popularity/iconic title ranking
+  manage-sales.py            — Create/clear sales, deals of the week, compare-at pricing
+  upload-photos.py           — Bulk upload product photos matched by filename/SKU
+  profit-report.py           — Generate profit reports from Shopify order data
 config/           — Pricing config, API keys (gitignored .env)
 data/             — CSVs, exports, price snapshots, sealed product templates
 docs/             — Business docs, SOPs, content plans
@@ -40,7 +44,7 @@ Next.js 16.2.1 SaaS dashboard for managing the store. Light theme, Nintendo Swit
 cd dashboard && npm install && npm run dev -- --port 3001
 ```
 
-**Pages:** Dashboard, Orders, Fulfillment, Inventory, Price Sync, eBay Finder, Social Media, Google Ads, Analytics, Settings
+**Pages:** Dashboard, Orders, Fulfillment, Inventory, Price Sync, Pokemon Import, eBay Finder, Social Media, Google Ads, Analytics, Scheduler, Settings
 
 **Architecture:**
 - `src/lib/` — TypeScript business logic (pricing, matching, Shopify/eBay/Google Ads APIs, Pokemon price sync)
@@ -79,6 +83,7 @@ cd dashboard && npm install && npm run dev -- --port 3001
 - `/api/google-ads/` — performance, search-terms, sync
 - `/api/social/` — generate, schedule, analytics
 - `/api/scheduler/status` — scheduler dashboard
+- `/api/scheduler/run` — manually trigger a scheduled job
 - `/api/settings` — config management
 
 ## Pokemon Card Import
@@ -131,7 +136,6 @@ python3 scripts/pokemon-card-importer.py --list-sets
 All API keys and tokens go in `config/.env` and `dashboard/.env.local` (both gitignored). Never commit secrets.
 
 ## Remaining Work
-- Deploy dashboard to VPS for 24/7 scheduler operation
 - Plan and launch first Google Ads campaign (Ads connected, Merchant Center live with 12K+ products)
 - Set up conversion tracking (Google Ads tag on Shopify checkout) before running ads
 - Import newest Pokemon sets when TCGPlayer pricing becomes available (me3 Perfect Order, me2pt5 Ascended Heroes)
@@ -147,3 +151,8 @@ All API keys and tokens go in `config/.env` and `dashboard/.env.local` (both git
 - Inventory API scopes (read + write) added
 - Automation hardened — retry logic, title matching safety, price caps, timeouts
 - First podcast episode recorded April 9, 2026
+- Dashboard deployed to VPS at 8bit.tristanaddi.com (24/7 scheduler running)
+- Collection sorting — all 59 Shopify collections sorted by popularity (iconic title boost + price score); Mario/Zelda/Sonic/Final Fantasy/Castlevania now at top of each relevant collection
+- Dashboard pages added — /scheduler (live job status, manual Run Now, circuit breaker view), /pokemon (set import UI with dry-run)
+- Dashboard inventory detail page rebuilt — replaced static mockup with live variant/profit/margin table loaded from Shopify
+- New automation scripts — sort-collections.py, manage-sales.py, upload-photos.py, profit-report.py

@@ -21,6 +21,8 @@ import {
   Loader2,
   Truck,
   AlertTriangle,
+  Sparkles,
+  Clock,
 } from "lucide-react";
 import Link from "next/link";
 import { useOrders } from "@/hooks/use-orders";
@@ -32,7 +34,9 @@ const QUICK_ACTIONS = [
   { title: "Sync Prices", description: "Update Shopify from PriceCharting", icon: RefreshCw, href: "/inventory/price-sync" },
   { title: "Find on eBay", description: "Search cheapest listings", icon: Search, href: "/ebay" },
   { title: "Generate Posts", description: "Create social media batch", icon: Share2, href: "/social" },
+  { title: "Pokemon Import", description: "Import new TCG card sets", icon: Sparkles, href: "/pokemon" },
   { title: "View Analytics", description: "Sales & profit insights", icon: BarChart3, href: "/analytics" },
+  { title: "Scheduler", description: "View automated job status", icon: Clock, href: "/scheduler" },
 ];
 
 export default function DashboardPage() {
@@ -225,7 +229,7 @@ export default function DashboardPage() {
       <div>
         <h2 className="mb-4 text-lg font-semibold text-text-primary">Quick Actions</h2>
         <motion.div
-          className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+          className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
           variants={staggerContainer}
           initial="hidden"
           animate="visible"

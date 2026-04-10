@@ -18,6 +18,8 @@ import {
   Settings,
   PanelLeftClose,
   PanelLeft,
+  Clock,
+  Sparkles,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -25,10 +27,12 @@ const NAV_ITEMS = [
   { href: "/orders", label: "Orders", icon: ShoppingCart },
   { href: "/fulfillment", label: "Fulfillment", icon: Truck },
   { href: "/inventory", label: "Inventory", icon: Package },
+  { href: "/pokemon", label: "Pokemon Import", icon: Sparkles },
   { href: "/ebay", label: "eBay Finder", icon: Search },
   { href: "/social", label: "Social Media", icon: Share2 },
   { href: "/ads", label: "Google Ads", icon: Target },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/scheduler", label: "Scheduler", icon: Clock },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
