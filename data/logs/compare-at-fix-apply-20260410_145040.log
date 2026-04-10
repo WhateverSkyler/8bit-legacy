@@ -1,0 +1,56 @@
+/Users/tristanaddi1/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+
+  === APPLY — finding variants with compare_at < price ===
+
+Scanning all products for compare_at_price set...
+  Scanned 500 products...
+  Scanned 1000 products...
+  Scanned 1500 products...
+  Scanned 2000 products...
+  Scanned 2500 products...
+  Scanned 3000 products...
+  Scanned 3500 products...
+  Scanned 4000 products...
+  Scanned 4500 products...
+  Scanned 5000 products...
+  Scanned 5500 products...
+  Scanned 6000 products...
+  Scanned 6500 products...
+  Scanned 7000 products...
+  Scanned 7500 products...
+  Found 34 variants with compare_at_price set
+
+  11 variants have compare_at < price (broken):
+
+  Product                                                 Variant         compare_at      price
+  ------------------------------------------------------- --------------- ---------- ----------
+  Conker's Bad Fur Day - Nintendo 64 Game                 Complete (CIB   $  219.99 $  438.99
+  Zelda Minish Cap - GBA Game                             Complete (CIB   $  123.71 $  304.99
+  007 GoldenEye - Nintendo 64 Game                        Complete (CIB   $   50.75 $  104.99
+  Grandia II - Sega Dreamcast Game                        Complete (CIB   $   40.30 $   84.99
+  Resident Evil 2 - PS1 Game                              Complete (CIB   $   66.50 $  109.99
+  Conker's Bad Fur Day - Nintendo 64 Game                 Game Only       $  219.99 $  243.99
+  Mega Man X4 - PS1 Game                                  Complete (CIB   $   22.78 $   37.99
+  Resident Evil - PS1 Game                                Complete (CIB   $   95.00 $  109.99
+  Metal Gear Solid - PS1 Game                             Complete (CIB   $   44.92 $   58.99
+  Grand Theft Auto III - PS2 Game                         Complete (CIB   $    8.46 $   14.99
+  Zelda Minish Cap - GBA Game                             Game Only       $  123.71 $  124.99
+
+  Applying fix: clearing compare_at_price on 11 variants...
+
+  Clearing 1 variant(s) on: 007 GoldenEye - Nintendo 64 Game
+  Clearing 1 variant(s) on: Grand Theft Auto III - PS2 Game
+  Clearing 1 variant(s) on: Grandia II - Sega Dreamcast Game
+  Clearing 1 variant(s) on: Mega Man X4 - PS1 Game
+  Clearing 1 variant(s) on: Metal Gear Solid - PS1 Game
+  Clearing 1 variant(s) on: Resident Evil - PS1 Game
+  Clearing 1 variant(s) on: Resident Evil 2 - PS1 Game
+  Clearing 2 variant(s) on: Zelda Minish Cap - GBA Game
+  Clearing 2 variant(s) on: Conker's Bad Fur Day - Nintendo 64 Game
+
+============================================================
+  RESULTS
+============================================================
+  Cleared:  11
+  Failed:   0
