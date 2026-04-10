@@ -76,13 +76,20 @@ No issues found.
 
 ## 5. Shop App / Sales Channels
 
-**Status: Action Needed on Shop Channel**
+**Status: Likely Resolved — Not Fully Verifiable Today (updated 2026-04-10)**
 
 - **Online Store** — Active and working
 - **Google & YouTube** — Installed and connected (see Task 2 for Ads account issue)
-- **Shop** — Shows "Action needed" badge. The store doesn't currently meet Shop's shopping requirements, likely because many CIB variants show as out of stock. Fixing the CIB inventory (Task 3) should resolve this.
+- **Shop** — Originally showed "Action needed" due to CIB variants being out of stock. The CIB variant fix has since been completed (6,112 variants set purchasable, per `CLAUDE.md` completed list).
 
-**Action needed:** After running the CIB inventory fix, revisit the Shop sales channel to see if the requirements are now met.
+**Recheck on 2026-04-10 (cowork browser session):**
+
+- The sidebar black-dot indicator next to "Shop" cleared after a single visit to the channel page, which in Shopify admin convention means it was a "new / unread notification" marker, not a persistent "Action needed" error badge.
+- No "Action needed" text, warning, or error badge was visible in the accessibility tree of the Sales channels page or the Shop app sidebar.
+- The embedded Shop channel iframe at `/store/dpxzef-st/apps/shop-72/merchant/catalog` would not render its content in this automation session — it throws an `InvalidStateError: Transition was aborted because of invalid state` in the console, which is a known Shopify admin iframe-routing quirk, not a sign of a merchant-facing issue.
+- Note also: the "On Sale" smart collection (see `docs/sale-collection-status-2026-04-10.md`) is NOT published to the Shop channel. Publishing it would improve Shop discoverability but is not a Task 5 blocker.
+
+**Action needed:** Tristan should do a fresh, manual check of Shop → Catalog in a normal browser session (2-minute task) to fully confirm no "Action needed" state remains. Based on the indirect signals above, Task 5 is **likely complete**.
 
 ---
 

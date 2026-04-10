@@ -277,3 +277,74 @@ Month 1 is a data-gathering exercise. Break-even or slight loss is the expected 
 - Scheduled job `google-ads-sync` (1 AM ET daily) — pulls campaign data into local DB
 
 Once the campaign is live, the dashboard handles monitoring. Tristan's daily involvement drops to ~5 minutes.
+
+---
+
+## Phase 0.1 audit — 2026-04-10
+
+**Auditor:** Claude (cowork / browser session)
+**Goal:** Verify whether Google Ads conversion tracking is actually wired up to `8bitlegacy.com` before we launch. This was marked as a blocking pre-launch task.
+
+### Result: Conversion tracking IS configured (Phase 0.1 is unblocked) — but via Shopify's Web Pixel Manager, not a traditional `gtag.js` embed.
+
+### What I found on the live storefront
+
+Inspecting `https://8bitlegacy.com/` directly in the browser:
+
+- `window.gtag` and `window.dataLayer` are **both undefined** on the page.
+- A standard DevTools → Network filter for `googletagmanager | googleadservices | googleads | gtag` returns **no requests** at page load from the main document.
+
+At first glance this looks like "conversion tracking is missing" — which is what the original Phase 0.1 concern was. **But that would be wrong.** Shopify's modern Web Pixel architecture loads third-party pixels in a sandboxed web worker (not the main document), specifically so that third-party JavaScript can't read/write the storefront DOM. That is why `gtag` and `dataLayer` are invisible from DevTools.
+
+### What is actually configured
+
+Searching the storefront HTML for the Shopify customer-events payload reveals a fully populated Google Tag config, delivered via the **Google & YouTube** Shopify app (pixel id `900628514`):
+
+```
+google_tag_ids: [
+  "G-09HMHWDE5K",        // GA4 property (already known)
+  "AW-18056461576",      // Google Ads conversion account
+  "GT-TBZRNKQC"          // Server-side Google Tag container
+]
+```
+
+With all seven standard ecommerce events mapped to Google Ads conversion action labels on `AW-18056461576`:
+
+| Event | Action label |
+|---|---|
+| `page_view` | (on AW + G4) |
+| `search` | AW-18056461576/eohHCNTzpZgcEIj6_qFD |
+| `view_item` | AW-18056461576/__3OCNHzpZgcEIj6_qFD |
+| `add_to_cart` | (on AW + G4) |
+| `begin_checkout` | AW-18056461576/sBi9CMjzpZgcEIj6_qFD |
+| `add_payment_info` | AW-18056461576/gJ0sCM7zpZgcEIj6_qFD |
+| `purchase` | AW-18056461576/jVFOCMXzpZgcEIj6_qFD |
+
+There is also a `MC-YLE2C6JRCH` tag on `view_item` — that is the Merchant Center enhanced-conversions ID.
+
+### What this means for the launch plan
+
+- **Phase 0.1 is not a blocker anymore.** The conversion tracking is already wired for all the events a Performance Max / Search campaign needs: `view_item`, `add_to_cart`, `begin_checkout`, `purchase`, and the enhanced-conversions pieces.
+- **BUT it can only be verified in Google Ads, not in DevTools.** Because Shopify sandboxes the pixel, Tristan can't confirm firing via the Network tab. The correct places to verify are:
+  1. **Google Ads → Tools → Measurement → Conversions** — all 7 conversion actions (Purchase, Begin checkout, View item, etc.) should list a status. "Recording" = working. "No recent conversions" = wired but hasn't seen traffic yet (expected given 5 orders in 6 months).
+  2. **Google Tag Assistant** Chrome extension — can see sandboxed Shopify pixels that DevTools cannot.
+  3. **Real purchase / real add-to-cart** — perform a real action on `8bitlegacy.com`, then refresh the Google Ads conversion diagnostics view. Because site traffic is so low, a single test action will be visible.
+
+### Action items
+
+- **Do NOT spend more time installing a "real" gtag.js snippet in the theme.** Doing so would cause double-counting — every event would fire twice, once from the Shopify sandboxed pixel and once from the theme-embedded tag.
+- Tristan should verify conversion status in the **Google Ads UI** before flipping spend on. (Flag for his manual to-do.)
+- If Google Ads shows "No recent conversions" for every event, do ONE manual test: add an item to cart on the live store, close the browser, then wait 2-4 hours and re-check Google Ads conversions → recent activity.
+- The original worry that "Phase 0.1 blocks launch" is resolved — the blocker is really **Task 2** from the April 6 audit (the Ads account that the Shopify app is pointing at is not the target `822-210-2291` account). That is the thing that needs fixing before spending budget.
+
+### Confidence
+
+High. The IDs and action labels are literally embedded in the storefront HTML via the Shopify customer-events config, which is how the Google & YouTube Shopify app works. I did not place a test purchase (per the brief: "Do NOT complete a real test purchase").
+
+### What I did NOT do
+
+- Did not place a real test order
+- Did not install any tag, pixel, or script
+- Did not modify the Google & YouTube Shopify app config
+- Did not add any code to the theme
+
