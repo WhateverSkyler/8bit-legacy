@@ -65,12 +65,27 @@ def get_all_products():
     return products
 
 
-def get_locations():
-    """Get all locations."""
-    url = f"{BASE_URL}/locations.json"
+def get_primary_location_id():
+    """Derive primary location ID from any existing inventory level.
+
+    Avoids needing the `read_locations` scope — we just read the inventory
+    level of the first product we find and extract its location_id.
+    """
+    url = f"{BASE_URL}/products.json?limit=1&status=active"
     resp = requests.get(url, headers=HEADERS)
     resp.raise_for_status()
-    return resp.json().get("locations", [])
+    products = resp.json().get("products", [])
+    if not products or not products[0].get("variants"):
+        raise RuntimeError("No products found to derive location from")
+    inventory_item_id = products[0]["variants"][0]["inventory_item_id"]
+
+    url = f"{BASE_URL}/inventory_levels.json?inventory_item_ids={inventory_item_id}"
+    resp = requests.get(url, headers=HEADERS)
+    resp.raise_for_status()
+    levels = resp.json().get("inventory_levels", [])
+    if not levels:
+        raise RuntimeError(f"No inventory levels found for item {inventory_item_id}")
+    return levels[0]["location_id"]
 
 
 def set_inventory_level(inventory_item_id, location_id, available):
@@ -93,18 +108,10 @@ def main():
         print("** DRY RUN MODE — no changes will be made **")
     print("=" * 60)
 
-    # Get locations
-    print("\n1. Fetching locations...")
-    locations = get_locations()
-    for loc in locations:
-        print(f"   Location: {loc['name']} (ID: {loc['id']})")
-
-    if not locations:
-        print("ERROR: No locations found!")
-        return
-
-    primary_location_id = locations[0]["id"]
-    print(f"   Using primary location: {locations[0]['name']}")
+    # Get primary location (derived from inventory_levels — no read_locations scope required)
+    print("\n1. Deriving primary location ID from inventory levels...")
+    primary_location_id = get_primary_location_id()
+    print(f"   Primary location ID: {primary_location_id}")
 
     # Get all active products
     print("\n2. Fetching all active products...")
@@ -168,11 +175,11 @@ def main():
             fixed += 1
             if (i + 1) % 50 == 0:
                 print(f"   Progress: {i + 1}/{len(needs_fix)} fixed...")
-            time.sleep(0.25)
+            time.sleep(0.5)
         except Exception as e:
             errors += 1
             print(f"   ERROR fixing {v['product_title']} ({v['variant_title']}): {e}")
-            time.sleep(1)
+            time.sleep(2)
 
     print(f"\n{'=' * 60}")
     print(f"RESULTS:")

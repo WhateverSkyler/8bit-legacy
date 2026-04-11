@@ -146,7 +146,7 @@ All API keys and tokens go in `config/.env` and `dashboard/.env.local` (both git
 - Google & YouTube Shopify app installed, Merchant Center connected (ID: 5296797260, 12K products approved)
 - Google Ads account linked (822-210-2291)
 - Pokemon cards live — 1,176+ cards at 1.15x TCGPlayer market, 9 collections, nav added
-- All CIB variants purchasable (6,112 fixed)
+- CIB variant purchasability — fix-cib-inventory.py script exists and works; as of 2026-04-11 all 6,112 CIB variants regressed back to 0 and were re-fixed. If Merchant Center starts showing CIB variants as "Out of stock" again, re-run `python3 scripts/fix-cib-inventory.py`. Root cause of regression is unknown — possibly a Shopify theme setting, a dashboard sync job, or Merchant Center auto-sync. Worth investigating in the future if it regresses a second time.
 - Full price refresh completed — 6,121 products scanned, 5,000+ prices updated
 - Inventory API scopes (read + write) added
 - Automation hardened — retry logic, title matching safety, price caps, timeouts
