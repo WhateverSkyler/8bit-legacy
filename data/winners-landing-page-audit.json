@@ -1,0 +1,384 @@
+[
+  {
+    "handle": "galerians-ps1-game",
+    "found": true,
+    "title": "Galerians - PS1 Game",
+    "status": "ACTIVE",
+    "online_url": "https://8bitlegacy.com/products/galerians-ps1-game",
+    "image_count": 1,
+    "description_chars": 305,
+    "variant_count": 2,
+    "purchasable_variants": 2,
+    "tags": [
+      "category:game",
+      "console:ps1",
+      "margin:medium",
+      "Playstation",
+      "price_tier:over_50"
+    ],
+    "issues": [],
+    "warnings": [
+      "only 1 image (recommend 3+ for Quality Score)",
+      "missing SEO meta description",
+      "mm-google-shopping.custom_product != true (is None) \u2014 will be fixed by fix-gtin-metafields.py"
+    ]
+  },
+  {
+    "handle": "galerians-ash-ps2-game",
+    "found": true,
+    "title": "Galerians Ash - PS2 Game",
+    "status": "ACTIVE",
+    "online_url": "https://8bitlegacy.com/products/galerians-ash-ps2-game",
+    "image_count": 1,
+    "description_chars": 305,
+    "variant_count": 2,
+    "purchasable_variants": 2,
+    "tags": [
+      "category:game",
+      "console:ps1",
+      "margin:medium",
+      "Playstation 2",
+      "price_tier:20_to_50"
+    ],
+    "issues": [],
+    "warnings": [
+      "only 1 image (recommend 3+ for Quality Score)",
+      "missing SEO meta description",
+      "mm-google-shopping.custom_product != true (is None) \u2014 will be fixed by fix-gtin-metafields.py"
+    ]
+  },
+  {
+    "handle": "mystical-ninja-starring-goemon-nintendo-64-game",
+    "found": true,
+    "title": "Mystical Ninja Starring Goemon - Nintendo 64 Game",
+    "status": "ACTIVE",
+    "online_url": "https://8bitlegacy.com/products/mystical-ninja-starring-goemon-nintendo-64-game",
+    "image_count": 1,
+    "description_chars": 305,
+    "variant_count": 2,
+    "purchasable_variants": 2,
+    "tags": [
+      "category:game",
+      "console:n64",
+      "margin:medium",
+      "Nintendo 64",
+      "price_tier:over_50"
+    ],
+    "issues": [],
+    "warnings": [
+      "only 1 image (recommend 3+ for Quality Score)",
+      "missing SEO meta description",
+      "mm-google-shopping.custom_product != true (is None) \u2014 will be fixed by fix-gtin-metafields.py"
+    ]
+  },
+  {
+    "handle": "phantasy-star-online-episode-i-ii-gamecube-game",
+    "found": true,
+    "title": "Phantasy Star Online Episode I & II - Gamecube Game",
+    "status": "ACTIVE",
+    "online_url": "https://8bitlegacy.com/products/phantasy-star-online-episode-i-ii-gamecube-game",
+    "image_count": 1,
+    "description_chars": 305,
+    "variant_count": 2,
+    "purchasable_variants": 2,
+    "tags": [
+      "category:game",
+      "console:gamecube",
+      "Gamecube",
+      "margin:medium",
+      "price_tier:over_50"
+    ],
+    "issues": [],
+    "warnings": [
+      "only 1 image (recommend 3+ for Quality Score)",
+      "missing SEO meta description",
+      "mm-google-shopping.custom_product != true (is None) \u2014 will be fixed by fix-gtin-metafields.py"
+    ]
+  },
+  {
+    "handle": "phantasy-star-online-episode-i-ii-plus-gamecube-game",
+    "found": true,
+    "title": "Phantasy Star Online Episode I & II Plus - Gamecube Game",
+    "status": "ACTIVE",
+    "online_url": "https://8bitlegacy.com/products/phantasy-star-online-episode-i-ii-plus-gamecube-game",
+    "image_count": 1,
+    "description_chars": 305,
+    "variant_count": 2,
+    "purchasable_variants": 2,
+    "tags": [
+      "category:game",
+      "console:gamecube",
+      "Gamecube",
+      "margin:medium",
+      "price_tier:over_50"
+    ],
+    "issues": [],
+    "warnings": [
+      "only 1 image (recommend 3+ for Quality Score)",
+      "missing SEO meta description",
+      "mm-google-shopping.custom_product != true (is None) \u2014 will be fixed by fix-gtin-metafields.py"
+    ]
+  },
+  {
+    "handle": "phantasy-star-online-iii-card-revolution-gamecube-game",
+    "found": true,
+    "title": "Phantasy Star Online III Card Revolution - Gamecube Game",
+    "status": "ACTIVE",
+    "online_url": "https://8bitlegacy.com/products/phantasy-star-online-iii-card-revolution-gamecube-game",
+    "image_count": 1,
+    "description_chars": 305,
+    "variant_count": 2,
+    "purchasable_variants": 2,
+    "tags": [
+      "category:game",
+      "console:gamecube",
+      "Gamecube",
+      "margin:medium",
+      "price_tier:20_to_50"
+    ],
+    "issues": [],
+    "warnings": [
+      "only 1 image (recommend 3+ for Quality Score)",
+      "missing SEO meta description",
+      "mm-google-shopping.custom_product != true (is None) \u2014 will be fixed by fix-gtin-metafields.py"
+    ]
+  },
+  {
+    "handle": "aidyn-chronicles-nintendo-64-game",
+    "found": true,
+    "title": "Aidyn Chronicles - Nintendo 64 Game",
+    "status": "ACTIVE",
+    "online_url": "https://8bitlegacy.com/products/aidyn-chronicles-nintendo-64-game",
+    "image_count": 1,
+    "description_chars": 305,
+    "variant_count": 2,
+    "purchasable_variants": 2,
+    "tags": [
+      "category:game",
+      "console:n64",
+      "margin:medium",
+      "Nintendo 64",
+      "price_tier:over_50"
+    ],
+    "issues": [],
+    "warnings": [
+      "only 1 image (recommend 3+ for Quality Score)",
+      "missing SEO meta description"
+    ]
+  },
+  {
+    "handle": "space-station-silicon-valley-nintendo-64-game",
+    "found": true,
+    "title": "Space Station Silicon Valley - Nintendo 64 Game",
+    "status": "ACTIVE",
+    "online_url": "https://8bitlegacy.com/products/space-station-silicon-valley-nintendo-64-game",
+    "image_count": 1,
+    "description_chars": 305,
+    "variant_count": 2,
+    "purchasable_variants": 2,
+    "tags": [
+      "category:game",
+      "console:n64",
+      "margin:medium",
+      "Nintendo 64",
+      "price_tier:over_50"
+    ],
+    "issues": [],
+    "warnings": [
+      "only 1 image (recommend 3+ for Quality Score)",
+      "missing SEO meta description",
+      "mm-google-shopping.custom_product != true (is None) \u2014 will be fixed by fix-gtin-metafields.py"
+    ]
+  },
+  {
+    "handle": "metal-gear-solid-ps1-game",
+    "found": true,
+    "title": "Metal Gear Solid - PS1 Game",
+    "status": "ACTIVE",
+    "online_url": "https://8bitlegacy.com/products/metal-gear-solid-ps1-game",
+    "image_count": 1,
+    "description_chars": 305,
+    "variant_count": 2,
+    "purchasable_variants": 2,
+    "tags": [
+      "category:game",
+      "console:ps1",
+      "margin:medium",
+      "Playstation",
+      "price_tier:20_to_50"
+    ],
+    "issues": [],
+    "warnings": [
+      "only 1 image (recommend 3+ for Quality Score)",
+      "missing SEO meta description",
+      "mm-google-shopping.custom_product != true (is None) \u2014 will be fixed by fix-gtin-metafields.py"
+    ]
+  },
+  {
+    "handle": "silent-hill-2-ps2-game",
+    "found": true,
+    "title": "Silent Hill 2 - PS2 Game",
+    "status": "ACTIVE",
+    "online_url": "https://8bitlegacy.com/products/silent-hill-2-ps2-game",
+    "image_count": 1,
+    "description_chars": 305,
+    "variant_count": 2,
+    "purchasable_variants": 2,
+    "tags": [
+      "category:game",
+      "console:ps1",
+      "margin:medium",
+      "Playstation 2",
+      "price_tier:over_50"
+    ],
+    "issues": [],
+    "warnings": [
+      "only 1 image (recommend 3+ for Quality Score)",
+      "missing SEO meta description",
+      "mm-google-shopping.custom_product != true (is None) \u2014 will be fixed by fix-gtin-metafields.py"
+    ]
+  },
+  {
+    "handle": "fatal-frame-ps2-game",
+    "found": true,
+    "title": "Fatal Frame - PS2 Game",
+    "status": "ACTIVE",
+    "online_url": "https://8bitlegacy.com/products/fatal-frame-ps2-game",
+    "image_count": 1,
+    "description_chars": 305,
+    "variant_count": 2,
+    "purchasable_variants": 2,
+    "tags": [
+      "category:game",
+      "console:ps1",
+      "margin:medium",
+      "Playstation 2",
+      "price_tier:over_50"
+    ],
+    "issues": [],
+    "warnings": [
+      "only 1 image (recommend 3+ for Quality Score)",
+      "missing SEO meta description",
+      "mm-google-shopping.custom_product != true (is None) \u2014 will be fixed by fix-gtin-metafields.py"
+    ]
+  },
+  {
+    "handle": "fatal-frame-2-ps2-game",
+    "found": true,
+    "title": "Fatal Frame 2 - PS2 Game",
+    "status": "ACTIVE",
+    "online_url": "https://8bitlegacy.com/products/fatal-frame-2-ps2-game",
+    "image_count": 1,
+    "description_chars": 305,
+    "variant_count": 2,
+    "purchasable_variants": 2,
+    "tags": [
+      "category:game",
+      "console:ps1",
+      "margin:medium",
+      "Playstation 2",
+      "price_tier:over_50"
+    ],
+    "issues": [],
+    "warnings": [
+      "only 1 image (recommend 3+ for Quality Score)",
+      "missing SEO meta description",
+      "mm-google-shopping.custom_product != true (is None) \u2014 will be fixed by fix-gtin-metafields.py"
+    ]
+  },
+  {
+    "handle": "custom-robo-gamecube-game",
+    "found": true,
+    "title": "Custom Robo - Gamecube Game",
+    "status": "ACTIVE",
+    "online_url": "https://8bitlegacy.com/products/custom-robo-gamecube-game",
+    "image_count": 1,
+    "description_chars": 305,
+    "variant_count": 2,
+    "purchasable_variants": 2,
+    "tags": [
+      "category:game",
+      "console:gamecube",
+      "Gamecube",
+      "margin:medium",
+      "price_tier:over_50"
+    ],
+    "issues": [],
+    "warnings": [
+      "only 1 image (recommend 3+ for Quality Score)",
+      "missing SEO meta description",
+      "mm-google-shopping.custom_product != true (is None) \u2014 will be fixed by fix-gtin-metafields.py"
+    ]
+  },
+  {
+    "handle": "geist-gamecube-game",
+    "found": true,
+    "title": "Geist - Gamecube Game",
+    "status": "ACTIVE",
+    "online_url": "https://8bitlegacy.com/products/geist-gamecube-game",
+    "image_count": 1,
+    "description_chars": 305,
+    "variant_count": 2,
+    "purchasable_variants": 2,
+    "tags": [
+      "category:game",
+      "console:gamecube",
+      "Gamecube",
+      "margin:medium",
+      "price_tier:20_to_50"
+    ],
+    "issues": [],
+    "warnings": [
+      "only 1 image (recommend 3+ for Quality Score)",
+      "missing SEO meta description",
+      "mm-google-shopping.custom_product != true (is None) \u2014 will be fixed by fix-gtin-metafields.py"
+    ]
+  },
+  {
+    "handle": "baten-kaitos-origins-gamecube-game",
+    "found": true,
+    "title": "Baten Kaitos Origins - Gamecube Game",
+    "status": "ACTIVE",
+    "online_url": "https://8bitlegacy.com/products/baten-kaitos-origins-gamecube-game",
+    "image_count": 1,
+    "description_chars": 305,
+    "variant_count": 2,
+    "purchasable_variants": 2,
+    "tags": [
+      "category:game",
+      "console:gamecube",
+      "Gamecube",
+      "margin:medium",
+      "price_tier:20_to_50"
+    ],
+    "issues": [],
+    "warnings": [
+      "only 1 image (recommend 3+ for Quality Score)",
+      "missing SEO meta description"
+    ]
+  },
+  {
+    "handle": "eternal-darkness-gamecube-game",
+    "found": true,
+    "title": "Eternal Darkness - Gamecube Game",
+    "status": "ACTIVE",
+    "online_url": "https://8bitlegacy.com/products/eternal-darkness-gamecube-game",
+    "image_count": 1,
+    "description_chars": 305,
+    "variant_count": 2,
+    "purchasable_variants": 2,
+    "tags": [
+      "category:game",
+      "console:gamecube",
+      "Gamecube",
+      "margin:medium",
+      "price_tier:over_50"
+    ],
+    "issues": [],
+    "warnings": [
+      "only 1 image (recommend 3+ for Quality Score)",
+      "missing SEO meta description",
+      "mm-google-shopping.custom_product != true (is None) \u2014 will be fixed by fix-gtin-metafields.py"
+    ]
+  }
+]

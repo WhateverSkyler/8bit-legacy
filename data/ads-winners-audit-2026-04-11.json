@@ -1,0 +1,811 @@
+[
+  {
+    "status": "ACTIVE",
+    "title": "Galerians - PS1 Game",
+    "handle": "galerians-ps1-game",
+    "has_image": true,
+    "tags": [
+      "category:game",
+      "console:ps1",
+      "margin:medium",
+      "Playstation",
+      "price_tier:over_50"
+    ],
+    "has_game_tag": true,
+    "is_accessory": false,
+    "is_console": false,
+    "target_variant": {
+      "title": "Game Only",
+      "price": "59.99",
+      "inventory": 9999,
+      "available": true
+    },
+    "all_variants": [
+      {
+        "title": "Game Only",
+        "price": "59.99",
+        "sku": "3713",
+        "inventory": 9999,
+        "available": true
+      },
+      {
+        "title": "Complete (CIB)",
+        "price": "132.99",
+        "sku": "3714",
+        "inventory": 10000,
+        "available": true
+      }
+    ],
+    "query": "Galerians",
+    "console_hint": "PS1",
+    "variant_hint": "Game Only"
+  },
+  {
+    "status": "ACTIVE",
+    "title": "Galerians - PS1 Game",
+    "handle": "galerians-ps1-game",
+    "has_image": true,
+    "tags": [
+      "category:game",
+      "console:ps1",
+      "margin:medium",
+      "Playstation",
+      "price_tier:over_50"
+    ],
+    "has_game_tag": true,
+    "is_accessory": false,
+    "is_console": false,
+    "target_variant": {
+      "title": "Complete (CIB)",
+      "price": "132.99",
+      "inventory": 10000,
+      "available": true
+    },
+    "all_variants": [
+      {
+        "title": "Game Only",
+        "price": "59.99",
+        "sku": "3713",
+        "inventory": 9999,
+        "available": true
+      },
+      {
+        "title": "Complete (CIB)",
+        "price": "132.99",
+        "sku": "3714",
+        "inventory": 10000,
+        "available": true
+      }
+    ],
+    "query": "Galerians",
+    "console_hint": "PS1",
+    "variant_hint": "Complete"
+  },
+  {
+    "status": "ACTIVE",
+    "title": "Galerians Ash - PS2 Game",
+    "handle": "galerians-ash-ps2-game",
+    "has_image": true,
+    "tags": [
+      "category:game",
+      "console:ps1",
+      "margin:medium",
+      "Playstation 2",
+      "price_tier:20_to_50"
+    ],
+    "has_game_tag": true,
+    "is_accessory": false,
+    "is_console": false,
+    "target_variant": {
+      "title": "Game Only",
+      "price": "32.99",
+      "inventory": 10000,
+      "available": true
+    },
+    "all_variants": [
+      {
+        "title": "Game Only",
+        "price": "32.99",
+        "sku": "3711",
+        "inventory": 10000,
+        "available": true
+      },
+      {
+        "title": "Complete (CIB)",
+        "price": "56.99",
+        "sku": "3712",
+        "inventory": 10000,
+        "available": true
+      }
+    ],
+    "query": "Galerians Ash",
+    "console_hint": "PS2",
+    "variant_hint": null
+  },
+  {
+    "status": "ACTIVE",
+    "title": "Mystical Ninja Starring Goemon - Nintendo 64 Game",
+    "handle": "mystical-ninja-starring-goemon-nintendo-64-game",
+    "has_image": true,
+    "tags": [
+      "category:game",
+      "console:n64",
+      "margin:medium",
+      "Nintendo 64",
+      "price_tier:over_50"
+    ],
+    "has_game_tag": true,
+    "is_accessory": false,
+    "is_console": false,
+    "target_variant": {
+      "title": "Game Only",
+      "price": "174.99",
+      "inventory": 10000,
+      "available": true
+    },
+    "all_variants": [
+      {
+        "title": "Game Only",
+        "price": "174.99",
+        "sku": "6481",
+        "inventory": 10000,
+        "available": true
+      },
+      {
+        "title": "Complete (CIB)",
+        "price": "452.99",
+        "sku": "6482",
+        "inventory": 10000,
+        "available": true
+      }
+    ],
+    "query": "Mystical Ninja Starring Goemon",
+    "console_hint": "N64",
+    "variant_hint": null
+  },
+  {
+    "status": "ACTIVE",
+    "title": "Legend of the Mystical Ninja - SNES Game",
+    "handle": "legend-of-the-mystical-ninja-snes-game",
+    "has_image": true,
+    "tags": [
+      "category:console",
+      "console:snes",
+      "margin:medium",
+      "price_tier:over_50",
+      "SNES (Super Nintendo Entertainment System)"
+    ],
+    "has_game_tag": false,
+    "is_accessory": false,
+    "is_console": true,
+    "target_variant": {
+      "title": "Game Only",
+      "price": "81.20",
+      "inventory": 10000,
+      "available": true
+    },
+    "all_variants": [
+      {
+        "title": "Game Only",
+        "price": "81.20",
+        "sku": "5131",
+        "inventory": 10000,
+        "available": true
+      },
+      {
+        "title": "Complete (CIB)",
+        "price": "81.20",
+        "sku": "5132",
+        "inventory": 10000,
+        "available": true
+      }
+    ],
+    "query": "Legend of the Mystical Ninja",
+    "console_hint": "SNES",
+    "variant_hint": null
+  },
+  {
+    "status": "ACTIVE",
+    "title": "Phantasy Star Online Episode I & II - Gamecube Game",
+    "handle": "phantasy-star-online-episode-i-ii-gamecube-game",
+    "has_image": true,
+    "tags": [
+      "category:game",
+      "console:gamecube",
+      "Gamecube",
+      "margin:medium",
+      "price_tier:over_50"
+    ],
+    "has_game_tag": true,
+    "is_accessory": false,
+    "is_console": false,
+    "target_variant": {
+      "title": "Game Only",
+      "price": "162.99",
+      "inventory": 10000,
+      "available": true
+    },
+    "all_variants": [
+      {
+        "title": "Game Only",
+        "price": "162.99",
+        "sku": "7575",
+        "inventory": 10000,
+        "available": true
+      },
+      {
+        "title": "Complete (CIB)",
+        "price": "303.99",
+        "sku": "7576",
+        "inventory": 10000,
+        "available": true
+      }
+    ],
+    "query": "Phantasy Star Online",
+    "console_hint": "GameCube",
+    "variant_hint": null
+  },
+  {
+    "status": "ACTIVE",
+    "title": "Phantasy Star Online Episode I & II Plus - Gamecube Game",
+    "handle": "phantasy-star-online-episode-i-ii-plus-gamecube-game",
+    "has_image": true,
+    "tags": [
+      "category:game",
+      "console:gamecube",
+      "Gamecube",
+      "margin:medium",
+      "price_tier:over_50"
+    ],
+    "has_game_tag": true,
+    "is_accessory": false,
+    "is_console": false,
+    "target_variant": {
+      "title": "Game Only",
+      "price": "162.99",
+      "inventory": 10000,
+      "available": true
+    },
+    "all_variants": [
+      {
+        "title": "Game Only",
+        "price": "162.99",
+        "sku": "7577",
+        "inventory": 10000,
+        "available": true
+      },
+      {
+        "title": "Complete (CIB)",
+        "price": "303.99",
+        "sku": "7578",
+        "inventory": 10000,
+        "available": true
+      }
+    ],
+    "query": "Phantasy Star Online Plus",
+    "console_hint": "GameCube",
+    "variant_hint": null
+  },
+  {
+    "status": "ACTIVE",
+    "title": "Phantasy Star Online III Card Revolution - Gamecube Game",
+    "handle": "phantasy-star-online-iii-card-revolution-gamecube-game",
+    "has_image": true,
+    "tags": [
+      "category:game",
+      "console:gamecube",
+      "Gamecube",
+      "margin:medium",
+      "price_tier:20_to_50"
+    ],
+    "has_game_tag": true,
+    "is_accessory": false,
+    "is_console": false,
+    "target_variant": {
+      "title": "Game Only",
+      "price": "48.99",
+      "inventory": 10000,
+      "available": true
+    },
+    "all_variants": [
+      {
+        "title": "Game Only",
+        "price": "48.99",
+        "sku": "7579",
+        "inventory": 10000,
+        "available": true
+      },
+      {
+        "title": "Complete (CIB)",
+        "price": "56.99",
+        "sku": "7580",
+        "inventory": 10000,
+        "available": true
+      }
+    ],
+    "query": "Phantasy Star Online III",
+    "console_hint": "GameCube",
+    "variant_hint": null
+  },
+  {
+    "status": "ACTIVE",
+    "title": "Aidyn Chronicles - Nintendo 64 Game",
+    "handle": "aidyn-chronicles-nintendo-64-game",
+    "has_image": true,
+    "tags": [
+      "category:game",
+      "console:n64",
+      "margin:medium",
+      "Nintendo 64",
+      "price_tier:over_50"
+    ],
+    "has_game_tag": true,
+    "is_accessory": false,
+    "is_console": false,
+    "target_variant": {
+      "title": "Game Only",
+      "price": "60.99",
+      "inventory": 10000,
+      "available": true
+    },
+    "all_variants": [
+      {
+        "title": "Game Only",
+        "price": "60.99",
+        "sku": "293",
+        "inventory": 10000,
+        "available": true
+      },
+      {
+        "title": "Complete (CIB)",
+        "price": "143.99",
+        "sku": "294",
+        "inventory": 10000,
+        "available": true
+      }
+    ],
+    "query": "Aidyn Chronicles",
+    "console_hint": "N64",
+    "variant_hint": null
+  },
+  {
+    "status": "ACTIVE",
+    "title": "Space Station Silicon Valley - Nintendo 64 Game",
+    "handle": "space-station-silicon-valley-nintendo-64-game",
+    "has_image": true,
+    "tags": [
+      "category:game",
+      "console:n64",
+      "margin:medium",
+      "Nintendo 64",
+      "price_tier:over_50"
+    ],
+    "has_game_tag": true,
+    "is_accessory": false,
+    "is_console": false,
+    "target_variant": {
+      "title": "Game Only",
+      "price": "108.99",
+      "inventory": 10000,
+      "available": true
+    },
+    "all_variants": [
+      {
+        "title": "Game Only",
+        "price": "108.99",
+        "sku": "9327",
+        "inventory": 10000,
+        "available": true
+      },
+      {
+        "title": "Complete (CIB)",
+        "price": "258.99",
+        "sku": "9328",
+        "inventory": 10000,
+        "available": true
+      }
+    ],
+    "query": "Space Station Silicon Valley",
+    "console_hint": "N64",
+    "variant_hint": null
+  },
+  {
+    "status": "ACTIVE",
+    "title": "Metal Gear Solid - PS1 Game",
+    "handle": "metal-gear-solid-ps1-game",
+    "has_image": true,
+    "tags": [
+      "category:game",
+      "console:ps1",
+      "margin:medium",
+      "Playstation",
+      "price_tier:20_to_50"
+    ],
+    "has_game_tag": true,
+    "is_accessory": false,
+    "is_console": false,
+    "target_variant": {
+      "title": "Game Only",
+      "price": "28.99",
+      "inventory": 9999,
+      "available": true
+    },
+    "all_variants": [
+      {
+        "title": "Game Only",
+        "price": "28.99",
+        "sku": "5941",
+        "inventory": 9999,
+        "available": true
+      },
+      {
+        "title": "Complete (CIB)",
+        "price": "58.99",
+        "sku": "5942",
+        "inventory": 10000,
+        "available": true
+      }
+    ],
+    "query": "Metal Gear Solid",
+    "console_hint": "PS1",
+    "variant_hint": null
+  },
+  {
+    "status": "ACTIVE",
+    "title": "Silent Hill Origins - PS2 Game",
+    "handle": "silent-hill-origins-ps2-game",
+    "has_image": true,
+    "tags": [
+      "category:game",
+      "console:ps1",
+      "margin:medium",
+      "Playstation 2",
+      "price_tier:over_50"
+    ],
+    "has_game_tag": true,
+    "is_accessory": false,
+    "is_console": false,
+    "target_variant": {
+      "title": "Game Only",
+      "price": "170.99",
+      "inventory": 10000,
+      "available": true
+    },
+    "all_variants": [
+      {
+        "title": "Game Only",
+        "price": "170.99",
+        "sku": "9015",
+        "inventory": 10000,
+        "available": true
+      },
+      {
+        "title": "Complete (CIB)",
+        "price": "249.99",
+        "sku": "9016",
+        "inventory": 10000,
+        "available": true
+      }
+    ],
+    "query": "Silent Hill",
+    "console_hint": "PS1",
+    "variant_hint": null
+  },
+  {
+    "status": "ACTIVE",
+    "title": "Silent Hill 2 - PS2 Game",
+    "handle": "silent-hill-2-ps2-game",
+    "has_image": true,
+    "tags": [
+      "category:game",
+      "console:ps1",
+      "margin:medium",
+      "Playstation 2",
+      "price_tier:over_50"
+    ],
+    "has_game_tag": true,
+    "is_accessory": false,
+    "is_console": false,
+    "target_variant": {
+      "title": "Game Only",
+      "price": "175.99",
+      "inventory": 10000,
+      "available": true
+    },
+    "all_variants": [
+      {
+        "title": "Game Only",
+        "price": "175.99",
+        "sku": "9007",
+        "inventory": 10000,
+        "available": true
+      },
+      {
+        "title": "Complete (CIB)",
+        "price": "258.99",
+        "sku": "9008",
+        "inventory": 10000,
+        "available": true
+      }
+    ],
+    "query": "Silent Hill 2",
+    "console_hint": "PS2",
+    "variant_hint": null
+  },
+  {
+    "query": "Silent Hill 3",
+    "console": "PS2",
+    "variant_hint": null,
+    "error": "no confident match (best: Silent Hill 2 - PS2 Game, score=-999)"
+  },
+  {
+    "status": "ACTIVE",
+    "title": "Fatal Frame - PS2 Game",
+    "handle": "fatal-frame-ps2-game",
+    "has_image": true,
+    "tags": [
+      "category:game",
+      "console:ps1",
+      "margin:medium",
+      "Playstation 2",
+      "price_tier:over_50"
+    ],
+    "has_game_tag": true,
+    "is_accessory": false,
+    "is_console": false,
+    "target_variant": {
+      "title": "Game Only",
+      "price": "102.99",
+      "inventory": 10000,
+      "available": true
+    },
+    "all_variants": [
+      {
+        "title": "Game Only",
+        "price": "102.99",
+        "sku": "3309",
+        "inventory": 10000,
+        "available": true
+      },
+      {
+        "title": "Complete (CIB)",
+        "price": "155.99",
+        "sku": "3310",
+        "inventory": 10000,
+        "available": true
+      }
+    ],
+    "query": "Fatal Frame",
+    "console_hint": "PS2",
+    "variant_hint": null
+  },
+  {
+    "status": "ACTIVE",
+    "title": "Fatal Frame 2 - PS2 Game",
+    "handle": "fatal-frame-2-ps2-game",
+    "has_image": true,
+    "tags": [
+      "category:game",
+      "console:ps1",
+      "margin:medium",
+      "Playstation 2",
+      "price_tier:over_50"
+    ],
+    "has_game_tag": true,
+    "is_accessory": false,
+    "is_console": false,
+    "target_variant": {
+      "title": "Game Only",
+      "price": "102.99",
+      "inventory": 10000,
+      "available": true
+    },
+    "all_variants": [
+      {
+        "title": "Game Only",
+        "price": "102.99",
+        "sku": "3303",
+        "inventory": 10000,
+        "available": true
+      },
+      {
+        "title": "Complete (CIB)",
+        "price": "155.99",
+        "sku": "3304",
+        "inventory": 10000,
+        "available": true
+      }
+    ],
+    "query": "Fatal Frame 2",
+    "console_hint": "PS2",
+    "variant_hint": null
+  },
+  {
+    "query": "Rule of Rose",
+    "console": "PS2",
+    "variant_hint": null,
+    "error": "no results"
+  },
+  {
+    "query": "Haunting Ground",
+    "console": "PS2",
+    "variant_hint": null,
+    "error": "no results"
+  },
+  {
+    "query": "Klonoa Door to Phantomile",
+    "console": "PS1",
+    "variant_hint": null,
+    "error": "no results"
+  },
+  {
+    "query": "Skies of Arcadia Legends",
+    "console": "GameCube",
+    "variant_hint": null,
+    "error": "no confident match (best: Ace Combat X Skies of Deception - PSP Game, score=-999)"
+  },
+  {
+    "status": "ACTIVE",
+    "title": "Custom Robo - Gamecube Game",
+    "handle": "custom-robo-gamecube-game",
+    "has_image": true,
+    "tags": [
+      "category:game",
+      "console:gamecube",
+      "Gamecube",
+      "margin:medium",
+      "price_tier:over_50"
+    ],
+    "has_game_tag": true,
+    "is_accessory": false,
+    "is_console": false,
+    "target_variant": {
+      "title": "Game Only",
+      "price": "54.99",
+      "inventory": 10000,
+      "available": true
+    },
+    "all_variants": [
+      {
+        "title": "Game Only",
+        "price": "54.99",
+        "sku": "2207",
+        "inventory": 10000,
+        "available": true
+      },
+      {
+        "title": "Complete (CIB)",
+        "price": "82.99",
+        "sku": "2208",
+        "inventory": 10000,
+        "available": true
+      }
+    ],
+    "query": "Custom Robo",
+    "console_hint": "GameCube",
+    "variant_hint": null
+  },
+  {
+    "status": "ACTIVE",
+    "title": "Geist - Gamecube Game",
+    "handle": "geist-gamecube-game",
+    "has_image": true,
+    "tags": [
+      "category:game",
+      "console:gamecube",
+      "Gamecube",
+      "margin:medium",
+      "price_tier:20_to_50"
+    ],
+    "has_game_tag": true,
+    "is_accessory": false,
+    "is_console": false,
+    "target_variant": {
+      "title": "Game Only",
+      "price": "37.99",
+      "inventory": 10000,
+      "available": true
+    },
+    "all_variants": [
+      {
+        "title": "Game Only",
+        "price": "37.99",
+        "sku": "3749",
+        "inventory": 10000,
+        "available": true
+      },
+      {
+        "title": "Complete (CIB)",
+        "price": "55.99",
+        "sku": "3750",
+        "inventory": 10000,
+        "available": true
+      }
+    ],
+    "query": "Geist",
+    "console_hint": "GameCube",
+    "variant_hint": null
+  },
+  {
+    "status": "ACTIVE",
+    "title": "Baten Kaitos Origins - Gamecube Game",
+    "handle": "baten-kaitos-origins-gamecube-game",
+    "has_image": true,
+    "tags": [
+      "category:game",
+      "console:gamecube",
+      "Gamecube",
+      "margin:medium",
+      "price_tier:20_to_50"
+    ],
+    "has_game_tag": true,
+    "is_accessory": false,
+    "is_console": false,
+    "target_variant": {
+      "title": "Game Only",
+      "price": "33.99",
+      "inventory": 10000,
+      "available": true
+    },
+    "all_variants": [
+      {
+        "title": "Game Only",
+        "price": "33.99",
+        "sku": "883",
+        "inventory": 10000,
+        "available": true
+      },
+      {
+        "title": "Complete (CIB)",
+        "price": "40.99",
+        "sku": "884",
+        "inventory": 10000,
+        "available": true
+      }
+    ],
+    "query": "Baten Kaitos Origins",
+    "console_hint": "GameCube",
+    "variant_hint": null
+  },
+  {
+    "status": "ACTIVE",
+    "title": "Eternal Darkness - Gamecube Game",
+    "handle": "eternal-darkness-gamecube-game",
+    "has_image": true,
+    "tags": [
+      "category:game",
+      "console:gamecube",
+      "Gamecube",
+      "margin:medium",
+      "price_tier:over_50"
+    ],
+    "has_game_tag": true,
+    "is_accessory": false,
+    "is_console": false,
+    "target_variant": {
+      "title": "Game Only",
+      "price": "101.99",
+      "inventory": 10000,
+      "available": true
+    },
+    "all_variants": [
+      {
+        "title": "Game Only",
+        "price": "101.99",
+        "sku": "3123",
+        "inventory": 10000,
+        "available": true
+      },
+      {
+        "title": "Complete (CIB)",
+        "price": "143.99",
+        "sku": "3124",
+        "inventory": 10000,
+        "available": true
+      }
+    ],
+    "query": "Eternal Darkness",
+    "console_hint": "GameCube",
+    "variant_hint": null
+  }
+]

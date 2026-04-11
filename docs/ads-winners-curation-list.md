@@ -17,34 +17,60 @@ Wait — that last point conflicts with the first. Let me resolve it.
 
 **Resolution:** The organic winners ARE eligible for the Winners ads campaign specifically because we want to scale their existing demand signal, not because we're trying to spark new demand. But we should NOT discount them in the sale wave. So they're "ads YES, sales NO." Different levers.
 
-## The List (~24 products, start here)
+## The List — verified 2026-04-11 against live Shopify
 
-| # | Title | Console | Price | Why included |
-|---|---|---|---|---|
-| 1 | Galerians (Game Only) | PS1 | $59.99 | Organic winner. PS1 survival horror cult classic. Low auction competition. |
-| 2 | Galerians (CIB) | PS1 | $132.99 | Same franchise, higher-ticket variant for collector intent. |
-| 3 | Galerians Ash | PS2 | $32.99 | Sequel — "if you liked X" cross-sell target. |
-| 4 | Mystical Ninja Starring Goemon | N64 | $174.99 | Organic winner. Top of the Winners pricing band. One sale = 300+ clicks paid for. |
-| 5 | Legend of the Mystical Ninja | SNES | $81.20 | Companion title, proven organic interest. |
-| 6 | Phantasy Star Online Episode I & II | GameCube | $162.99 | Organic winner. Extreme collector affinity (servers shut down, cult following). |
-| 7 | Phantasy Star Online Episode I & II Plus | GameCube | $162.99 | Rare "Plus" variant = even higher collector intent. |
-| 8 | Phantasy Star Online III: C.A.R.D. Revolution | GameCube | $48.99 | Series fan cross-sell. Mid-ticket. |
-| 9 | Aidyn Chronicles: The First Mage | N64 | (TBD — verify) | Organic winner per CLAUDE.md notes. Rare N64 RPG. |
-| 10 | Space Station Silicon Valley | N64 | (TBD — verify) | Organic winner per CLAUDE.md notes. DMA Design cult classic. |
-| 11 | Metal Gear Solid | PS1 | (TBD — verify current price) | Top-3 bestseller per profit-report history. Proven demand. |
-| 12 | Silent Hill | PS1 | (TBD — verify) | Iconic survival horror. In the same niche as Galerians. |
-| 13 | Silent Hill 2 | PS2 | (TBD — verify) | Franchise cross-sell. |
-| 14 | Silent Hill 3 | PS2 | (TBD — verify) | Franchise cross-sell. |
-| 15 | Fatal Frame | PS2 | (TBD — verify) | Survival horror niche. High collector affinity. |
-| 16 | Fatal Frame II: Crimson Butterfly | PS2 | (TBD — verify) | Franchise cross-sell. |
-| 17 | Rule of Rose | PS2 | (TBD — verify) | Rare survival horror, high collector value. |
-| 18 | Haunting Ground | PS2 | (TBD — verify) | Rare survival horror, Capcom cult. |
-| 19 | Klonoa: Door to Phantomile | PS1 | (TBD — verify) | Cult platformer, enthusiast demand. |
-| 20 | Skies of Arcadia Legends | GameCube | (TBD — verify) | Cult JRPG, proven collector demand. |
-| 21 | Custom Robo | GameCube | (TBD — verify) | Cult mech-battler, low competition. |
-| 22 | Geist | GameCube | (TBD — verify) | Rare Nintendo FPS, collector appeal. |
-| 23 | Baten Kaitos Origins | GameCube | (TBD — verify) | Cult JRPG sequel. |
-| 24 | Eternal Darkness: Sanity's Requiem | GameCube | (TBD — verify) | Nintendo-exclusive horror, proven enthusiast demand. |
+**Audit data:** `docs/ads-winners-audit-2026-04-11.md` / `data/ads-winners-audit-2026-04-11.json`
+
+**Status legend:**
+- ✅ LIVE — product is active, in stock, imaged, correctly tagged → ready for ads
+- ⚠️ TAG FIX — product exists but has a tag bug that needs correcting before ads launch
+- ❌ MISSING — product is not in the store catalog; either import or remove from Winners list
+
+| # | Title | Console | Price | Handle | Status |
+|---|---|---|---|---|---|
+| 1 | Galerians (Game Only) | PS1 | $59.99 | `galerians-ps1-game` | ✅ LIVE |
+| 2 | Galerians (Complete/CIB) | PS1 | $132.99 | `galerians-ps1-game` | ✅ LIVE |
+| 3 | Galerians Ash | PS2 | $32.99 | `galerians-ash-ps2-game` | ✅ LIVE |
+| 4 | Mystical Ninja Starring Goemon | N64 | $174.99 | `mystical-ninja-starring-goemon-nintendo-64-game` | ✅ LIVE |
+| 5 | Legend of the Mystical Ninja | SNES | $81.20 | `legend-of-the-mystical-ninja-snes-game` | ⚠️ TAG FIX (category:console, should be category:game) |
+| 6 | Phantasy Star Online Episode I & II | GameCube | $162.99 | `phantasy-star-online-episode-i-ii-gamecube-game` | ✅ LIVE |
+| 7 | Phantasy Star Online Episode I & II Plus | GameCube | $162.99 | `phantasy-star-online-episode-i-ii-plus-gamecube-game` | ✅ LIVE |
+| 8 | Phantasy Star Online III: C.A.R.D. Revolution | GameCube | $48.99 | `phantasy-star-online-iii-card-revolution-gamecube-game` | ✅ LIVE |
+| 9 | Aidyn Chronicles | N64 | $60.99 | `aidyn-chronicles-nintendo-64-game` | ✅ LIVE |
+| 10 | Space Station Silicon Valley | N64 | $108.99 | `space-station-silicon-valley-nintendo-64-game` | ✅ LIVE |
+| 11 | Metal Gear Solid | PS1 | $28.99 | `metal-gear-solid-ps1-game` | ✅ LIVE (priced below $30 Winners floor — keep or exclude?) |
+| 12 | Silent Hill | PS1 | — | — | ❌ MISSING (Silent Hill Origins PS2 exists but NOT the original 1999 PS1 game) |
+| 13 | Silent Hill 2 | PS2 | $175.99 | `silent-hill-2-ps2-game` | ✅ LIVE (near top of price band) |
+| 14 | Silent Hill 3 | PS2 | — | — | ❌ MISSING |
+| 15 | Fatal Frame | PS2 | $102.99 | `fatal-frame-ps2-game` | ✅ LIVE |
+| 16 | Fatal Frame 2 | PS2 | $102.99 | `fatal-frame-2-ps2-game` | ✅ LIVE |
+| 17 | Rule of Rose | PS2 | — | — | ❌ MISSING |
+| 18 | Haunting Ground | PS2 | — | — | ❌ MISSING |
+| 19 | Klonoa: Door to Phantomile | PS1 | — | — | ❌ MISSING (only Klonoa Wii remaster exists at $26.99) |
+| 20 | Skies of Arcadia Legends | GameCube | — | — | ❌ MISSING |
+| 21 | Custom Robo | GameCube | $54.99 | `custom-robo-gamecube-game` | ✅ LIVE |
+| 22 | Geist | GameCube | $37.99 | `geist-gamecube-game` | ✅ LIVE |
+| 23 | Baten Kaitos Origins | GameCube | $33.99 | `baten-kaitos-origins-gamecube-game` | ✅ LIVE |
+| 24 | Eternal Darkness: Sanity's Requiem | GameCube | $101.99 | `eternal-darkness-gamecube-game` | ✅ LIVE |
+
+**Audit summary (2026-04-11):** 18 LIVE, 1 tag-fix needed, 5 missing from catalog.
+
+### Actions before launch
+
+1. **Fix Legend of the Mystical Ninja tag bug.** ✅ DONE 2026-04-11. `scripts/optimize-product-feed.py:92` (the `get_category()` function) contained a buggy rule `if "system" in pt_lower: return "console"` which miscategorized all 694 products where productType contained "Super Nintendo Entertainment System" etc. Script patched, then `scripts/fix-miscategorized-tags.py` ran across all 694 products and replaced `category:console` with `category:game` (0 errors).
+
+2. **Decide on Metal Gear Solid PS1.** Current price $28.99 is *below* the $30 Winners floor. Options: (a) include it anyway since it's a proven bestseller, (b) raise the price to $34.99 via `scripts/price-sync.py --only-sku 5941 --force-price 34.99`, (c) exclude from Winners and let Discovery campaign cover it.
+
+3. **Source the 5 missing titles** (Silent Hill 1, Silent Hill 3, Rule of Rose, Haunting Ground, Klonoa PS1, Skies of Arcadia Legends) OR drop them from the Winners list. **Decision 2026-04-11: DROP from Phase 1.** Launch with the 17 products already LIVE. Revisit sourcing after the first 14 days of data — if the vibe campaign is working, it's worth the effort to import these. If not, they stay dropped.
+
+4. **Final Phase 1 Winners list — ready for ads:** 17 products (16 unique handles — Galerians Game Only + CIB share a handle). Audited by `scripts/audit-winners-landing-pages.py` on 2026-04-11: **0 blocking issues**. Full report at `docs/winners-landing-page-audit.md`.
+
+### Landing-page quality — recommended (not blocking) fixes
+
+Every Winner has:
+- **Only 1 product image.** Google Shopping Quality Score rewards 3+ images. Cowork can shoot a second angle + disc/box-back shots with the Sony A7S III; or we can scrape additional box-art images from PriceCharting via a small script.
+- **Missing SEO meta description.** Shopify falls back to truncated body HTML, which is OK but not optimal. A one-line canned pattern like `"Buy {title} for {console} at 8-Bit Legacy — {condition}, fast shipping, 90-day returns."` would lift CTR on Shopping ads and organic search. Low-effort to batch-apply via a script.
+- **Missing `mm-google-shopping.custom_product = true`.** Being fixed by `scripts/fix-gtin-metafields.py` in a store-wide sweep (6,105 products). This is what tells Merchant Center to bypass the GTIN requirement for used retro games — without it, products can get disapproved for missing GTIN.
 
 **Pattern:** Every entry is a **cult/niche title on a retro console where the store has variant options (Game Only + CIB)**. Avoids head-to-head with DKOldies/Lukie Games on mainstream mega-hits ("Zelda OoT N64", "Mario 64", "Final Fantasy VII") where:
 - Their SEO and reviews beat us

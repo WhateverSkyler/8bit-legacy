@@ -89,19 +89,37 @@ def get_console_slug(product_type: str) -> str:
     return pt_lower.replace(" ", "-")[:20]
 
 
-def get_category(product_type: str, tags: list[str]) -> str:
-    """Determine product category from type and tags."""
+def get_category(product_type: str, tags: list[str], title: str = "") -> str:
+    """Determine product category from type, tags, and title.
+
+    NOTE: productType is used by this store as the *console family name*
+    (e.g. "NES (Nintendo Entertainment System)"), NOT as a category indicator.
+    So substring-matching 'system' or 'console' in productType is wrong — every
+    NES/SNES game would be flagged as a console. Use the title suffix instead.
+    """
     pt_lower = product_type.lower()
     tags_lower = [t.lower() for t in tags]
+    title_lower = title.lower().strip()
 
     if "pokemon card" in pt_lower or any("pokemon" in t for t in tags_lower):
         return "pokemon_card"
     if any(t in tags_lower for t in ["sealed", "etb", "booster"]):
         return "sealed"
-    if any(t in pt_lower for t in ["console", "system"]):
+
+    # Title-suffix-based detection: "... Game" = game, "... Console" = console, etc.
+    if title_lower.endswith("game") or " game" in title_lower:
+        return "game"
+    if title_lower.endswith("console") or title_lower.endswith("system"):
         return "console"
+    if any(t in title_lower for t in ["controller", "memory card", "adapter", "cable"]):
+        return "accessory"
+
+    # Fall back to productType only if title isn't descriptive
     if any(t in pt_lower for t in ["accessory", "controller"]):
         return "accessory"
+    if "console" in pt_lower and "(" not in pt_lower:
+        # Raw "Console" productType without parenthetical = actual console
+        return "console"
     return "game"
 
 
@@ -288,7 +306,7 @@ def main():
 
         # Compute labels
         console_slug = get_console_slug(product_type)
-        category = get_category(product_type, existing_tags)
+        category = get_category(product_type, existing_tags, title)
         price_tier = get_price_tier(min_price)
         margin_tier = get_margin_tier(category)
 

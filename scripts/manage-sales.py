@@ -58,6 +58,15 @@ SHOPIFY_API_VERSION = "2024-10"
 
 SHOPIFY_DELAY = 0.3
 
+# Iconic franchises for --iconic filter (substring match on title, lowercase)
+ICONIC_FRANCHISES = [
+    "mario", "zelda", "sonic", "final fantasy", "castlevania",
+    "metroid", "mega man", "street fighter", "pokemon", "kirby",
+    "donkey kong", "resident evil", "silent hill", "metal gear",
+    "dragon quest", "chrono", "kingdom hearts", "tekken", "mortal kombat",
+    "crash bandicoot", "spyro", "banjo", "star fox", "f-zero",
+]
+
 # Console tag mapping (lowercase tag → display name)
 CONSOLE_TAGS = {
     "nes": "NES", "snes": "SNES", "n64": "Nintendo 64",
@@ -275,11 +284,15 @@ def remove_sale_tag(product_id, dry_run=True):
 # ── Sale Logic ───────────────────────────────────────────────────────
 
 def apply_discount_to_products(products, discount_percent, min_price=0, max_price=99999,
-                                top_n=None, dry_run=True):
+                                top_n=None, min_savings=1.00, dry_run=True):
     """Apply a percentage discount to products by setting compare-at prices.
 
     The current price becomes the compare-at (strikethrough) price,
     and the new discounted price becomes the actual price.
+
+    Variants are SKIPPED when the computed savings are less than `min_savings`
+    (default $1.00). This avoids absurd $0.01 "sales" on cheap items where the
+    .99 rounding would otherwise swallow the entire discount.
     """
     discount_factor = 1 - (discount_percent / 100)
 
@@ -302,6 +315,7 @@ def apply_discount_to_products(products, discount_percent, min_price=0, max_pric
 
     total_updated = 0
     total_savings = 0
+    skipped_low_savings = 0
 
     print(f"\n  {'Product':<55} {'Original':>9} {'Sale':>9} {'Save':>7}")
     print(f"  {'-'*55} {'-'*9} {'-'*9} {'-'*7}")
@@ -313,14 +327,37 @@ def apply_discount_to_products(products, discount_percent, min_price=0, max_pric
                 continue  # Already on sale
 
             original_price = v["price"]
-            new_price = round(original_price * discount_factor, 2)
+            raw_new_price = round(original_price * discount_factor, 2)
 
-            # Round to .99
-            new_price = int(new_price) + 0.99
+            # Round DOWN to the nearest $X.99 for psychological pricing.
+            # Never round UP — that would shrink the discount (or even raise price).
+            # Examples:
+            #   raw=25.50 → 24.99  (floor(25.50) - 1 + 0.99)
+            #   raw=25.99 → 25.99  (already at .99, keep it)
+            #   raw=9.00  → 8.99
+            #   raw=1.50  → 0.99
+            #   raw=0.80  → use raw (too cheap for .99 rounding)
+            if raw_new_price < 1:
+                new_price = raw_new_price
+            else:
+                dollars = int(raw_new_price)
+                cents = round((raw_new_price - dollars) * 100)
+                if cents >= 99:
+                    new_price = float(dollars) + 0.99
+                else:
+                    new_price = float(dollars - 1) + 0.99
+
             if new_price >= original_price:
                 continue
 
-            savings = original_price - new_price
+            savings = round(original_price - new_price, 2)
+
+            # Skip variants where the discount is too small to be meaningful.
+            # Prevents $0.01 "sales" that look broken to customers.
+            if savings < min_savings:
+                skipped_low_savings += 1
+                continue
+
             total_savings += savings
 
             variant_updates.append({
@@ -342,6 +379,9 @@ def apply_discount_to_products(products, discount_percent, min_price=0, max_pric
 
         if not dry_run:
             time.sleep(SHOPIFY_DELAY)
+
+    if skipped_low_savings:
+        print(f"\n  Skipped {skipped_low_savings} variants where savings < ${min_savings:.2f} (too cheap to discount meaningfully)")
 
     return total_updated, total_savings
 
@@ -396,17 +436,54 @@ def list_active_sales(products):
     print(f"\n  Total items on sale: {len(on_sale)}")
 
 
-def deals_of_the_week(products, count, discount_percent, dry_run=True):
-    """Select random popular games for a "Deals of the Week" promotion."""
-    # Filter to products with reasonable prices
-    eligible = [p for p in products
-                if p["variants"]
-                and max(v["price"] for v in p["variants"]) >= 10
-                and not any(v["compare_at"] is not None for v in p["variants"])]
+def deals_of_the_week(products, count, discount_percent, iconic_only=False,
+                       min_price=10, max_price=100, min_savings=1.00, dry_run=True):
+    """Select popular games for a "Deals of the Week" promotion.
+
+    Excludes:
+      - Pokemon singles (`category:pokemon_card` tag) — those have their own pricing logic
+      - Products already on sale
+      - Products outside [min_price, max_price] (default $10-$100)
+      - Any product with an outlier single variant > max_price
+
+    When `iconic_only=True`, the candidate pool is further restricted to products
+    whose title contains a franchise from ICONIC_FRANCHISES. This keeps "Deals of
+    the Week" looking intentional (Mario, Zelda, etc.) instead of random shovelware.
+    """
+    def is_pokemon_single(p):
+        tags_lo = [t.lower() for t in p.get("tags", [])]
+        return "category:pokemon_card" in tags_lo
+
+    def is_iconic(p):
+        title_lo = p["title"].lower()
+        return any(f in title_lo for f in ICONIC_FRANCHISES)
+
+    # Filter to products with reasonable prices + no Pokemon + not on sale
+    eligible = []
+    for p in products:
+        if not p["variants"]:
+            continue
+        if any(v["compare_at"] is not None for v in p["variants"]):
+            continue
+        if is_pokemon_single(p):
+            continue
+        prices = [v["price"] for v in p["variants"]]
+        max_price_v = max(prices)
+        # Both ends of the price range: cheap items can't carry a real discount,
+        # expensive outliers (e.g., Steel Battalion @ $530) don't belong in "Deals of the Week"
+        if max_price_v < min_price or max_price_v > max_price:
+            continue
+        if iconic_only and not is_iconic(p):
+            continue
+        eligible.append(p)
 
     if len(eligible) < count:
         print(f"  Only {len(eligible)} eligible products (need {count})")
         count = len(eligible)
+
+    if count == 0:
+        print("  No eligible products — try lowering --min-price, raising --max-price, or removing --iconic")
+        return 0, 0
 
     # Weighted random: higher price = more likely to be picked (better deal perception)
     weights = [max(v["price"] for v in p["variants"]) for p in eligible]
@@ -418,14 +495,18 @@ def deals_of_the_week(products, count, discount_percent, dry_run=True):
         total = sum(remaining_weights)
         if total == 0:
             break
-        probs = [w / total for w in remaining_weights]
         chosen_idx = random.choices(remaining, weights=remaining_weights, k=1)[0]
         selected.append(eligible[chosen_idx])
         remaining.remove(chosen_idx)
 
-    print(f"\n  Deals of the Week — {discount_percent}% off {len(selected)} products:")
+    label = "iconic-franchise " if iconic_only else ""
+    print(f"\n  Deals of the Week — {discount_percent}% off {len(selected)} {label}products (${min_price:.0f}-${max_price:.0f}):")
 
-    updated, savings = apply_discount_to_products(selected, discount_percent, dry_run=dry_run)
+    updated, savings = apply_discount_to_products(
+        selected, discount_percent,
+        min_price=min_price, max_price=max_price,
+        min_savings=min_savings, dry_run=dry_run,
+    )
 
     return updated, savings
 
@@ -448,9 +529,13 @@ def main():
     parser.add_argument("--min-price", type=float, default=0, help="Minimum price filter")
     parser.add_argument("--max-price", type=float, default=99999, help="Maximum price filter")
     parser.add_argument("--top", type=int, help="Only discount the top N highest-value products")
+    parser.add_argument("--iconic", action="store_true",
+                        help="Restrict --deals-of-week to iconic franchises (Mario, Zelda, Sonic, Final Fantasy, etc.)")
 
     # Sale parameters
     parser.add_argument("--discount", type=float, help="Discount percentage (e.g., 10 for 10%% off)")
+    parser.add_argument("--min-savings", type=float, default=1.00,
+                        help="Skip variants where the computed discount is less than this amount (default $1.00). Prevents $0.01 'sales'.")
 
     # Execution mode
     parser.add_argument("--dry-run", action="store_true", help="Preview without applying")
@@ -494,7 +579,16 @@ def main():
             return
         mode = "DRY RUN" if dry_run else "APPLYING"
         print(f"\n  Mode: {mode}")
-        updated, savings = deals_of_the_week(products, args.deals_of_week, args.discount, dry_run)
+        # deals-of-week has sensible defaults: $10-$100 price range unless overridden
+        deals_min = args.min_price if args.min_price > 0 else 10
+        deals_max = args.max_price if args.max_price < 99999 else 100
+        updated, savings = deals_of_the_week(
+            products, args.deals_of_week, args.discount,
+            iconic_only=args.iconic,
+            min_price=deals_min, max_price=deals_max,
+            min_savings=args.min_savings,
+            dry_run=dry_run,
+        )
         print(f"\n  {'Would update' if dry_run else 'Updated'} {updated} products")
         print(f"  Total customer savings: ${savings:.2f}")
         return
@@ -512,6 +606,7 @@ def main():
             min_price=args.min_price,
             max_price=args.max_price,
             top_n=args.top,
+            min_savings=args.min_savings,
             dry_run=dry_run,
         )
 
