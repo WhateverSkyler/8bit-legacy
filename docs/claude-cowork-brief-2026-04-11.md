@@ -208,6 +208,57 @@ If everything is clean, we can close this concern and Tristan can stop worrying 
 
 ---
 
+## Task 4 — Trust signal changes (Tristan-approved, 15 min)
+
+Tristan has signed off on these changes — just execute them in Shopify admin. Do NOT ask for further confirmation.
+
+### 4a. Free shipping threshold: $50 → $35
+
+**Why:** Closes the gap with DKOldies (who offer free shipping at $20). At $50 we were 2.5x worse; at $35 we're only 1.75x worse and most of the Winners list ($30–$49 retro games) now qualifies for free shipping, which materially affects conversion rate on Google Shopping clicks.
+
+**How:**
+1. Shopify admin → Settings → Shipping and delivery
+2. Click the shipping profile that applies to US orders
+3. Find the "Free shipping" rate (currently $50 minimum)
+4. Edit → change minimum order price to **$35.00**
+5. Save
+
+**Verify:** Add a ~$36 product to cart and confirm shipping shows "Free" at checkout.
+
+### 4b. Return policy: 30 days → 90 days
+
+**Why:** Matches Lukie Games (another retro-games dropshipper who's figured out the math). Still dropship-safe because our eBay supplier refund windows are typically 60 days, which we can stretch to 90 with buyer-funded return shipping on a case-by-case basis. The 30-day policy was unnecessarily conservative and made us look amateur vs DKOldies (365 days) and Lukie (90 days).
+
+**How:**
+1. Shopify admin → Settings → Policies → Refund policy → edit
+2. Find all instances of "30 days" / "30-day" / "thirty days" and replace with "90 days" / "90-day" / "ninety days"
+3. Save the refund policy text
+4. Check the announcement bar: Online Store → Themes → Customize → announcement bar section. If the bar text hardcodes "30 day returns", change to "90 day returns".
+5. Check product page footer / trust badges row: some themes render the return window in a hardcoded section. If present in theme customizer or in a Liquid snippet you can spot, update.
+6. Search theme code for "30 day" in the edit-code view (Shopify admin → Themes → Edit code → search). Update any hardcoded occurrences.
+
+**Verify:** Load a product page and confirm any visible return-window text says 90 days.
+
+### 4c. Reviews — DO NOT install Shopify Product Reviews
+
+**Reversal from earlier draft:** Tristan does not want a Shopify review app installed. His reasoning: reviews on a 10,000+ product used-goods store make the business look *smaller* than it is (most products will have 0 reviews forever because inventory is sparse and non-repeating), and Shopify review apps give approximately zero algorithmic benefit for Google Shopping ads since they're not Google-native reviews.
+
+**Do instead: Enable Google Customer Reviews** (this is a real Google program, free, lives inside Merchant Center):
+
+1. Sign in to Merchant Center 5296797260
+2. Growth → Manage programs → Customer Reviews → Enable
+3. Accept the agreement
+4. Enable the "Customer Reviews opt-in" on the Shopify checkout:
+   - The Google & YouTube Shopify app should have this toggle under its settings. Find it and turn it on.
+   - If the toggle isn't visible in the app, add the Google Customer Reviews opt-in module snippet to `checkout-post-purchase.liquid` / order confirmation per the Merchant Center setup guide that surfaces after enabling.
+5. Leave it running. At 100 store reviews + 12 months of data, the seller-rating star extension becomes eligible to show on Google Shopping ads — that IS the algorithmic benefit Tristan was asking about.
+
+**Why this is different from a Shopify review app:** Google Customer Reviews feeds Google's own seller rating system directly. Shopify app reviews (Loox, Judge.me, Shopify Product Reviews) do not; they only render on the storefront. Seller ratings in Shopping ads are a real conversion lift and Google gates them behind their own review program.
+
+**Do NOT install:** Loox, Judge.me, Shopify Product Reviews, Yotpo, Stamped, etc. If any of these are already installed, uninstall them — Tristan wants them gone.
+
+---
+
 ## Commit + push when you're done
 
 Per `CLAUDE.md` sync rules, commit and push from Mac when you finish so desktop Claude can see the work:
@@ -244,4 +295,7 @@ Drop a line in `docs/handoff-2026-04-11-evening.md` (create if it doesn't exist)
 - [ ] Draft theme published (or left as draft with clear handoff if you want Tristan to review first)
 - [ ] Site audit of the 9 pages above, screenshots of any bugs found, fixes applied where the CSS-only pattern fits
 - [ ] Shop app dispute status definitively answered (open / closed / unknown-with-reason)
+- [ ] Free shipping threshold lowered to $35 in Shopify settings (Task 4a)
+- [ ] Return policy text updated to 90 days in Shopify policies + theme (Task 4b)
+- [ ] Google Customer Reviews enabled in Merchant Center 5296797260 (Task 4c)
 - [ ] Commit + push from Mac, handoff note written
