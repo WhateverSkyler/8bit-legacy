@@ -1,0 +1,678 @@
+[
+  {
+    "id": "gid://shopify/Product/7956655308834",
+    "title": "ECW Hardcore Revolution - Sega Dreamcast Game",
+    "tags": [
+      "category:game",
+      "console:dreamcast",
+      "margin:medium",
+      "price_tier:under_20",
+      "Sega Dreamcast"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794806767650",
+    "loose_price": 15.74,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-25",
+    "cib_id": "gid://shopify/ProductVariant/43794604523554",
+    "cib_price": 15.74,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956679786530",
+    "title": "Hot Shots Tennis: Get a Grip - PSP Game",
+    "tags": [
+      "category:game",
+      "console:psp",
+      "margin:medium",
+      "price_tier:under_20",
+      "PSP"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794830983202",
+    "loose_price": 7.02,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-25",
+    "cib_id": "gid://shopify/ProductVariant/43794577719330",
+    "cib_price": 7.02,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956679950370",
+    "title": "Hot Wheels Stunt Track Driver - Gameboy Color Game",
+    "tags": [
+      "category:game",
+      "console:gbc",
+      "Gameboy Color",
+      "margin:medium",
+      "price_tier:under_20"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794831147042",
+    "loose_price": 4.71,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-25",
+    "cib_id": "gid://shopify/ProductVariant/43794577391650",
+    "cib_price": 4.71,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956720779298",
+    "title": "NBA 09 The Inside - PS2 Game",
+    "tags": [
+      "category:game",
+      "console:ps2",
+      "margin:medium",
+      "Playstation 2",
+      "price_tier:under_20"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794875744290",
+    "loose_price": 8.87,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-25",
+    "cib_id": "gid://shopify/ProductVariant/43794529157154",
+    "cib_price": 8.87,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956720812066",
+    "title": "NBA 09 The Inside - PSP Game",
+    "tags": [
+      "category:game",
+      "console:psp",
+      "margin:medium",
+      "price_tier:under_20",
+      "PSP"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794875777058",
+    "loose_price": 5.28,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-25",
+    "cib_id": "gid://shopify/ProductVariant/43794529124386",
+    "cib_price": 5.28,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956824555554",
+    "title": "Nintendo 64 Console - 2 Player Bundle",
+    "tags": [
+      "category:console",
+      "console:n64",
+      "margin:medium",
+      "Nintendo 64 Console",
+      "Nintendo 64 Consoles",
+      "price_tier:over_50"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794888065058",
+    "loose_price": 150.0,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-14",
+    "cib_id": "gid://shopify/ProductVariant/43794352865314",
+    "cib_price": 150.0,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956824588322",
+    "title": "Wii Console - Player Pack (WiiMote + Nunchuck)",
+    "tags": [
+      "category:console",
+      "console:wii",
+      "margin:medium",
+      "price_tier:over_50",
+      "Wii Consoles"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43795020742690",
+    "loose_price": 99.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-14",
+    "cib_id": "gid://shopify/ProductVariant/43794352799778",
+    "cib_price": 99.99,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956824653858",
+    "title": "PS2 Slim - Player Pack (Controller + Cables)",
+    "tags": [
+      "category:accessory",
+      "console:ps2",
+      "margin:medium",
+      "Playstation 2 Consoles",
+      "price_tier:over_50"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794906382370",
+    "loose_price": 184.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-14",
+    "cib_id": "gid://shopify/ProductVariant/43794352767010",
+    "cib_price": 184.99,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956824719394",
+    "title": "NES Console - 2 Player Pack",
+    "tags": [
+      "category:console",
+      "console:nes-consoles",
+      "margin:medium",
+      "NES Consoles",
+      "price_tier:over_50"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794882035746",
+    "loose_price": 129.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-12-31",
+    "cib_id": "gid://shopify/ProductVariant/43794352701474",
+    "cib_price": 129.99,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956824784930",
+    "title": "Original Xbox Console Bundle",
+    "tags": [
+      "category:game",
+      "console:xbox",
+      "margin:medium",
+      "price_tier:over_50"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794891178018",
+    "loose_price": 179.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-14",
+    "cib_id": "gid://shopify/ProductVariant/43794352668706",
+    "cib_price": 179.99,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956824817698",
+    "title": "NES (Nintendo Entertainment System) Console Bundle",
+    "tags": [
+      "category:console",
+      "console:nes-consoles",
+      "margin:medium",
+      "NES Consoles",
+      "price_tier:over_50"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794882068514",
+    "loose_price": 99.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-14",
+    "cib_id": "gid://shopify/ProductVariant/43794352635938",
+    "cib_price": 99.99,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956824850466",
+    "title": "SNES (Super Nintendo) Console Bundle",
+    "tags": [
+      "category:console",
+      "console:snes-consoles",
+      "margin:medium",
+      "price_tier:over_50",
+      "SNES Consoles"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794934333474",
+    "loose_price": 145.0,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-14",
+    "cib_id": "gid://shopify/ProductVariant/43794352603170",
+    "cib_price": 145.0,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956824883234",
+    "title": "Nintendo 64 Console Bundle",
+    "tags": [
+      "category:console",
+      "console:n64",
+      "margin:medium",
+      "Nintendo 64 Consoles",
+      "price_tier:over_50"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794889080866",
+    "loose_price": 94.25,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-14",
+    "cib_id": "gid://shopify/ProductVariant/43794352570402",
+    "cib_price": 94.25,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956824916002",
+    "title": "Nintendo Gamecube Console Bundle",
+    "tags": [
+      "category:game",
+      "console:gamecube",
+      "margin:medium",
+      "Nintendo Gamecube Consoles",
+      "price_tier:over_50"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794889310242",
+    "loose_price": 101.5,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-14",
+    "cib_id": "gid://shopify/ProductVariant/43794352537634",
+    "cib_price": 101.5,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956824948770",
+    "title": "Nintendo Wii Console Bundle",
+    "tags": [
+      "category:console",
+      "console:wii",
+      "margin:medium",
+      "Nintendo Wii Consoles",
+      "price_tier:over_50"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794889375778",
+    "loose_price": 69.25,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-14",
+    "cib_id": "gid://shopify/ProductVariant/43794352504866",
+    "cib_price": 69.25,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956825112610",
+    "title": "Playstation 1 Console Bundle",
+    "tags": [
+      "category:console",
+      "console:ps1",
+      "margin:medium",
+      "Playstation 1 Consoles",
+      "price_tier:over_50"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794901434402",
+    "loose_price": 94.25,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-14",
+    "cib_id": "gid://shopify/ProductVariant/43794352439330",
+    "cib_price": 94.25,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956825145378",
+    "title": "Playstation 2 Console Bundle",
+    "tags": [
+      "category:console",
+      "console:ps2",
+      "margin:medium",
+      "Playstation 2 Consoles",
+      "price_tier:over_50"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794901499938",
+    "loose_price": 166.75,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-14",
+    "cib_id": "gid://shopify/ProductVariant/43794352406562",
+    "cib_price": 166.75,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956825210914",
+    "title": "Nintendo Gameboy Console",
+    "tags": [
+      "category:game",
+      "console:gameboy",
+      "margin:medium",
+      "Nintendo Gameboy Consoles",
+      "price_tier:over_50"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794889277474",
+    "loose_price": 94.25,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-06-10",
+    "cib_id": "gid://shopify/ProductVariant/43794352373794",
+    "cib_price": 94.25,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956825243682",
+    "title": "Nintendo Gameboy Color Console",
+    "tags": [
+      "category:game",
+      "console:gbc",
+      "margin:medium",
+      "Nintendo Gameboy Color Consoles",
+      "price_tier:over_50"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794889244706",
+    "loose_price": 94.25,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-14",
+    "cib_id": "gid://shopify/ProductVariant/43794352341026",
+    "cib_price": 94.25,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956825309218",
+    "title": "Nintendo Gameboy Advance Console",
+    "tags": [
+      "category:game",
+      "console:gba",
+      "margin:medium",
+      "Nintendo Gameboy Advance Consoles",
+      "price_tier:over_50"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794889179170",
+    "loose_price": 140.65,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-14",
+    "cib_id": "gid://shopify/ProductVariant/43794352308258",
+    "cib_price": 140.65,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956825374754",
+    "title": "Nintendo DS Lite Console",
+    "tags": [
+      "category:console",
+      "console:ds",
+      "margin:medium",
+      "Nintendo DS Consoles",
+      "price_tier:over_50"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794889146402",
+    "loose_price": 101.5,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-02-08",
+    "cib_id": "gid://shopify/ProductVariant/43794352275490",
+    "cib_price": 101.5,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956825440290",
+    "title": "Nintendo 3DS XL Console",
+    "tags": [
+      "category:console",
+      "console:3ds",
+      "margin:medium",
+      "Nintendo 3DS Consoles",
+      "price_tier:over_50"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794888032290",
+    "loose_price": 261.0,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-14",
+    "cib_id": "gid://shopify/ProductVariant/43794352209954",
+    "cib_price": 261.0,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956825505826",
+    "title": "Sega Genesis Console Bundle",
+    "tags": [
+      "category:console",
+      "console:genesis",
+      "margin:medium",
+      "price_tier:over_50",
+      "Sega Genesis Consoles"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794920800290",
+    "loose_price": 87.0,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-14",
+    "cib_id": "gid://shopify/ProductVariant/43794352144418",
+    "cib_price": 87.0,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956825538594",
+    "title": "Sega Dreamcast Console Bundle",
+    "tags": [
+      "category:console",
+      "console:dreamcast",
+      "margin:medium",
+      "price_tier:over_50",
+      "Sega Dreamcast Consoles"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794920669218",
+    "loose_price": 153.7,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-14",
+    "cib_id": "gid://shopify/ProductVariant/43794352111650",
+    "cib_price": 153.7,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956825604130",
+    "title": "Nintendo Gameboy Advance SP Console",
+    "tags": [
+      "category:game",
+      "console:gba",
+      "margin:medium",
+      "Nintendo Gameboy Advance Consoles",
+      "price_tier:over_50"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794889211938",
+    "loose_price": 140.65,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-14",
+    "cib_id": "gid://shopify/ProductVariant/43794352078882",
+    "cib_price": 140.65,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956825669666",
+    "title": "NES (Nintendo Entertainment System) Official Controller",
+    "tags": [
+      "category:accessory",
+      "console:nes-consoles",
+      "margin:medium",
+      "price_tier:20_to_50"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794882101282",
+    "loose_price": 21.75,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-14",
+    "cib_id": "gid://shopify/ProductVariant/43794352046114",
+    "cib_price": 21.75,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956825702434",
+    "title": "Nintendo 64 Official Controller",
+    "tags": [
+      "category:accessory",
+      "console:n64",
+      "margin:medium",
+      "price_tier:20_to_50"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794889113634",
+    "loose_price": 39.15,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-14",
+    "cib_id": "gid://shopify/ProductVariant/43794352013346",
+    "cib_price": 39.15,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956825735202",
+    "title": "Nintendo Gamecube Official Controller",
+    "tags": [
+      "category:game",
+      "console:gamecube",
+      "margin:medium",
+      "Nintendo GameCube Accessories",
+      "price_tier:20_to_50"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794889343010",
+    "loose_price": 44.95,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-14",
+    "cib_id": "gid://shopify/ProductVariant/43794351980578",
+    "cib_price": 44.95,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956825767970",
+    "title": "Nintendo Wii Official Wiimote Controller",
+    "tags": [
+      "category:accessory",
+      "console:wii",
+      "margin:medium",
+      "price_tier:20_to_50"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794889408546",
+    "loose_price": 29.0,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-03-18",
+    "cib_id": "gid://shopify/ProductVariant/43794351947810",
+    "cib_price": 29.0,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956825800738",
+    "title": "Playstation 1 Official Dualshock Controller",
+    "tags": [
+      "category:accessory",
+      "console:ps1",
+      "margin:medium",
+      "price_tier:20_to_50"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794901467170",
+    "loose_price": 29.0,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-14",
+    "cib_id": "gid://shopify/ProductVariant/43794351882274",
+    "cib_price": 29.0,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956825833506",
+    "title": "Playstation 2 Official Controller",
+    "tags": [
+      "category:accessory",
+      "console:ps2",
+      "margin:medium",
+      "price_tier:20_to_50"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794901532706",
+    "loose_price": 43.5,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-14",
+    "cib_id": "gid://shopify/ProductVariant/43794351849506",
+    "cib_price": 43.5,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956825866274",
+    "title": "Original Xbox Official Controller",
+    "tags": [
+      "category:accessory",
+      "console:xbox",
+      "margin:medium",
+      "price_tier:20_to_50"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794891243554",
+    "loose_price": 29.0,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-14",
+    "cib_id": "gid://shopify/ProductVariant/43794351816738",
+    "cib_price": 29.0,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956825931810",
+    "title": "Sega Genesis Official Controller",
+    "tags": [
+      "category:accessory",
+      "console:genesis",
+      "margin:medium",
+      "price_tier:20_to_50"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794920833058",
+    "loose_price": 21.75,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-14",
+    "cib_id": "gid://shopify/ProductVariant/43794351751202",
+    "cib_price": 21.75,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956825964578",
+    "title": "Sega Dreamcast Official Controller",
+    "tags": [
+      "category:accessory",
+      "console:dreamcast",
+      "margin:medium",
+      "price_tier:20_to_50"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794920701986",
+    "loose_price": 29.0,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-14",
+    "cib_id": "gid://shopify/ProductVariant/43794351718434",
+    "cib_price": 29.0,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956826423330",
+    "title": "Original White Wiimote Remote Controller - Wii & Wii U",
+    "tags": [
+      "category:accessory",
+      "console:wii",
+      "margin:medium",
+      "price_tier:under_20",
+      "Wii Accessories"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794891145250",
+    "loose_price": 19.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-09-10",
+    "cib_id": "gid://shopify/ProductVariant/43794351357986",
+    "cib_price": 19.99,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956826456098",
+    "title": "Original Black Motion Plus Controller - Wii",
+    "tags": [
+      "category:accessory",
+      "console:uncategorized",
+      "margin:medium",
+      "price_tier:20_to_50",
+      "Uncategorized"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794891112482",
+    "loose_price": 29.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-14",
+    "cib_id": "gid://shopify/ProductVariant/43794351325218",
+    "cib_price": 29.99,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  }
+]

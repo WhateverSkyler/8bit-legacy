@@ -1,0 +1,51 @@
+[15:09:50] ============================================================
+[15:09:50] FIX CIB==LOOSE — APPLY
+[15:09:50] Products to process: 1364
+[15:09:50] Log: /home/tristan/Projects/8bit-legacy/data/logs/fix-cib-equals-loose-20260411_150950.log
+[15:09:50] CSV: /home/tristan/Projects/8bit-legacy/data/logs/fix-cib-equals-loose-20260411_150950.csv
+[15:09:50] ============================================================
+[15:12:47]   progress: 50/1364 | cib_updated=47 | loose_updated=15 | rate=17/min | eta=78min
+[15:16:00]   progress: 100/1364 | cib_updated=95 | loose_updated=19 | rate=16/min | eta=78min
+[15:19:14]   progress: 150/1364 | cib_updated=145 | loose_updated=21 | rate=16/min | eta=76min
+[15:22:28]   progress: 200/1364 | cib_updated=193 | loose_updated=27 | rate=16/min | eta=74min
+[15:25:44]   progress: 250/1364 | cib_updated=241 | loose_updated=33 | rate=16/min | eta=71min
+[15:28:58]   progress: 300/1364 | cib_updated=290 | loose_updated=36 | rate=16/min | eta=68min
+[15:32:16]   progress: 350/1364 | cib_updated=340 | loose_updated=38 | rate=16/min | eta=65min
+[15:35:33]   progress: 400/1364 | cib_updated=390 | loose_updated=42 | rate=16/min | eta=62min
+[18:13:30]   ERROR [436] Hot Shots Tennis: Get a Grip - PSP Game: HTTPSConnectionPool(host='dpxzef-st.myshopify.com', port=443): Max retries exceeded with url: /admin/api/2024-10/graphql.json (Caused by NameResolutionError("HTTPSConnection(host='dpxzef-st.myshopify.com', port=443): Failed to resolve 'dpxzef-st.myshopify.com' ([Errno -3] Temporary failure in name resolution)"))
+[18:13:32]   ERROR [437] Hot Wheels Stunt Track Driver - Gameboy Color Game: HTTPSConnectionPool(host='dpxzef-st.myshopify.com', port=443): Max retries exceeded with url: /admin/api/2024-10/graphql.json (Caused by NameResolutionError("HTTPSConnection(host='dpxzef-st.myshopify.com', port=443): Failed to resolve 'dpxzef-st.myshopify.com' ([Errno -3] Temporary failure in name resolution)"))
+[18:14:23]   progress: 450/1364 | cib_updated=438 | loose_updated=45 | rate=2/min | eta=375min
+[18:17:46]   progress: 500/1364 | cib_updated=487 | loose_updated=49 | rate=3/min | eta=325min
+[18:21:06]   progress: 550/1364 | cib_updated=537 | loose_updated=55 | rate=3/min | eta=283min
+[18:24:21]   progress: 600/1364 | cib_updated=586 | loose_updated=59 | rate=3/min | eta=248min
+[18:27:25]   progress: 650/1364 | cib_updated=636 | loose_updated=65 | rate=3/min | eta=217min
+[18:30:45]   progress: 700/1364 | cib_updated=686 | loose_updated=67 | rate=3/min | eta=191min
+[19:21:36]   ERROR [705] NBA 09 The Inside - PS2 Game: HTTPSConnectionPool(host='dpxzef-st.myshopify.com', port=443): Max retries exceeded with url: /admin/api/2024-10/graphql.json (Caused by NameResolutionError("HTTPSConnection(host='dpxzef-st.myshopify.com', port=443): Failed to resolve 'dpxzef-st.myshopify.com' ([Errno -3] Temporary failure in name resolution)"))
+[19:21:38]   ERROR [706] NBA 09 The Inside - PSP Game: HTTPSConnectionPool(host='dpxzef-st.myshopify.com', port=443): Max retries exceeded with url: /admin/api/2024-10/graphql.json (Caused by NameResolutionError("HTTPSConnection(host='dpxzef-st.myshopify.com', port=443): Failed to resolve 'dpxzef-st.myshopify.com' ([Errno -3] Temporary failure in name resolution)"))
+[19:24:22]   progress: 750/1364 | cib_updated=734 | loose_updated=71 | rate=3/min | eta=208min
+[19:27:37]   progress: 800/1364 | cib_updated=784 | loose_updated=75 | rate=3/min | eta=182min
+[19:30:49]   progress: 850/1364 | cib_updated=834 | loose_updated=78 | rate=3/min | eta=158min
+[19:34:10]   progress: 900/1364 | cib_updated=884 | loose_updated=82 | rate=3/min | eta=136min
+[19:37:24]   progress: 950/1364 | cib_updated=934 | loose_updated=83 | rate=4/min | eta=117min
+[19:40:38]   progress: 1000/1364 | cib_updated=984 | loose_updated=87 | rate=4/min | eta=99min
+[19:43:41]   progress: 1050/1364 | cib_updated=1034 | loose_updated=89 | rate=4/min | eta=82min
+[19:46:38]   progress: 1100/1364 | cib_updated=1084 | loose_updated=90 | rate=4/min | eta=66min
+[19:49:43]   progress: 1150/1364 | cib_updated=1133 | loose_updated=96 | rate=4/min | eta=52min
+[19:52:53]   progress: 1200/1364 | cib_updated=1182 | loose_updated=101 | rate=4/min | eta=39min
+[19:55:59]   progress: 1250/1364 | cib_updated=1232 | loose_updated=106 | rate=4/min | eta=26min
+[19:59:10]   progress: 1300/1364 | cib_updated=1281 | loose_updated=111 | rate=4/min | eta=14min
+[20:01:09] 
+[20:01:09] ============================================================
+[20:01:09] RESULTS
+[20:01:09] ============================================================
+[20:01:09]   Total processed:            1364
+[20:01:09]   No console detected:        31
+[20:01:09]   PC search found CIB data:   130
+[20:01:09]   PC search found but no CIB: 1
+[20:01:09]   PC search missed:           1202
+[20:01:09]   Used 1.8x uplift fallback:  1203
+[20:01:09]   CIB variant updated:        1314
+[20:01:09]   Loose variant updated:      118
+[20:01:09]   No meaningful change:       1
+[20:01:09]   Errors:                     4
+[20:01:09]   Elapsed:                    291.3 min

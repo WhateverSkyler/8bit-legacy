@@ -1,0 +1,58 @@
+[18:19:31] ============================================================
+[18:19:31] SET SEO DESCRIPTIONS — APPLY
+[18:19:31] Mode: only missing
+[18:19:31] Log: /home/tristan/Projects/8bit-legacy/data/logs/seo-descriptions-apply-20260411_181931.log
+[18:19:31] ============================================================
+[18:19:32]   sample: .hack GU Rebirth - PS2 Game                        -> Shop .hack GU Rebirth for PS2 at 8-Bit Legacy. Authentic retro game, fast shipping and 90-day returns.
+[18:19:33]   sample: .hack Infection - PS2 Game                         -> Shop .hack Infection for PS2 at 8-Bit Legacy. Authentic retro game, fast shipping and 90-day returns.
+[18:19:34]   sample: .hack Mutation - PS2 Game                          -> Shop .hack Mutation for PS2 at 8-Bit Legacy. Authentic retro game, fast shipping and 90-day returns.
+[18:19:34]   sample: .hack Outbreak - PS2 Game                          -> Shop .hack Outbreak for PS2 at 8-Bit Legacy. Authentic retro game, fast shipping and 90-day returns.
+[18:19:35]   sample: 007 Agent Under Fire - Gamecube Game               -> Shop 007 Agent Under Fire for GameCube at 8-Bit Legacy. Authentic retro game, fast shipping and 90-day returns.
+[18:19:36]   sample: 007 Agent Under Fire - PS2 Game                    -> Shop 007 Agent Under Fire for PS2 at 8-Bit Legacy. Authentic retro game, fast shipping and 90-day returns.
+[18:19:37]   sample: 007 Everything or Nothing - Gamecube Game          -> Shop 007 Everything or Nothing for GameCube at 8-Bit Legacy. Authentic retro game, fast shipping and 90-day returns.
+[18:19:38]   sample: 007 Everything or Nothing - Xbox Game              -> Shop 007 Everything or Nothing for Xbox at 8-Bit Legacy. Authentic retro game, fast shipping and 90-day returns.
+[18:22:25]   progress: 200 updated | rate=69/min
+[18:25:20]   progress: 400 updated | rate=69/min
+[18:28:14]   progress: 600 updated | rate=69/min
+[19:21:50]   progress: 800 updated | rate=13/min
+[19:24:44]   progress: 1000 updated | rate=15/min
+[19:27:35]   progress: 1200 updated | rate=18/min
+[19:30:28]   progress: 1400 updated | rate=20/min
+[19:33:23]   progress: 1600 updated | rate=22/min
+[19:36:15]   progress: 1800 updated | rate=23/min
+[19:39:07]   progress: 2000 updated | rate=25/min
+[19:42:01]   progress: 2200 updated | rate=27/min
+[19:44:53]   progress: 2400 updated | rate=28/min
+[19:47:49]   progress: 2600 updated | rate=29/min
+[19:50:42]   progress: 2800 updated | rate=31/min
+[19:53:36]   progress: 3000 updated | rate=32/min
+[19:56:29]   progress: 3200 updated | rate=33/min
+[19:59:22]   progress: 3400 updated | rate=34/min
+[20:02:22]   progress: 3600 updated | rate=35/min
+[20:05:22]   progress: 3800 updated | rate=36/min
+[20:08:20]   progress: 4000 updated | rate=37/min
+[20:11:17]   progress: 4200 updated | rate=38/min
+[20:14:12]   progress: 4400 updated | rate=38/min
+[20:17:10]   progress: 4600 updated | rate=39/min
+[20:20:07]   progress: 4800 updated | rate=40/min
+[20:23:01]   progress: 5000 updated | rate=40/min
+[20:25:55]   progress: 5200 updated | rate=41/min
+[20:28:49]   progress: 5400 updated | rate=42/min
+[20:31:43]   progress: 5600 updated | rate=42/min
+[20:34:39]   progress: 5800 updated | rate=43/min
+[20:37:32]   progress: 6000 updated | rate=43/min
+[20:40:18]   progress: 6200 updated | rate=44/min
+[20:42:49]   progress: 6400 updated | rate=45/min
+[20:45:20]   progress: 6600 updated | rate=45/min
+[20:47:52]   progress: 6800 updated | rate=46/min
+[20:50:22]   progress: 7000 updated | rate=46/min
+[20:52:54]   progress: 7200 updated | rate=47/min
+[20:54:02] 
+[20:54:02] ============================================================
+[20:54:02] RESULTS
+[20:54:02] ============================================================
+[20:54:02]   Total scanned:        7290
+[20:54:02]   Updated:              7290
+[20:54:02]   Skipped (has desc):   0
+[20:54:02]   Errors:               0
+[20:54:02]   Elapsed:              154.5 min

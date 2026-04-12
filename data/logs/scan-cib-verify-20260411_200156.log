@@ -1,0 +1,25 @@
+Scanning all active products for CIB == Loose...
+  scanned 500 | multi-variant=500 | CIB==Loose=0
+  scanned 1000 | multi-variant=1000 | CIB==Loose=0
+  scanned 1500 | multi-variant=1500 | CIB==Loose=0
+  scanned 2000 | multi-variant=2000 | CIB==Loose=1
+  scanned 2500 | multi-variant=2500 | CIB==Loose=3
+  scanned 3000 | multi-variant=3000 | CIB==Loose=3
+  scanned 3500 | multi-variant=3500 | CIB==Loose=5
+  scanned 4000 | multi-variant=4000 | CIB==Loose=5
+  scanned 4500 | multi-variant=4500 | CIB==Loose=5
+  scanned 5000 | multi-variant=5000 | CIB==Loose=5
+  scanned 5500 | multi-variant=5500 | CIB==Loose=5
+  scanned 6000 | multi-variant=6000 | CIB==Loose=5
+  scanned 6500 | multi-variant=6112 | CIB==Loose=36
+  scanned 7000 | multi-variant=6112 | CIB==Loose=36
+
+============================================================
+  Total active products:        7290
+  Multi-variant retro games:    6112
+  CIB > Loose (good):           6036
+  CIB == Loose (BUG):           36
+  Bug percentage:               0.6%
+============================================================
+
+Wrote /home/tristan/Projects/8bit-legacy/data/cib-equals-loose.json (36 entries)

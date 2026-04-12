@@ -80,12 +80,17 @@ CONSOLE_SLUG_MAP = {
 
 
 def get_console_slug(product_type: str) -> str:
-    """Map a Shopify product type to a clean console slug."""
+    """Map a Shopify product type to a clean console slug.
+
+    Longest-key-first match: 'playstation 2' must be checked before 'playstation'
+    or every PS2 product ends up tagged as PS1. Same trap exists for Gameboy
+    Color/Advance vs Gameboy, Xbox 360 vs Xbox, Wii U vs Wii.
+    """
     pt_lower = product_type.lower().strip()
-    # Handle messy types like "Nintendo Gamecube > Gamecube, Gamecube"
-    for key, slug in CONSOLE_SLUG_MAP.items():
+    # Sort keys longest-first so specific matches win over generic ones
+    for key in sorted(CONSOLE_SLUG_MAP.keys(), key=len, reverse=True):
         if key in pt_lower:
-            return slug
+            return CONSOLE_SLUG_MAP[key]
     return pt_lower.replace(" ", "-")[:20]
 
 
@@ -154,39 +159,56 @@ def build_seo_title(title: str) -> str:
     return f"{title} | 8-Bit Legacy"
 
 
-def graphql(query: str, variables: dict = None, retries: int = 5) -> dict:
-    """Execute a Shopify GraphQL query with retry on throttle."""
+def graphql(query: str, variables: dict = None, retries: int = 6) -> dict:
+    """Execute a Shopify GraphQL query with retry on throttle and network error.
+
+    Why the explicit timeout: `requests.post()` defaults to no timeout and will
+    hang forever if the socket is dangling (e.g., laptop sleeps mid-request).
+    We saw this exact failure mode on 2026-04-11 — the script sat wedged in
+    `wait_woken` on a zombie TCP socket for 2.5 hours across a network
+    outage. Setting a 30s timeout means a stuck request surfaces promptly
+    and the retry loop can recover.
+    """
     url = f"https://{SHOPIFY_STORE}/admin/api/{SHOPIFY_API_VERSION}/graphql.json"
     payload = {"query": query}
     if variables:
         payload["variables"] = variables
 
+    last_exc = None
     for attempt in range(retries):
-        resp = requests.post(
-            url,
-            headers={
-                "X-Shopify-Access-Token": SHOPIFY_TOKEN,
-                "Content-Type": "application/json",
-            },
-            json=payload,
-        )
-        resp.raise_for_status()
-        data = resp.json()
+        try:
+            resp = requests.post(
+                url,
+                headers={
+                    "X-Shopify-Access-Token": SHOPIFY_TOKEN,
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+                timeout=30,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+        except requests.exceptions.RequestException as e:
+            last_exc = e
+            wait = min(2 ** attempt, 30)
+            print(f"  Network error ({e.__class__.__name__}), retrying in {wait}s...", flush=True)
+            time.sleep(wait)
+            continue
 
         # Check for throttle
         errors = data.get("errors", [])
         if any(e.get("extensions", {}).get("code") == "THROTTLED" for e in errors):
             wait = 2 ** attempt
-            print(f"  Throttled, waiting {wait}s...")
+            print(f"  Throttled, waiting {wait}s...", flush=True)
             time.sleep(wait)
             continue
 
         if errors:
-            print(f"  GraphQL errors: {errors}", file=sys.stderr)
+            print(f"  GraphQL errors: {errors}", file=sys.stderr, flush=True)
         return data
 
-    print("  Max retries exceeded on throttle", file=sys.stderr)
-    return data
+    print(f"  Max retries exceeded (last error: {last_exc})", file=sys.stderr, flush=True)
+    return {}
 
 
 def fetch_all_products():
