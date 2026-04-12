@@ -1,0 +1,41 @@
+[15:07:47] ============================================================
+[15:07:47] FIX CIB==LOOSE — DRY RUN
+[15:07:47] Products to process: 10
+[15:07:47] Log: /home/tristan/Projects/8bit-legacy/data/logs/fix-cib-equals-loose-20260411_150747.log
+[15:07:47] CSV: /home/tristan/Projects/8bit-legacy/data/logs/fix-cib-equals-loose-20260411_150747.csv
+[15:07:47] ============================================================
+[15:07:50]   [1/10] 1943: The Battle of Midway - NES Game
+[15:07:50]       loose: $25.67 -> $24.99 | cib: $25.67 -> $45.99 | markets: loose=$19.01 cib=$34.23 (uplift_1.8x)
+[15:07:52]   [2/10] 7 Wonders of the Ancient World - PS2 Game
+[15:07:52]       loose: $13.99 -> $12.99 | cib: $13.99 -> $17.99 | markets: loose=$9.87 cib=$9.99 (pc_search)
+[15:07:55]   [3/10] 720 - NES Game
+[15:07:55]       loose: $7.03 -> $6.99 | cib: $7.03 -> $11.99 | markets: loose=$5.21 cib=$9.37 (uplift_1.8x)
+[15:07:59]   [4/10] A Dinosaur's Tale - Sega Genesis Game
+[15:07:59]       loose: $17.39 -> $16.99 | cib: $17.39 -> $30.99 | markets: loose=$12.88 cib=$23.19 (uplift_1.8x)
+[15:08:02]   [5/10] Academy of Champions Soccer - Wii Game
+[15:08:02]       loose: $8.99 -> $8.99 | cib: $8.99 -> $15.99 | markets: loose=$6.66 cib=$11.99 (uplift_1.8x)
+[15:08:06]   [6/10] Action Girlz Racing - Wii Game
+[15:08:06]       loose: $6.99 -> $5.99 | cib: $6.99 -> $10.99 | markets: loose=$4.59 cib=$5.00 (pc_search)
+[15:08:08]   [7/10] Activision Anthology - PS2 Game
+[15:08:08]       loose: $12.99 -> $11.99 | cib: $12.99 -> $12.99 | markets: loose=$9.00 cib=$9.82 (pc_search)
+[15:08:11]   [8/10] AFL Premiership 2006 - PS2 Game
+[15:08:11]       loose: $113.98 -> $112.99 | cib: $113.98 -> $204.99 | markets: loose=$84.43 cib=$151.97 (uplift_1.8x)
+[15:08:13]   [9/10] Agatha Christie Evil Under the Sun - Wii Game
+[15:08:13]       loose: $12.99 -> $11.99 | cib: $12.99 -> $16.99 | markets: loose=$9.00 cib=$9.07 (pc_search)
+[15:08:17]   [10/10] Air Diver - Sega Genesis Game
+[15:08:17]       loose: $9.48 -> $8.99 | cib: $9.48 -> $16.99 | markets: loose=$7.02 cib=$12.64 (uplift_1.8x)
+[15:08:17] 
+[15:08:17] ============================================================
+[15:08:17] RESULTS
+[15:08:17] ============================================================
+[15:08:17]   Total processed:            10
+[15:08:17]   No console detected:        0
+[15:08:17]   PC search found CIB data:   4
+[15:08:17]   PC search found but no CIB: 0
+[15:08:17]   PC search missed:           6
+[15:08:17]   Used 1.8x uplift fallback:  6
+[15:08:17]   CIB variant updated:        0
+[15:08:17]   Loose variant updated:      0
+[15:08:17]   No meaningful change:       0
+[15:08:17]   Errors:                     0
+[15:08:17]   Elapsed:                    0.5 min

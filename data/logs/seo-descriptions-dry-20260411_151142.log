@@ -1,0 +1,22 @@
+[15:11:42] ============================================================
+[15:11:42] SET SEO DESCRIPTIONS — DRY RUN
+[15:11:42] Mode: only missing
+[15:11:42] Log: /home/tristan/Projects/8bit-legacy/data/logs/seo-descriptions-dry-20260411_151142.log
+[15:11:42] ============================================================
+[15:11:42]   sample: .hack GU Rebirth - PS2 Game                        -> Shop .hack GU Rebirth for PS2 at 8-Bit Legacy. Authentic retro game, fast shipping and 90-day returns.
+[15:11:42]   sample: .hack Infection - PS2 Game                         -> Shop .hack Infection for PS2 at 8-Bit Legacy. Authentic retro game, fast shipping and 90-day returns.
+[15:11:42]   sample: .hack Mutation - PS2 Game                          -> Shop .hack Mutation for PS2 at 8-Bit Legacy. Authentic retro game, fast shipping and 90-day returns.
+[15:11:42]   sample: .hack Outbreak - PS2 Game                          -> Shop .hack Outbreak for PS2 at 8-Bit Legacy. Authentic retro game, fast shipping and 90-day returns.
+[15:11:42]   sample: 007 Agent Under Fire - Gamecube Game               -> Shop 007 Agent Under Fire for GameCube at 8-Bit Legacy. Authentic retro game, fast shipping and 90-day returns.
+[15:11:42]   sample: 007 Agent Under Fire - PS2 Game                    -> Shop 007 Agent Under Fire for PS2 at 8-Bit Legacy. Authentic retro game, fast shipping and 90-day returns.
+[15:11:42]   sample: 007 Everything or Nothing - Gamecube Game          -> Shop 007 Everything or Nothing for GameCube at 8-Bit Legacy. Authentic retro game, fast shipping and 90-day returns.
+[15:11:42]   sample: 007 Everything or Nothing - Xbox Game              -> Shop 007 Everything or Nothing for Xbox at 8-Bit Legacy. Authentic retro game, fast shipping and 90-day returns.
+[15:11:42] 
+[15:11:42] ============================================================
+[15:11:42] RESULTS
+[15:11:42] ============================================================
+[15:11:42]   Total scanned:        16
+[15:11:42]   Updated:              15
+[15:11:42]   Skipped (has desc):   0
+[15:11:42]   Errors:               0
+[15:11:42]   Elapsed:              0.0 min
