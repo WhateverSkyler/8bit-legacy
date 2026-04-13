@@ -46,9 +46,8 @@ Nothing substantive. Session was a read-through of project docs for context + th
 - Target state: all 7 actions show "Recording" or "No recent conversions", NOT "Inactive"
 **Why first:** The $700 promo credit (expires 2026-05-31) is worthless without conversion tracking. Every other launch step is blocked until this is green.
 
-### 🔴 2. Re-link Google Ads account (one-time blocker)
-**From yesterday's handoff, still outstanding.** Google & YouTube Shopify app is connected to `tristanaddi1@gmail.com` / account `438-063-8976` instead of target `822-210-2291` under `sideshowtristan@gmail.com`. Fix: either add `tristanaddi1@gmail.com` as admin on `822-210-2291`, OR disconnect+reconnect the Shopify app using `sideshowtristan@gmail.com`.
-**Time:** ~10 min.
+### ~~🔴 2. Re-link Google Ads account~~ ✅ RESOLVED (2026-04-13 PM)
+**Confirmed linked:** Google & YouTube → Settings shows Google Ads account **8222102291 (8-Bit Legacy)** = 822-210-2291. The correct account is connected. No action needed.
 
 ### 🟡 3. Build the two Phase 1 campaigns (Winners + Discovery)
 Only after #1 and #2 are green. Follow `docs/ads-pre-launch-checklist.md` Section F. Campaigns stay **Paused** until Section G content schedule is green.
