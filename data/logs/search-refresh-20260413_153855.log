@@ -1,0 +1,27 @@
+[15:38:55] ============================================================
+[15:38:55] SEARCH-BASED PRICE REFRESH — APPLY
+[15:38:55] Multiplier: 1.35x | Min profit: $3.00
+[15:38:55] Log: /Users/tristanaddi1/Projects/8bit-legacy/data/logs/search-refresh-20260413_153855.log
+[15:38:55] CSV: /Users/tristanaddi1/Projects/8bit-legacy/data/logs/search-refresh-20260413_153855.csv
+[15:38:55] ============================================================
+[15:38:55] Fetching all Shopify products...
+[15:39:12]   Fetched 1000 products (page 20)...
+[15:39:29]   Fetched 2000 products (page 40)...
+[15:39:49]   Fetched 3000 products (page 60)...
+[15:40:06]   Fetched 4000 products (page 80)...
+[15:40:23]   Fetched 5000 products (page 100)...
+[15:40:40]   Fetched 6000 products (page 120)...
+[15:40:56]   Fetched 6121 products (page 140)...
+[15:41:07]   Total: 6121 game products
+[15:41:07] Filtered to --only-ids-file list: 1204/6121 match
+[15:44:41]   Progress: 50/1204 | Matched: 5 | Rate: 840/hr | ETA: 82min
+[15:48:15]   Progress: 100/1204 | Matched: 13 | Rate: 840/hr | ETA: 79min
+[15:51:35]   Progress: 150/1204 | Matched: 15 | Rate: 859/hr | ETA: 74min
+[15:54:49]   Progress: 200/1204 | Matched: 16 | Rate: 876/hr | ETA: 69min
+[15:58:44]   Progress: 250/1204 | Matched: 27 | Rate: 851/hr | ETA: 67min
+[16:02:11]   Progress: 300/1204 | Matched: 33 | Rate: 854/hr | ETA: 64min
+[16:05:30]   Progress: 350/1204 | Matched: 35 | Rate: 861/hr | ETA: 60min
+[16:08:34]   Progress: 400/1204 | Matched: 39 | Rate: 874/hr | ETA: 55min
+[16:11:47]   Progress: 450/1204 | Matched: 41 | Rate: 881/hr | ETA: 51min
+[16:15:03]   Progress: 500/1204 | Matched: 45 | Rate: 884/hr | ETA: 48min
+[16:18:15]   Progress: 550/1204 | Matched: 55 | Rate: 889/hr | ETA: 44min

@@ -165,58 +165,66 @@ def title_similarity(query_title, result_title):
 # Max market price cap — anything above this needs manual review
 MAX_MARKET_PRICE = 800.0
 
-def search_pricecharting(game_title, console_name):
-    """Search PriceCharting for a specific game + console combo."""
-    query = f"{game_title} {console_name}"
-    url = f"https://www.pricecharting.com/search-products?q={quote_plus(query)}&type=videogames"
+def _query_variants(title):
+    """Yield query body variants to try when the baseline fails.
 
+    Each variant strips or normalizes one common pattern that can confuse
+    PriceCharting's exact-title search (subtitle after colon, 'The' prefix,
+    & vs 'and', first-3-words fallback for very long titles).
+    """
+    yield title  # baseline
+    if ":" in title:
+        yield title.split(":", 1)[0].strip()
+    if title.lower().startswith("the "):
+        yield title[4:]
+    if " & " in title:
+        yield title.replace(" & ", " and ", 1)
+    if " and " in title.lower():
+        yield re.sub(r"\s+and\s+", " & ", title, count=1, flags=re.IGNORECASE)
+    # Last-chance fallback for 4+ word titles — drop everything after word 3
+    words = title.split()
+    if len(words) >= 4:
+        yield " ".join(words[:3])
+
+
+def _fetch_candidates(query, console_name):
+    """Single PriceCharting search. Returns a list of candidate dicts or None."""
+    url = f"https://www.pricecharting.com/search-products?q={quote_plus(query)}&type=videogames"
     try:
         resp = requests.get(url, headers=HEADERS, timeout=15)
         resp.raise_for_status()
-    except Exception as e:
+    except Exception:
         return None
 
     soup = BeautifulSoup(resp.text, "html.parser")
     table = soup.find("table", {"id": "games_table"})
     if not table:
         return None
-
     tbody = table.find("tbody")
     if not tbody:
         return None
-
     rows = tbody.find_all("tr")
     if not rows:
         return None
 
-    # Check top results for a console match, score by title similarity
     target_console = console_name.lower().strip()
     candidates = []
-
-    for row in rows[:8]:  # Check top 8 results
+    for row in rows[:8]:
         cols = row.find_all("td")
         if len(cols) < 5:
             continue
-
         title_link = cols[1].find("a")
         if not title_link:
             continue
-
         result_title = title_link.get_text(strip=True)
         result_console = cols[2].get_text(strip=True).lower().strip() if len(cols) > 2 else ""
-
-        # Skip PAL/JP versions — we want NTSC (US) prices
         if "pal" in result_console or "jp " in result_console or "japanese" in result_console:
             continue
-
-        # Verify console matches
         if target_console not in result_console and result_console not in target_console:
             continue
-
-        similarity = title_similarity(game_title, result_title)
+        similarity = title_similarity(" ".join(query.split()[:-2]) if len(query.split()) > 2 else query, result_title)
         loose = parse_price_text(cols[3].get_text(strip=True)) if len(cols) > 3 else 0
         cib = parse_price_text(cols[4].get_text(strip=True)) if len(cols) > 4 else 0
-
         candidates.append({
             "title": result_title,
             "console": cols[2].get_text(strip=True),
@@ -225,9 +233,34 @@ def search_pricecharting(game_title, console_name):
             "new": parse_price_text(cols[5].get_text(strip=True)) if len(cols) > 5 else 0,
             "similarity": similarity,
         })
+    return candidates if candidates else None
 
+
+def search_pricecharting(game_title, console_name):
+    """Search PriceCharting for a specific game + console combo.
+
+    Tries up to ~5 query variants (baseline, colon-strip, 'The'-strip,
+    & <-> 'and' normalization, first-3-words fallback) before giving up.
+    Between attempts adds a short extra sleep to avoid burst rate-limits.
+    """
+    attempts = 0
+    candidates = None
+    for variant in _query_variants(game_title):
+        query = f"{variant} {console_name}"
+        result = _fetch_candidates(query, console_name)
+        attempts += 1
+        if result:
+            candidates = result
+            break
+        if attempts > 1:
+            time.sleep(1.2)  # extra breathing room between retries
     if not candidates:
         return None
+
+    # Re-score using the original game_title (not whatever query variant hit)
+    # so fallback queries don't artificially inflate similarity.
+    for c in candidates:
+        c["similarity"] = title_similarity(game_title, c["title"])
 
     # Pick the best title match (minimum 0.3 similarity)
     best = max(candidates, key=lambda c: c["similarity"])
