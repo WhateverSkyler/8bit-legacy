@@ -152,6 +152,9 @@ All API keys and tokens go in `config/.env` and `dashboard/.env.local` (both git
 - Automation hardened — retry logic, title matching safety, price caps, timeouts
 - First podcast episode recorded April 9, 2026
 - Dashboard deployed to VPS at 8bit.tristanaddi.com (24/7 scheduler running)
+- Google Customer Reviews opt-in — live via Shopify Custom Pixel (ID: 149717026), fires on checkout_completed
+- Variant price display fix — added `class="money"` to ProductPrice spans in 3 section files
+- Sale price variant display fix — added show/hide logic for compare_at_price in selectCallback across 3 section files. Theme: "Copy of bs-kidxtore-home6-v1-7-price-fix" (ID: 185256640546)
 - Collection sorting — all 59 Shopify collections sorted by popularity (iconic title boost + price score); Mario/Zelda/Sonic/Final Fantasy/Castlevania now at top of each relevant collection
 - Dashboard pages added — /scheduler (live job status, manual Run Now, circuit breaker view), /pokemon (set import UI with dry-run)
 - Dashboard inventory detail page rebuilt — replaced static mockup with live variant/profit/margin table loaded from Shopify

@@ -1,0 +1,876 @@
+[
+  {
+    "id": "gid://shopify/Product/7956626767906",
+    "title": "Buzz! Master Quiz - PSP Game",
+    "tags": [
+      "category:game",
+      "console:psp",
+      "margin:medium",
+      "price_tier:under_20",
+      "PSP"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794778685474",
+    "loose_price": 4.94,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-25",
+    "cib_id": "gid://shopify/ProductVariant/43794645155874",
+    "cib_price": 4.99,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-13"
+  },
+  {
+    "id": "gid://shopify/Product/7956664811554",
+    "title": "Flow Urban Dance Uprising - PS2 Game",
+    "tags": [
+      "category:game",
+      "console:ps2",
+      "margin:medium",
+      "Playstation 2",
+      "price_tier:under_20"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794816499746",
+    "loose_price": 6.59,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-25",
+    "cib_id": "gid://shopify/ProductVariant/43794594332706",
+    "cib_price": 6.99,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-13"
+  },
+  {
+    "id": "gid://shopify/Product/7956674117666",
+    "title": "Guitar Hero Encore Rocks the 80's - PS2 Game",
+    "tags": [
+      "category:game",
+      "console:ps2",
+      "margin:medium",
+      "Playstation 2",
+      "price_tier:under_20"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794825347106",
+    "loose_price": 10.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-13",
+    "cib_id": "gid://shopify/ProductVariant/43794584109090",
+    "cib_price": 10.99,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956678606882",
+    "title": "High School Musical 3 Senior Year Dance - PS2 Game",
+    "tags": [
+      "category:game",
+      "console:ps2",
+      "margin:medium",
+      "Playstation 2",
+      "price_tier:under_20"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794829803554",
+    "loose_price": 6.94,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-25",
+    "cib_id": "gid://shopify/ProductVariant/43794578964514",
+    "cib_price": 6.99,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-13"
+  },
+  {
+    "id": "gid://shopify/Product/7956688142370",
+    "title": "Just Dance 2016 - Wii Game",
+    "tags": [
+      "category:game",
+      "console:wii",
+      "margin:medium",
+      "price_tier:under_20",
+      "Wii"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794838519842",
+    "loose_price": 20.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-13",
+    "cib_id": "gid://shopify/ProductVariant/43794568544290",
+    "cib_price": 20.99,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956688338978",
+    "title": "Just Dance 4 - Wii U Game",
+    "tags": [
+      "category:game",
+      "console:wii-u",
+      "margin:medium",
+      "price_tier:under_20",
+      "Wii U"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794838716450",
+    "loose_price": 12.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-13",
+    "cib_id": "gid://shopify/ProductVariant/43794568347682",
+    "cib_price": 12.99,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-13"
+  },
+  {
+    "id": "gid://shopify/Product/7956695941154",
+    "title": "LEGO Star Wars The Force Awakens - Wii U Game",
+    "tags": [
+      "category:game",
+      "console:wii-u",
+      "margin:medium",
+      "price_tier:under_20",
+      "Wii U"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794846613538",
+    "loose_price": 7.91,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-25",
+    "cib_id": "gid://shopify/ProductVariant/43794558517282",
+    "cib_price": 7.99,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-13"
+  },
+  {
+    "id": "gid://shopify/Product/7956794769442",
+    "title": "The Sims 2: Pets - Gamecube Game",
+    "tags": [
+      "category:game",
+      "console:gamecube",
+      "Gamecube",
+      "margin:medium",
+      "price_tier:under_20"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794985975842",
+    "loose_price": 14.74,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-14",
+    "cib_id": "gid://shopify/ProductVariant/43794401198114",
+    "cib_price": 14.99,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-13"
+  },
+  {
+    "id": "gid://shopify/Product/7956600651810",
+    "title": "688 Attack Sub - Sega Genesis Game",
+    "tags": [
+      "category:game",
+      "console:genesis",
+      "margin:medium",
+      "price_tier:under_20",
+      "Sega Genesis"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794753323042",
+    "loose_price": 11.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794686705698",
+    "cib_price": 9.02,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956600815650",
+    "title": "8 Eyes - NES Game",
+    "tags": [
+      "category:game",
+      "console:nes",
+      "margin:medium",
+      "NES (Nintendo Entertainment System)",
+      "price_tier:under_20"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794753486882",
+    "loose_price": 20.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794686476322",
+    "cib_price": 17.4,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956600848418",
+    "title": "A Bug's Life - Gameboy Color Game",
+    "tags": [
+      "category:game",
+      "console:gbc",
+      "Gameboy Color",
+      "margin:medium",
+      "price_tier:under_20"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794753519650",
+    "loose_price": 7.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794686443554",
+    "cib_price": 6.6,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956601077794",
+    "title": "AAAHH Real Monsters - SNES Game",
+    "tags": [
+      "category:game",
+      "console:snes",
+      "margin:medium",
+      "price_tier:under_20",
+      "SNES (Super Nintendo Entertainment System)"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794753781794",
+    "loose_price": 18.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794686148642",
+    "cib_price": 17.08,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956601110562",
+    "title": "Abadox - NES Game",
+    "tags": [
+      "category:game",
+      "console:nes",
+      "margin:medium",
+      "NES (Nintendo Entertainment System)",
+      "price_tier:under_20"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794753814562",
+    "loose_price": 22.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794686115874",
+    "cib_price": 15.14,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956601864226",
+    "title": "ActRaiser - SNES Game",
+    "tags": [
+      "category:game",
+      "console:snes",
+      "margin:medium",
+      "price_tier:over_50",
+      "SNES (Super Nintendo Entertainment System)"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794754568226",
+    "loose_price": 62.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794685198370",
+    "cib_price": 60.23,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956601896994",
+    "title": "ActRaiser 2 - SNES Game",
+    "tags": [
+      "category:game",
+      "console:snes",
+      "margin:medium",
+      "price_tier:20_to_50",
+      "SNES (Super Nintendo Entertainment System)"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794754535458",
+    "loose_price": 54.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794685165602",
+    "cib_price": 49.99,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956602322978",
+    "title": "Adventure Island 3 - NES Game",
+    "tags": [
+      "category:game",
+      "console:nes",
+      "margin:medium",
+      "NES (Nintendo Entertainment System)",
+      "price_tier:over_50"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794754994210",
+    "loose_price": 108.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794684739618",
+    "cib_price": 97.88,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956602585122",
+    "title": "Adventures of Dino Riki - NES Game",
+    "tags": [
+      "category:game",
+      "console:nes",
+      "margin:medium",
+      "NES (Nintendo Entertainment System)",
+      "price_tier:under_20"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794755780642",
+    "loose_price": 16.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794684215330",
+    "cib_price": 14.5,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956602617890",
+    "title": "Adventures of Dr Franken - SNES Game",
+    "tags": [
+      "category:game",
+      "console:snes",
+      "margin:medium",
+      "price_tier:under_20",
+      "SNES (Super Nintendo Entertainment System)"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794755813410",
+    "loose_price": 20.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794684182562",
+    "cib_price": 17.4,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956603043874",
+    "title": "Aero the Acro-Bat - SNES Game",
+    "tags": [
+      "category:game",
+      "console:snes",
+      "margin:medium",
+      "price_tier:under_20",
+      "SNES (Super Nintendo Entertainment System)"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794756272162",
+    "loose_price": 16.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794683723810",
+    "cib_price": 14.49,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956603076642",
+    "title": "Aero the Acro-Bat 2 - SNES Game",
+    "tags": [
+      "category:game",
+      "console:snes",
+      "margin:medium",
+      "price_tier:over_50",
+      "SNES (Super Nintendo Entertainment System)"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794756206626",
+    "loose_price": 93.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794683691042",
+    "cib_price": 91.9,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956604026914",
+    "title": "Aladdin - SNES Game",
+    "tags": [
+      "category:game",
+      "console:snes",
+      "margin:medium",
+      "price_tier:20_to_50",
+      "SNES (Super Nintendo Entertainment System)"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794757255202",
+    "loose_price": 21.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794682609698",
+    "cib_price": 20.95,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956605567010",
+    "title": "All-Star Baseball 2001 - Gameboy Color Game",
+    "tags": [
+      "category:game",
+      "console:gbc",
+      "Gameboy Color",
+      "margin:medium",
+      "price_tier:under_20"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794758172706",
+    "loose_price": 8.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794681593890",
+    "cib_price": 6.82,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956605730850",
+    "title": "All-Star Baseball 2004 - Xbox Game",
+    "tags": [
+      "category:game",
+      "console:xbox",
+      "margin:medium",
+      "price_tier:under_20",
+      "Xbox"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794758303778",
+    "loose_price": 6.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794681462818",
+    "cib_price": 5.18,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956606058530",
+    "title": "Alone In The Dark The New Nightmare - Gameboy Color Game",
+    "tags": [
+      "category:game",
+      "console:gbc",
+      "Gameboy Color",
+      "margin:medium",
+      "price_tier:20_to_50"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794758664226",
+    "loose_price": 44.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794681135138",
+    "cib_price": 36.76,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956606681122",
+    "title": "American Dragon Jake Long Rise of the Huntsclan - GBA Game",
+    "tags": [
+      "category:game",
+      "console:gba",
+      "Gameboy Advance",
+      "margin:medium",
+      "price_tier:under_20"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794759254050",
+    "loose_price": 10.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794680545314",
+    "cib_price": 8.24,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956607303714",
+    "title": "Animaniacs - SNES Game",
+    "tags": [
+      "category:game",
+      "console:snes",
+      "margin:medium",
+      "price_tier:under_20",
+      "SNES (Super Nintendo Entertainment System)"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794759942178",
+    "loose_price": 16.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794679857186",
+    "cib_price": 15.91,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956607893538",
+    "title": "Aquatic Games Starring James Pond - Sega Genesis Game",
+    "tags": [
+      "category:game",
+      "console:genesis",
+      "margin:medium",
+      "price_tier:under_20",
+      "Sega Genesis"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794760663074",
+    "loose_price": 13.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794679136290",
+    "cib_price": 11.59,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956609335330",
+    "title": "Army Men Air Combat Elite Missions - Gamecube Game",
+    "tags": [
+      "category:game",
+      "console:gamecube",
+      "Gamecube",
+      "margin:medium",
+      "price_tier:under_20"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794762006562",
+    "loose_price": 26.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794677006370",
+    "cib_price": 18.6,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956610514978",
+    "title": "Atari Anniversary Edition - Sega Dreamcast Game",
+    "tags": [
+      "category:game",
+      "console:dreamcast",
+      "margin:medium",
+      "price_tier:under_20",
+      "Sega Dreamcast"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794763317282",
+    "loose_price": 12.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794675564578",
+    "cib_price": 9.58,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956612284450",
+    "title": "Bad Boys Miami Takedown - Gamecube Game",
+    "tags": [
+      "category:game",
+      "console:gamecube",
+      "Gamecube",
+      "margin:medium",
+      "price_tier:under_20"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794765021218",
+    "loose_price": 20.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794673434658",
+    "cib_price": 14.71,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956614709282",
+    "title": "Batman Returns - SNES Game",
+    "tags": [
+      "category:game",
+      "console:snes",
+      "margin:medium",
+      "price_tier:20_to_50",
+      "SNES (Super Nintendo Entertainment System)"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794767642658",
+    "loose_price": 50.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794668683298",
+    "cib_price": 28.99,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956619132962",
+    "title": "Bionic Commando Elite Forces - Gameboy Color Game",
+    "tags": [
+      "category:game",
+      "console:gbc",
+      "Gameboy Color",
+      "margin:medium",
+      "price_tier:20_to_50"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794771017762",
+    "loose_price": 42.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794656919586",
+    "cib_price": 28.99,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956625391650",
+    "title": "Bugs Bunny Crazy Castle - NES Game",
+    "tags": [
+      "category:game",
+      "console:nes",
+      "margin:medium",
+      "NES (Nintendo Entertainment System)",
+      "price_tier:under_20"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794777440290",
+    "loose_price": 26.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794646532130",
+    "cib_price": 17.39,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956628963362",
+    "title": "Captain America and the Avengers - Sega Genesis Game",
+    "tags": [
+      "category:game",
+      "console:genesis",
+      "margin:medium",
+      "price_tier:20_to_50",
+      "Sega Genesis"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794780684322",
+    "loose_price": 33.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794642927650",
+    "cib_price": 30.96,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956633255970",
+    "title": "Chuck Rock II Son of Chuck - Sega Genesis Game",
+    "tags": [
+      "category:game",
+      "console:genesis",
+      "margin:medium",
+      "price_tier:under_20",
+      "Sega Genesis"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794785009698",
+    "loose_price": 22.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794638700578",
+    "cib_price": 18.33,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956633747490",
+    "title": "Cliffhanger - Sega CD Game",
+    "tags": [
+      "category:game",
+      "console:sega-cd",
+      "margin:medium",
+      "price_tier:under_20",
+      "Sega CD"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794785501218",
+    "loose_price": 14.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794635423778",
+    "cib_price": 11.22,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956644036642",
+    "title": "Demolition Man - Sega Genesis Game",
+    "tags": [
+      "category:game",
+      "console:genesis",
+      "margin:medium",
+      "price_tier:20_to_50",
+      "Sega Genesis"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794796183586",
+    "loose_price": 54.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794615435298",
+    "cib_price": 36.18,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956655046690",
+    "title": "Ecco the Dolphin - Sega Genesis Game",
+    "tags": [
+      "category:game",
+      "console:genesis",
+      "margin:medium",
+      "price_tier:under_20",
+      "Sega Genesis"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794806505506",
+    "loose_price": 18.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794604785698",
+    "cib_price": 14.49,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956679393314",
+    "title": "Hook - SNES Game",
+    "tags": [
+      "category:game",
+      "console:snes",
+      "margin:medium",
+      "price_tier:20_to_50",
+      "SNES (Super Nintendo Entertainment System)"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794830557218",
+    "loose_price": 47.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794578145314",
+    "cib_price": 44.44,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956684931106",
+    "title": "Iron Soldier 3 - PS1 Game",
+    "tags": [
+      "category:game",
+      "console:ps1",
+      "margin:medium",
+      "Playstation",
+      "price_tier:under_20"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794834423842",
+    "loose_price": 20.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794573066274",
+    "cib_price": 16.93,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956717338658",
+    "title": "Muppet Adventure - NES Game",
+    "tags": [
+      "category:game",
+      "console:nes",
+      "margin:medium",
+      "NES (Nintendo Entertainment System)",
+      "price_tier:under_20"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794872434722",
+    "loose_price": 19.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794533548066",
+    "cib_price": 12.86,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956734345250",
+    "title": "Pac-Man 2 The New Adventures - SNES Game",
+    "tags": [
+      "category:game",
+      "console:snes",
+      "margin:medium",
+      "price_tier:under_20",
+      "SNES (Super Nintendo Entertainment System)"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794895175714",
+    "loose_price": 19.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794508546082",
+    "cib_price": 12.17,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956779597858",
+    "title": "Super Adventure Island II - SNES Game",
+    "tags": [
+      "category:game",
+      "console:snes",
+      "margin:medium",
+      "price_tier:over_50",
+      "SNES (Super Nintendo Entertainment System)"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794958942242",
+    "loose_price": 132.52,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-14",
+    "cib_id": "gid://shopify/ProductVariant/43794437177378",
+    "cib_price": 55.99,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956779663394",
+    "title": "Super Battleship - SNES Game",
+    "tags": [
+      "category:game",
+      "console:snes",
+      "margin:medium",
+      "price_tier:under_20",
+      "SNES (Super Nintendo Entertainment System)"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794959040546",
+    "loose_price": 13.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794437144610",
+    "cib_price": 10.14,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956779728930",
+    "title": "Super Bomberman - SNES Game",
+    "tags": [
+      "category:game",
+      "console:snes",
+      "margin:medium",
+      "price_tier:over_50",
+      "SNES (Super Nintendo Entertainment System)"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794959138850",
+    "loose_price": 84.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794437046306",
+    "cib_price": 66.47,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956797849634",
+    "title": "Tiny Toon Adventures Buster Busts Loose - SNES Game",
+    "tags": [
+      "category:game",
+      "console:snes",
+      "margin:medium",
+      "price_tier:under_20",
+      "SNES (Super Nintendo Entertainment System)"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794989973538",
+    "loose_price": 19.99,
+    "loose_title": "Game Only",
+    "loose_updated": "2026-04-06",
+    "cib_id": "gid://shopify/ProductVariant/43794396348450",
+    "cib_price": 18.88,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  }
+]

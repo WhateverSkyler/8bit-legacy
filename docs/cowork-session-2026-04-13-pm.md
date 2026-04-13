@@ -2,7 +2,7 @@
 
 ## Session Summary
 
-Follow-up session to the morning cowork. Three tasks from Tristan's brief, all resolved.
+Follow-up session to the morning cowork. Four tasks completed: variant price display fix, Google Customer Reviews custom pixel (live), Google Ads account verification, and sale price variant display fix (show/hide compare-at on variant switch).
 
 ---
 
@@ -37,46 +37,24 @@ Follow-up session to the morning cowork. Three tasks from Tristan's brief, all r
 
 ---
 
-## 🟡 Task 2: Google Customer Reviews Opt-in — NEEDS TRISTAN PASTE
+## ✅ Task 2: Google Customer Reviews Opt-in — LIVE VIA CUSTOM PIXEL
 
-The Shopify checkout settings page no longer exposes the classic "Additional scripts" text box for the order status page. The store is on the newer extensible checkout, which doesn't surface that field in Settings → Checkout.
+**Resolved via Shopify Custom Pixel** (Settings → Customer events → Custom pixels).
 
-**What Tristan needs to do:**
+The classic "Additional scripts" field is no longer available on extensible checkout. Instead, created a Custom Pixel named "Google Customer Reviews" (Pixel ID: 149717026) using Shopify's Web Pixel API.
 
-### Step 1: Find the Additional Scripts field
-Try one of these approaches:
-- **Option A:** Shopify admin → Settings → Checkout → scroll to "Order status page" section (may appear after clicking "Customize" on the checkout configuration)
-- **Option B:** Navigate directly to `https://admin.shopify.com/store/dpxzef-st/settings/checkout` and look for "Order processing" or "Additional scripts" — if Shopify has re-enabled it
-- **Option C:** If neither works, create a Custom Pixel in Settings → Customer events → Custom pixels tab → "Add custom pixel" and paste the script there (note: custom pixels have limited access to Liquid template variables like `{{ order.email }}`, so Option A/B is strongly preferred)
+**How it works:**
+- Subscribes to `analytics.subscribe("checkout_completed", ...)` — fires after every completed checkout
+- Loads Google's `platform.js` and renders the `surveyoptin` modal
+- Passes order ID, customer email, shipping country, estimated delivery date (7 days out), and product GTINs (from variant SKUs)
+- Merchant Center ID: 5296797260
+- Access level: Permission (not consent-gated)
 
-### Step 2: Paste this exact snippet
+**Status:** Connected and live (button shows "Disconnect" in Shopify admin).
 
-```html
-<!-- Google Customer Reviews opt-in -->
-<script src="https://apis.google.com/js/platform.js?onload=renderOptIn" async defer></script>
-<script>
-  window.renderOptIn = function() {
-    window.gapi.load('surveyoptin', function() {
-      window.gapi.surveyoptin.render({
-        "merchant_id": 5296797260,
-        "order_id": "{{ order.order_number }}",
-        "email": "{{ order.email }}",
-        "delivery_country": "{{ order.shipping_address.country_code }}",
-        "estimated_delivery_date": "{{ order.created_at | date: '%s' | plus: 604800 | date: '%Y-%m-%d' }}",
-        "products": [
-          {% for line in order.line_items %}{% if line.variant.barcode != blank %}{"gtin":"{{ line.variant.barcode }}"}{% unless forloop.last %},{% endunless %}{% endif %}{% endfor %}
-        ]
-      });
-    });
-  }
-</script>
-```
-
-### Step 3: Enable in Merchant Center
-- Go to [merchants.google.com](https://merchants.google.com) → account 5296797260
-- Navigate to Growth → Manage programs → Customer Reviews
-- Enable the program and accept the agreement
-- The snippet above satisfies the "opt-in integration" requirement
+**Remaining for Tristan:**
+- Enable the Customer Reviews program in Merchant Center (merchants.google.com → account 5296797260 → Growth → Manage programs → Customer Reviews)
+- The custom pixel satisfies the "opt-in integration" requirement
 
 ---
 
@@ -92,6 +70,41 @@ Navigated to Shopify admin → Apps → Google & YouTube → Settings.
 - Google Business Profile: tristanaddi1@gmail.com
 
 **The correct Google Ads account (822-210-2291) IS linked.** The previous audit docs flagging this as "still wrong" were stale — the issue has been resolved (likely by Tristan's manual relinking). The "Re-link Google Ads account" action item should be permanently removed from future session handoffs.
+
+---
+
+## ✅ Task 4: Sale Price Variant Display Fix — GREEN
+
+**When switching variants on sale products, the struck-through compare-at price now correctly shows/hides.**
+
+**Root cause:** Two bugs in the theme's inline `selectCallback` function:
+1. ComparePrice `<span>` elements were missing `class="money"` — needed for the theme's currency conversion system
+2. The callback had no `else` clause for `compare_at_price` — when switching from a sale variant (e.g., Game Only with compare_at) to a non-sale variant (e.g., CIB without compare_at), the old struck-through price remained visible
+
+**Fix applied to three files (same files as Task 1):**
+- `sections/bs-product.liquid`
+- `sections/product-2-columns-left.liquid`
+- `sections/product-2-columns-right.liquid`
+
+**Changes per file:**
+1. Added `class="money"` to both ComparePrice spans (the `old-price` visible one and the `hide` fallback one)
+2. Replaced the `if (variant.compare_at_price > variant.price)` block with full show/hide logic:
+   - If variant has compare_at_price > price: update text, show compare price, show sale container
+   - Else: hide compare price, remove sale styling
+
+**Process:**
+1. Duplicated live theme `bs-kidxtore-home6-v1-7-price-fix` (ID: 185254740002)
+2. Created `Copy of bs-kidxtore-home6-v1-7-price-fix` (ID: 185256640546)
+3. Applied both fixes via `themeFilesUpsert` mutation
+4. Tested on preview theme against two products:
+   - **Resident Evil 2 (PS1):** Game Only → $52.99 + ~~$66.50~~ ✓ | CIB → $109.99 alone ✓
+   - **Chrono Trigger (SNES):** Game Only → $279.99 + ~~$299.99~~ ✓ | CIB → $502.99 alone ✓
+5. Published as MAIN via `themePublish` mutation
+
+**Current theme state (updated):**
+- **MAIN (live):** `Copy of bs-kidxtore-home6-v1-7-price-fix` (ID: 185256640546)
+- **UNPUBLISHED (backup 1):** `bs-kidxtore-home6-v1-7-price-fix` (ID: 185254740002) — has Task 1 fix only
+- **UNPUBLISHED (backup 2):** `bs-kidxtore-home6-v1-7` (ID: 173344522274) — original, no fixes
 
 ---
 
@@ -134,8 +147,9 @@ All six spans now have `class="money"`.
 
 ## Action Items for Next Session
 
-- [ ] Tristan: Paste Google Customer Reviews snippet (Task 2 above)
-- [ ] Tristan: Enable Customer Reviews program in Merchant Center
-- [ ] Monitor variant price display on live site — confirm no regressions
-- [ ] Consider renaming the new live theme to something cleaner (e.g., back to `bs-kidxtore-home6-v1-7`)
+- [ ] Tristan: Enable Customer Reviews program in Merchant Center (pixel is already live)
+- [ ] Monitor variant price + sale display on live site — confirm no regressions
+- [ ] Consider renaming live theme to something cleaner (e.g., `bs-kidxtore-home6-v1-7`)
+- [ ] Consider deleting oldest backup theme (173344522274) once confident in the fixes
 - [ ] Note: The "FREE shipping over $50" badge on product pages still shows $50 even though the threshold was changed to $35 in the AM session. This is likely a hardcoded string in the theme that needs a separate fix.
+- [ ] Note: The "-20%" sale badge on the product image doesn't update when switching variants — it's rendered server-side in Liquid. Low priority but worth noting.

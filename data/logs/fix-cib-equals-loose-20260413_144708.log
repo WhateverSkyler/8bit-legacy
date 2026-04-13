@@ -1,0 +1,61 @@
+[14:47:08] ============================================================
+[14:47:08] FIX CIB==LOOSE — DRY RUN
+[14:47:08] Products to process: 46
+[14:47:08] Log: /Users/tristanaddi1/Projects/8bit-legacy/data/logs/fix-cib-equals-loose-20260413_144708.log
+[14:47:08] CSV: /Users/tristanaddi1/Projects/8bit-legacy/data/logs/fix-cib-equals-loose-20260413_144708.csv
+[14:47:08] ============================================================
+[14:47:10]   [1/46] Buzz! Master Quiz - PSP Game
+[14:47:10]       loose: $4.94 -> $3.99 | cib: $4.99 -> $8.99 | markets: loose=$3.32 cib=$3.66 (pc_search)
+[14:47:12]   [2/46] Flow Urban Dance Uprising - PS2 Game
+[14:47:12]       loose: $6.59 -> $5.99 | cib: $6.99 -> $10.99 | markets: loose=$4.89 cib=$4.99 (pc_search)
+[14:47:14]   [3/46] Guitar Hero Encore Rocks the 80's - PS2 Game
+[14:47:14]       loose: $10.99 -> $10.99 | cib: $10.99 -> $18.99 | markets: loose=$8.14 cib=$14.65 (uplift_1.8x)
+[14:47:16]   [4/46] High School Musical 3 Senior Year Dance - PS2 Game
+[14:47:16]       loose: $6.94 -> $5.99 | cib: $6.99 -> $11.99 | markets: loose=$5.14 cib=$9.25 (uplift_1.8x)
+[14:47:18]   [5/46] Just Dance 2016 - Wii Game
+[14:47:18]       loose: $20.99 -> $20.99 | cib: $20.99 -> $36.99 | markets: loose=$15.55 cib=$27.99 (uplift_1.8x)
+[14:47:21]   [6/46] Just Dance 4 - Wii U Game
+[14:47:21]       loose: $12.99 -> $12.99 | cib: $12.99 -> $22.99 | markets: loose=$9.62 cib=$17.32 (uplift_1.8x)
+[14:47:23]   [7/46] LEGO Star Wars The Force Awakens - Wii U Game
+[14:47:23]       loose: $7.91 -> $6.99 | cib: $7.99 -> $11.99 | markets: loose=$5.66 cib=$5.69 (pc_search)
+[14:47:25]   [8/46] The Sims 2: Pets - Gamecube Game
+[14:47:25]       loose: $14.74 -> $13.99 | cib: $14.99 -> $25.99 | markets: loose=$10.92 cib=$19.65 (uplift_1.8x)
+[14:47:27]   [9/46] 688 Attack Sub - Sega Genesis Game
+[14:47:27]       loose: $11.99 -> $11.99 | cib: $9.02 -> $20.99 | markets: loose=$8.88 cib=$15.99 (uplift_1.8x)
+[14:47:29]   [10/46] 8 Eyes - NES Game
+[14:47:29]       loose: $20.99 -> $20.99 | cib: $17.40 -> $36.99 | markets: loose=$15.55 cib=$27.99 (uplift_1.8x)
+[14:47:32]   [11/46] A Bug's Life - Gameboy Color Game
+[14:47:32]       loose: $7.99 -> $7.99 | cib: $6.60 -> $13.99 | markets: loose=$5.92 cib=$10.65 (uplift_1.8x)
+[14:47:34]   [12/46] AAAHH Real Monsters - SNES Game
+[14:47:34]       loose: $18.99 -> $18.99 | cib: $17.08 -> $33.99 | markets: loose=$14.07 cib=$25.32 (uplift_1.8x)
+[14:47:37]   [13/46] Abadox - NES Game
+[14:47:37]       loose: $22.99 -> $22.99 | cib: $15.14 -> $40.99 | markets: loose=$17.03 cib=$30.65 (uplift_1.8x)
+[14:47:42]   [14/46] ActRaiser - SNES Game
+[14:47:42]       loose: $62.99 -> $62.99 | cib: $60.23 -> $112.99 | markets: loose=$46.66 cib=$83.99 (uplift_1.8x)
+[14:47:44]   [15/46] ActRaiser 2 - SNES Game
+[14:47:44]       loose: $54.99 -> $54.99 | cib: $49.99 -> $97.99 | markets: loose=$40.73 cib=$73.32 (uplift_1.8x)
+[14:47:46]   [16/46] Adventure Island 3 - NES Game
+[14:47:46]       loose: $108.99 -> $108.99 | cib: $97.88 -> $195.99 | markets: loose=$80.73 cib=$145.32 (uplift_1.8x)
+[14:47:48]   [17/46] Adventures of Dino Riki - NES Game
+[14:47:48]       loose: $16.99 -> $16.99 | cib: $14.50 -> $29.99 | markets: loose=$12.59 cib=$22.65 (uplift_1.8x)
+[14:47:51]   [18/46] Adventures of Dr Franken - SNES Game
+[14:47:51]       loose: $20.99 -> $20.99 | cib: $17.40 -> $36.99 | markets: loose=$15.55 cib=$27.99 (uplift_1.8x)
+[14:47:54]   [19/46] Aero the Acro-Bat - SNES Game
+[14:47:54]       loose: $16.99 -> $16.99 | cib: $14.49 -> $29.99 | markets: loose=$12.59 cib=$22.65 (uplift_1.8x)
+[14:47:57]   [20/46] Aero the Acro-Bat 2 - SNES Game
+[14:47:57]       loose: $93.99 -> $93.99 | cib: $91.90 -> $168.99 | markets: loose=$69.62 cib=$125.32 (uplift_1.8x)
+[14:49:16] 
+[14:49:16] ============================================================
+[14:49:16] RESULTS
+[14:49:16] ============================================================
+[14:49:16]   Total processed:            46
+[14:49:16]   No console detected:        0
+[14:49:16]   PC search found CIB data:   4
+[14:49:16]   PC search found but no CIB: 0
+[14:49:16]   PC search missed:           42
+[14:49:16]   Used 1.8x uplift fallback:  42
+[14:49:16]   CIB variant updated:        0
+[14:49:16]   Loose variant updated:      0
+[14:49:16]   No meaningful change:       0
+[14:49:16]   Errors:                     0
+[14:49:16]   Elapsed:                    2.1 min
