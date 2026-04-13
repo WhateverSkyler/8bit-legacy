@@ -1,0 +1,52 @@
+/Users/tristanaddi1/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+Scanning loose variants for price updatedAt distribution...
+  scanned 500 | multi=500 | stale_may_2025=83
+  scanned 1000 | multi=1000 | stale_may_2025=208
+  scanned 1500 | multi=1500 | stale_may_2025=345
+  scanned 2000 | multi=2000 | stale_may_2025=465
+  scanned 2500 | multi=2500 | stale_may_2025=614
+  scanned 3000 | multi=3000 | stale_may_2025=743
+  scanned 3500 | multi=3500 | stale_may_2025=920
+  scanned 4000 | multi=4000 | stale_may_2025=1051
+  scanned 4500 | multi=4500 | stale_may_2025=1178
+  scanned 5000 | multi=5000 | stale_may_2025=1317
+  scanned 5500 | multi=5500 | stale_may_2025=1452
+  scanned 6000 | multi=6000 | stale_may_2025=1578
+  scanned 6500 | multi=6112 | stale_may_2025=1618
+  scanned 7000 | multi=6112 | stale_may_2025=1618
+
+============================================================
+  Total active products:        7290
+  Multi-variant retro games:    6112
+  Loose stale (May 2025):       1618
+  Loose stale (pre-2026):       1632
+  Loose == CIB (should be 36):  32
+============================================================
+
+Loose variant updatedAt by month (top 20):
+  2026-04   4474
+  2025-05   1618
+  2026-01      3
+  2025-07      3
+  2025-10      3
+  2025-09      3
+  2025-08      2
+  2026-02      2
+  2025-12      2
+  2025-06      1
+  2026-03      1
+
+Sample of stale (May 2025) loose variants:
+  2025-05-25  $  14.38  007 GoldenEye - Wii Game
+  2025-05-25  $   8.30  007 Quantum of Solace - Wii Game
+  2025-05-25  $  18.98  102 Dalmatians Puppies to the Rescue - PS1 Game
+  2025-05-25  $  25.67  1943: The Battle of Midway - NES Game
+  2025-05-25  $   7.58  2Xtreme - PS1 Game
+
+Sample of recently-refreshed (Apr 2026) loose variants:
+  2026-04-06  $  13.99  .hack GU Rebirth - PS2 Game
+  2026-04-06  $  17.99  .hack Infection - PS2 Game
+  2026-04-06  $  36.99  .hack Mutation - PS2 Game
+
+Wrote 1632 stale product IDs to /Users/tristanaddi1/Projects/8bit-legacy/data/stale-loose-product-ids.json

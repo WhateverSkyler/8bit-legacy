@@ -3,7 +3,7 @@
 **For:** Claude Code running on Tristan's Mac with browser/UI automation
 **From:** Claude Opus 4.6 running on the laptop (same repo, 8bit-legacy)
 **Written:** 2026-04-13 09:55 AM EDT
-**Goal of this session:** Unblock Google Ads launch (conversion tracking + account linking), ship the pre-approved trust signal changes, and knock out two homepage/cart fixes while the other Claude handles pricing work in the terminal.
+**Goal of this session:** Unblock Google Ads launch (conversion tracking + account linking), ship the pre-approved trust signal changes, and knock out the cart-footer spacing fix while the other Claude handles pricing work in the terminal.
 
 ---
 
@@ -163,22 +163,77 @@ Tristan has already signed off on these. Just execute. Do NOT ask for re-approva
 
 ---
 
-## Task 5 — Delete 2 empty homepage banner sections (PRIORITY: 🟢 MEDIUM, ~5 min)
+## Task 5 — 🚨 Product page variant price display bug (PRIORITY: 🔴 CRITICAL, investigate + fix)
 
-**The problem:** Two `bs_banner_three_image` sections render at 0px height between Deals of the Week → GameCube and GameCube → Nintendo Classics. They're placeholder banner slots that were never populated. They create awkward whitespace that makes the homepage feel "half-finished" (per Tristan's own words).
+**Do this AFTER Tasks 1–4 are shipped.** This is the biggest find of the day.
 
-**Full context:** `docs/homepage-redesign-notes.md` Issue 1.
+### The bug
 
-1. Shopify admin → Online Store → Themes → Customize
-2. Homepage → scroll the sections panel on the left
-3. Find the two empty sections with keys:
-   - `bs_banner_three_image_cxQzxU` (between DotW and GameCube)
-   - `bs_banner_three_image_nX4pqz` (between GameCube and Nintendo Classics)
-4. Click each → three-dot menu → **Remove section**
-5. Preview the homepage — flow should be: Hero → Platform icons → Deals of the Week → GameCube → Nintendo Classics → Sony Classics → Footer
-6. Save / Publish
+Backend is correct — each multi-variant product has separate Loose and CIB prices (verified 99.1% of 6,081 retro games have CIB > Loose, confirmed via live Shopify API 2026-04-13 10:58 AM). But **on the storefront product page, the displayed price does NOT change when the customer toggles between "Game Only" and "Complete (CIB)"** variants. Same number shown for both.
 
-Do NOT touch any other homepage section. Issues 2–5 from `homepage-redesign-notes.md` are parked.
+Tristan confirmed this live at 11:05 AM on `Phantasy Star Online Episode I & II - Gamecube Game` (`phantasy-star-online-episode-i-ii-gamecube-game`). Backend: Game Only $162.99, Complete (CIB) $303.99. Frontend: shows the same price regardless of variant selection.
+
+This means every customer shopping the store sees "no premium for CIB" — the entire CIB pricing strategy is invisible. Almost certainly a major conversion killer and a direct contributor to the cold-traffic diagnosis in `docs/google-ads-launch-plan-v2.md`.
+
+### Reproduce
+
+1. Open https://8bitlegacy.com/products/phantasy-star-online-episode-i-ii-gamecube-game in an incognito window
+2. Note the price shown with "Game Only" selected
+3. Switch the variant selector to "Complete (CIB)"
+4. Confirm: price display does NOT update (stays at the Game Only price or a wrong value)
+
+Repeat on 2-3 more random products (pick from homepage Deals of the Week or Nintendo/Sony Classics grids) to confirm it's theme-wide, not product-specific.
+
+### Diagnose
+
+The theme is 8bit-legacy (Shopify theme id `23583179538466`). Likely suspects:
+
+1. **`product.liquid` / `product-form.liquid` / `price.liquid`** — the price element isn't listening for the `variant:change` JavaScript event
+2. **Theme's variant selector JS** — the `<variant-radios>` / `<variant-selects>` custom element isn't firing the price-update event
+3. **Cached JSON `[data-product-json]`** — the variant data block at page load may have all variants rendered with the same price (theme bug in the Liquid layer)
+4. **Tree-shaken JS** — a previous theme edit may have removed the price-refresh logic
+
+### Investigate (Shopify admin → Online Store → Themes → Edit code)
+
+1. Open the live theme's **snippets/** and **sections/** — search for `product-price`, `price-update`, `variant:change`, `variantChange`
+2. Open the `product.liquid` template and the product-detail section. Find where `{{ current_variant.price }}` is rendered.
+3. Open `assets/global.js` / `assets/theme.js` (whatever name the theme uses) and grep for `price` and `variant`. Confirm there is an event listener that reads `e.detail.variant.price` (or similar) and writes it to the price element.
+4. Check `[data-product-json]` in a live product page — inspect the script tag that contains the product JSON. Confirm each variant actually has its own price in that block (it should — the backend data is right, but a theme bug could be flattening it).
+5. Open the Dawn theme baseline at https://github.com/Shopify/dawn — diff the expected structure against the 8bit-legacy theme to see what was modified.
+
+### Fix
+
+Once root cause is pinned, the fix is likely one of:
+
+- **If a JS event listener is missing or broken:** add/restore the listener, usually in `assets/product-form.js` or similar. Pattern: on `variant:change` event, update the `[data-product-price]` element's innerText to `formatMoney(e.detail.variant.price)`.
+- **If Liquid is flattening variants:** fix the JSON block in `product.liquid` to emit each variant's real price instead of a single shared price.
+- **If the price element itself isn't getting updated:** ensure the element has the correct data attribute the JS listens for (e.g. `data-product-price`), and that the listener has the right selector.
+
+### Test + ship
+
+1. **Always duplicate the live theme first** (Online Store → Themes → ⋯ → Duplicate). Work on the duplicate.
+2. Apply the fix to the duplicate.
+3. Preview on desktop (1440w) and mobile (375w):
+   - Click "Game Only" → confirm correct loose price displays
+   - Click "Complete (CIB)" → confirm CIB price displays (higher)
+   - Toggle back → confirm it updates again
+   - Test 5 different products across Nintendo, Sony, and Pokemon collections
+4. Also verify **cart + checkout** show the correct price after variant change (the bug may extend past the product page if it's a JSON flattening issue).
+5. If all green → publish the duplicate theme.
+
+### If it's beyond a quick fix
+
+If this is a deeper template rewrite than ~30 min, **stop** and write the diagnosis to `docs/variant-price-display-bug-2026-04-13.md` with:
+- Root cause
+- Proposed fix approach with complexity estimate
+- Any files that need changing
+- Whether we should keep searching OR punt to a Shopify theme dev
+
+Then commit + push and let Tristan decide next steps.
+
+### Impact
+
+This is likely the single biggest conversion lever on the site. Fixing it could materially move the 22.7% margin / $101 AOV math before any ads spend happens. Worth prioritizing over anything in the Google Ads launch plan if the fix is more than trivial — a correct CIB price display is more valuable than any ad traffic.
 
 ---
 
@@ -222,7 +277,7 @@ Do NOT touch any other homepage section. Issues 2–5 from `homepage-redesign-no
 - [ ] Return policy text = 90 days everywhere visible
 - [ ] Google Customer Reviews enabled in Merchant Center `5296797260`
 - [ ] Cart page has clean spacing (if not already fixed)
-- [ ] Two empty homepage banner sections deleted
+- [ ] Product page variant selector updates displayed price when switching Loose ↔ CIB
 - [ ] Handoff doc written and pushed
 
 Shortest path to ads running tomorrow: Tasks 1 + 2 green → Tristan can build the two campaigns in Section F → flip switches after content is scheduled (Section G).

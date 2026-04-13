@@ -1,0 +1,60 @@
+[10:43:35] ============================================================
+[10:43:35] SEARCH-BASED PRICE REFRESH — APPLY
+[10:43:35] Multiplier: 1.35x | Min profit: $3.00
+[10:43:35] Log: /Users/tristanaddi1/Projects/8bit-legacy/data/logs/search-refresh-20260413_104335.log
+[10:43:35] CSV: /Users/tristanaddi1/Projects/8bit-legacy/data/logs/search-refresh-20260413_104335.csv
+[10:43:35] ============================================================
+[10:43:35] Fetching all Shopify products...
+[10:43:51]   Fetched 1000 products (page 20)...
+[10:44:08]   Fetched 2000 products (page 40)...
+[10:44:25]   Fetched 3000 products (page 60)...
+[10:44:41]   Fetched 4000 products (page 80)...
+[10:44:58]   Fetched 5000 products (page 100)...
+[10:45:15]   Fetched 6000 products (page 120)...
+[10:45:30]   Fetched 6121 products (page 140)...
+[10:45:41]   Total: 6121 game products
+[10:45:41] Filtered to --only-ids-file list: 1632/6121 match
+[10:48:23]   Progress: 50/1632 | Matched: 20 | Rate: 1111/hr | ETA: 85min
+[10:51:07]   Checkpoint: 100/1632 | Matched: 35 | Loose: 10 | CIB: 10 | Rate: 1106/hr | ETA: 83min
+[10:54:07]   Progress: 150/1632 | Matched: 46 | Rate: 1067/hr | ETA: 83min
+[10:56:44]   Progress: 200/1632 | Matched: 59 | Rate: 1086/hr | ETA: 79min
+[10:59:31]   Progress: 250/1632 | Matched: 68 | Rate: 1084/hr | ETA: 77min
+[11:02:22]   Progress: 300/1632 | Matched: 83 | Rate: 1079/hr | ETA: 74min
+[11:07:53]   Progress: 400/1632 | Matched: 108 | Rate: 1081/hr | ETA: 68min
+[11:10:39]   Progress: 450/1632 | Matched: 117 | Rate: 1082/hr | ETA: 66min
+[11:13:15]   Progress: 500/1632 | Matched: 128 | Rate: 1088/hr | ETA: 62min
+[11:15:50]   Progress: 550/1632 | Matched: 141 | Rate: 1095/hr | ETA: 59min
+[11:18:34]   Progress: 600/1632 | Matched: 158 | Rate: 1095/hr | ETA: 57min
+[11:24:00]   Progress: 700/1632 | Matched: 176 | Rate: 1096/hr | ETA: 51min
+[11:26:38]   Progress: 750/1632 | Matched: 196 | Rate: 1099/hr | ETA: 48min
+[11:29:15]   Progress: 800/1632 | Matched: 207 | Rate: 1102/hr | ETA: 45min
+[11:31:55]   Progress: 850/1632 | Matched: 217 | Rate: 1103/hr | ETA: 43min
+[11:34:30]   Progress: 900/1632 | Matched: 223 | Rate: 1106/hr | ETA: 40min
+[11:37:12]   Progress: 950/1632 | Matched: 236 | Rate: 1106/hr | ETA: 37min
+[11:40:12]   Progress: 1000/1632 | Matched: 246 | Rate: 1101/hr | ETA: 35min
+[11:42:50]   Progress: 1050/1632 | Matched: 255 | Rate: 1102/hr | ETA: 32min
+[11:45:35]   Progress: 1100/1632 | Matched: 269 | Rate: 1102/hr | ETA: 29min
+[11:48:17]   Progress: 1150/1632 | Matched: 281 | Rate: 1102/hr | ETA: 26min
+[11:51:02]   Progress: 1200/1632 | Matched: 294 | Rate: 1102/hr | ETA: 24min
+[11:53:55]   Progress: 1250/1632 | Matched: 317 | Rate: 1099/hr | ETA: 21min
+[11:56:40]   Progress: 1300/1632 | Matched: 324 | Rate: 1099/hr | ETA: 18min
+[11:59:23]   Progress: 1350/1632 | Matched: 330 | Rate: 1099/hr | ETA: 15min
+[12:02:05]   Checkpoint: 1400/1632 | Matched: 339 | Loose: 112 | CIB: 148 | Rate: 1100/hr | ETA: 13min
+[12:04:58]   Progress: 1450/1632 | Matched: 358 | Rate: 1097/hr | ETA: 10min
+[12:07:49]   Progress: 1500/1632 | Matched: 367 | Rate: 1096/hr | ETA: 7min
+[12:10:44]   Progress: 1550/1632 | Matched: 383 | Rate: 1093/hr | ETA: 5min
+[12:13:42]   Progress: 1627/1632 | Matched: 396 | Rate: 1091/hr | ETA: 0min
+[12:13:54] 
+============================================================
+[12:13:54] RESULTS
+[12:13:54] ============================================================
+[12:13:54]   Total products:       1632
+[12:13:54]   Searched:             1603
+[12:13:54]   Matched:              399
+[12:13:54]   No match:             1233
+[12:13:54]   Loose prices updated: 136
+[12:13:54]   CIB prices updated:   172
+[12:13:54]   No significant change:488
+[12:13:54]   Errors:               0
+[12:13:54]   Time: 88.2 minutes
+[12:13:54]   Match rate: 24.9%
