@@ -29,6 +29,8 @@ Usage:
     python3 scripts/fix-cib-equals-loose.py --apply         # Actually update Shopify
     python3 scripts/fix-cib-equals-loose.py --apply --uplift-only   # Skip PC search, just apply 1.8x uplift
 """
+from __future__ import annotations
+
 import argparse
 import csv
 import json

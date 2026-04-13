@@ -1,0 +1,21 @@
+[10:19:00] ============================================================
+[10:19:00] FIX CIB==LOOSE — APPLY
+[10:19:00] Products to process: 5
+[10:19:00] Log: /Users/tristanaddi1/Projects/8bit-legacy/data/logs/fix-cib-equals-loose-20260413_101900.log
+[10:19:00] CSV: /Users/tristanaddi1/Projects/8bit-legacy/data/logs/fix-cib-equals-loose-20260413_101900.csv
+[10:19:00] ============================================================
+[10:19:18] 
+[10:19:18] ============================================================
+[10:19:18] RESULTS
+[10:19:18] ============================================================
+[10:19:18]   Total processed:            5
+[10:19:18]   No console detected:        0
+[10:19:18]   PC search found CIB data:   1
+[10:19:18]   PC search found but no CIB: 0
+[10:19:18]   PC search missed:           4
+[10:19:18]   Used 1.8x uplift fallback:  4
+[10:19:18]   CIB variant updated:        4
+[10:19:18]   Loose variant updated:      0
+[10:19:18]   No meaningful change:       1
+[10:19:18]   Errors:                     0
+[10:19:18]   Elapsed:                    0.3 min

@@ -365,6 +365,7 @@ def main():
     parser = argparse.ArgumentParser(description="Search-based full price refresh")
     parser.add_argument("--apply", action="store_true", help="Apply changes to Shopify")
     parser.add_argument("--resume", action="store_true", help="Resume from last checkpoint")
+    parser.add_argument("--only-ids-file", help="JSON file with a list of Shopify product GIDs to process (filters the full catalog pull)")
     args = parser.parse_args()
 
     if not SHOPIFY_STORE or not SHOPIFY_TOKEN:
@@ -380,6 +381,13 @@ def main():
 
     init_csv()
     products = fetch_all_shopify_products()
+
+    if args.only_ids_file:
+        with open(args.only_ids_file) as f:
+            allow = set(json.load(f))
+        before = len(products)
+        products = [p for p in products if p["id"] in allow]
+        log(f"Filtered to --only-ids-file list: {len(products)}/{before} match")
 
     # Load checkpoint if resuming
     completed_ids = set()

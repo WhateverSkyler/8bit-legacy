@@ -1,0 +1,97 @@
+[
+  {
+    "id": "gid://shopify/Product/7956655308834",
+    "title": "ECW Hardcore Revolution - Sega Dreamcast Game",
+    "tags": [
+      "category:game",
+      "console:dreamcast",
+      "margin:medium",
+      "price_tier:under_20",
+      "Sega Dreamcast"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794806767650",
+    "loose_price": 15.74,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-25",
+    "cib_id": "gid://shopify/ProductVariant/43794604523554",
+    "cib_price": 15.74,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956679786530",
+    "title": "Hot Shots Tennis: Get a Grip - PSP Game",
+    "tags": [
+      "category:game",
+      "console:psp",
+      "margin:medium",
+      "price_tier:under_20",
+      "PSP"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794830983202",
+    "loose_price": 7.02,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-25",
+    "cib_id": "gid://shopify/ProductVariant/43794577719330",
+    "cib_price": 7.02,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956679950370",
+    "title": "Hot Wheels Stunt Track Driver - Gameboy Color Game",
+    "tags": [
+      "category:game",
+      "console:gbc",
+      "Gameboy Color",
+      "margin:medium",
+      "price_tier:under_20"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794831147042",
+    "loose_price": 4.71,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-25",
+    "cib_id": "gid://shopify/ProductVariant/43794577391650",
+    "cib_price": 4.71,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956720779298",
+    "title": "NBA 09 The Inside - PS2 Game",
+    "tags": [
+      "category:game",
+      "console:ps2",
+      "margin:medium",
+      "Playstation 2",
+      "price_tier:under_20"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794875744290",
+    "loose_price": 8.87,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-25",
+    "cib_id": "gid://shopify/ProductVariant/43794529157154",
+    "cib_price": 8.87,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  },
+  {
+    "id": "gid://shopify/Product/7956720812066",
+    "title": "NBA 09 The Inside - PSP Game",
+    "tags": [
+      "category:game",
+      "console:psp",
+      "margin:medium",
+      "price_tier:under_20",
+      "PSP"
+    ],
+    "loose_id": "gid://shopify/ProductVariant/43794875777058",
+    "loose_price": 5.28,
+    "loose_title": "Game Only",
+    "loose_updated": "2025-05-25",
+    "cib_id": "gid://shopify/ProductVariant/43794529124386",
+    "cib_price": 5.28,
+    "cib_title": "Complete (CIB)",
+    "cib_updated": "2026-04-11"
+  }
+]

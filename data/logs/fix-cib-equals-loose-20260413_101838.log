@@ -1,0 +1,29 @@
+[10:18:38] ============================================================
+[10:18:38] FIX CIB==LOOSE — DRY RUN
+[10:18:38] Products to process: 5
+[10:18:38] Log: /Users/tristanaddi1/Projects/8bit-legacy/data/logs/fix-cib-equals-loose-20260413_101838.log
+[10:18:38] CSV: /Users/tristanaddi1/Projects/8bit-legacy/data/logs/fix-cib-equals-loose-20260413_101838.csv
+[10:18:38] ============================================================
+[10:18:44]   [2/5] Hot Shots Tennis: Get a Grip - PSP Game
+[10:18:44]       loose: $7.02 -> $6.99 | cib: $7.02 -> $11.99 | markets: loose=$5.20 cib=$9.36 (uplift_1.8x)
+[10:18:46]   [3/5] Hot Wheels Stunt Track Driver - Gameboy Color Game
+[10:18:46]       loose: $4.71 -> $3.99 | cib: $4.71 -> $7.99 | markets: loose=$3.49 cib=$6.28 (uplift_1.8x)
+[10:18:49]   [4/5] NBA 09 The Inside - PS2 Game
+[10:18:49]       loose: $8.87 -> $7.99 | cib: $8.87 -> $14.99 | markets: loose=$6.57 cib=$11.83 (uplift_1.8x)
+[10:18:53]   [5/5] NBA 09 The Inside - PSP Game
+[10:18:53]       loose: $5.28 -> $4.99 | cib: $5.28 -> $8.99 | markets: loose=$3.91 cib=$7.04 (uplift_1.8x)
+[10:18:53] 
+[10:18:53] ============================================================
+[10:18:53] RESULTS
+[10:18:53] ============================================================
+[10:18:53]   Total processed:            5
+[10:18:53]   No console detected:        0
+[10:18:53]   PC search found CIB data:   1
+[10:18:53]   PC search found but no CIB: 0
+[10:18:53]   PC search missed:           4
+[10:18:53]   Used 1.8x uplift fallback:  4
+[10:18:53]   CIB variant updated:        0
+[10:18:53]   Loose variant updated:      0
+[10:18:53]   No meaningful change:       1
+[10:18:53]   Errors:                     0
+[10:18:53]   Elapsed:                    0.3 min
