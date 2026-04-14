@@ -72,22 +72,35 @@ def walk_fix_cib_history():
 
 
 def walk_search_refresh_history():
-    """Any product that got a real PriceCharting match via search-price-refresh
-    OVERRIDES a prior uplift_1.8x treatment. Walk those CSVs too, with the
-    same 'latest wins' rule, but these are treated as `pc_search` source."""
+    """Any product that got a real PriceCharting/eBay match via a refresh script
+    OVERRIDES a prior uplift_1.8x treatment. Walk both legacy search-refresh-*.csv
+    and the newer refresh-unified-*.csv logs, same 'latest wins' rule.
+
+    APPLIED rows are real-market writes. NO_CHANGE rows ALSO count as overrides:
+    they prove the current price already matches real market data (so the earlier
+    synthetic treatment is effectively validated/replaced, or never actually
+    caused the mis-price)."""
     latest = {}
-    for csv_path in sorted(PROJECT.glob("data/logs/search-refresh-*.csv"),
-                           key=parse_timestamp):
+    patterns = ["data/logs/search-refresh-*.csv", "data/logs/refresh-unified-*.csv"]
+    paths = []
+    for pat in patterns:
+        paths.extend(PROJECT.glob(pat))
+    for csv_path in sorted(paths, key=parse_timestamp):
         ts = parse_timestamp(csv_path)
         with open(csv_path) as f:
             reader = csv.DictReader(f)
             for row in reader:
                 status = row.get("status", "")
-                if status != "APPLIED":
+                if status not in ("APPLIED", "NO_CHANGE"):
+                    continue
+                # Only count CIB-variant rows as CIB overrides
+                vtype = (row.get("type") or row.get("variant_type") or "").lower()
+                if vtype and vtype != "cib":
                     continue
                 title = row["product"]
+                source = row.get("source") or "pc_search"
                 latest[title] = {
-                    "source": "pc_search",
+                    "source": source,
                     "when": ts.isoformat(timespec="seconds"),
                     "csv": csv_path.name,
                 }

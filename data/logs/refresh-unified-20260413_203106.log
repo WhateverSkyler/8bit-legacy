@@ -1,0 +1,33 @@
+[20:31:06] ============================================================
+[20:31:06] UNIFIED PRICE REFRESH — REPORT
+[20:31:06] Multiplier: 1.35× | Round to: $X.99 | Min profit: $3.00
+[20:31:06] eBay fallback: ON (active×0.85 trimmed median, min 4 comps)
+[20:31:06] Log: /home/tristan/Projects/8bit-legacy/data/logs/refresh-unified-20260413_203106.log
+[20:31:06] CSV: /home/tristan/Projects/8bit-legacy/data/logs/refresh-unified-20260413_203106.csv
+[20:31:06] ============================================================
+[20:31:06] Fetching all Shopify products…
+[20:31:21]   Fetched 1000 products (page 20)…
+[20:31:36]   Fetched 2000 products (page 40)…
+[20:31:51]   Fetched 3000 products (page 60)…
+[20:32:06]   Fetched 4000 products (page 80)…
+[20:32:21]   Fetched 5000 products (page 100)…
+[20:32:36]   Fetched 6000 products (page 120)…
+[20:32:51]   Fetched 6121 products (page 140)…
+[20:33:01]   Total: 6121 game products
+[20:33:01] Filtered to --ids-file list: 1678/6121 match
+[20:33:01] Limited to first 40 products
+[20:36:00] 
+============================================================
+[20:36:00] RESULTS
+[20:36:00] ============================================================
+[20:36:00]   Total products:       40
+[20:36:00]   PC matches:           15
+[20:36:00]   eBay matches:         23
+[20:36:00]   No match (both failed): 2
+[20:36:00]   Loose prices updated: 0
+[20:36:00]   CIB prices updated:   0
+[20:36:00]   No change (<$0.50):   30
+[20:36:00]   Errors:               0
+[20:36:00]   Skipped (resume):     0
+[20:36:00]   Time: 3.0 min
+[20:36:00]   Match rate: 95.0%

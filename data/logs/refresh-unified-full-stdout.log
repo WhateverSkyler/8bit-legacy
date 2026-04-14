@@ -1,0 +1,71 @@
+[20:37:00] ============================================================
+[20:37:00] UNIFIED PRICE REFRESH — APPLY
+[20:37:00] Multiplier: 1.35× | Round to: $X.99 | Min profit: $3.00
+[20:37:00] eBay fallback: ON (active×0.92 trimmed median, min 4 comps)
+[20:37:00] Log: /home/tristan/Projects/8bit-legacy/data/logs/refresh-unified-20260413_203700.log
+[20:37:00] CSV: /home/tristan/Projects/8bit-legacy/data/logs/refresh-unified-20260413_203700.csv
+[20:37:00] ============================================================
+[20:37:00] Fetching all Shopify products…
+[20:37:16]   Fetched 1000 products (page 20)…
+[20:37:31]   Fetched 2000 products (page 40)…
+[20:37:45]   Fetched 3000 products (page 60)…
+[20:38:00]   Fetched 4000 products (page 80)…
+[20:38:15]   Fetched 5000 products (page 100)…
+[20:38:29]   Fetched 6000 products (page 120)…
+[20:38:44]   Fetched 6121 products (page 140)…
+[20:38:54]   Total: 6121 game products
+[20:38:54] Filtered to --ids-file list: 1678/6121 match
+[20:44:23]   Checkpoint: 50/1678 | PC: 20 | eBay: 28 | Loose upd: 29 | CIB upd: 19 | No match: 2 | ETA: 179min
+[20:49:55]   Checkpoint: 100/1678 | PC: 37 | eBay: 57 | Loose upd: 56 | CIB upd: 34 | No match: 6 | ETA: 174min
+[20:54:33]   Checkpoint: 150/1678 | PC: 58 | eBay: 82 | Loose upd: 78 | CIB upd: 43 | No match: 10 | ETA: 159min
+[20:59:45]   Checkpoint: 200/1678 | PC: 73 | eBay: 108 | Loose upd: 106 | CIB upd: 57 | No match: 19 | ETA: 154min
+[21:05:09]   Checkpoint: 250/1678 | PC: 87 | eBay: 137 | Loose upd: 133 | CIB upd: 74 | No match: 26 | ETA: 150min
+[21:10:16]   Checkpoint: 300/1678 | PC: 98 | eBay: 173 | Loose upd: 168 | CIB upd: 98 | No match: 29 | ETA: 144min
+[21:15:02]   Checkpoint: 350/1678 | PC: 120 | eBay: 195 | Loose upd: 190 | CIB upd: 112 | No match: 35 | ETA: 137min
+[21:20:00]   Checkpoint: 400/1678 | PC: 135 | eBay: 227 | Loose upd: 221 | CIB upd: 133 | No match: 38 | ETA: 131min
+[21:24:45]   Checkpoint: 450/1678 | PC: 154 | eBay: 256 | Loose upd: 250 | CIB upd: 148 | No match: 40 | ETA: 125min
+[21:29:59]   Checkpoint: 500/1678 | PC: 165 | eBay: 291 | Loose upd: 285 | CIB upd: 171 | No match: 44 | ETA: 120min
+[21:32:40]   Progress: 525/1678 | PC: 172 | eBay: 304 | No match: 49 | ETA: 118min
+[21:35:03]   Checkpoint: 550/1678 | PC: 179 | eBay: 319 | Loose upd: 315 | CIB upd: 193 | No match: 52 | ETA: 115min
+[21:39:44]   Checkpoint: 600/1678 | PC: 200 | eBay: 340 | Loose upd: 338 | CIB upd: 205 | No match: 60 | ETA: 109min
+[21:44:37]   Checkpoint: 650/1678 | PC: 221 | eBay: 367 | Loose upd: 370 | CIB upd: 221 | No match: 62 | ETA: 104min
+[21:49:19]   Checkpoint: 700/1678 | PC: 242 | eBay: 393 | Loose upd: 397 | CIB upd: 238 | No match: 65 | ETA: 98min
+[21:51:59]   Progress: 725/1678 | PC: 245 | eBay: 413 | No match: 67 | ETA: 96min
+[21:53:59]   Checkpoint: 750/1678 | PC: 258 | eBay: 423 | Loose upd: 423 | CIB upd: 249 | No match: 69 | ETA: 93min
+[21:58:32]   Checkpoint: 800/1678 | PC: 280 | eBay: 447 | Loose upd: 447 | CIB upd: 260 | No match: 73 | ETA: 87min
+[22:03:25]   Checkpoint: 850/1678 | PC: 289 | eBay: 482 | Loose upd: 479 | CIB upd: 274 | No match: 79 | ETA: 82min
+[22:08:03]   Checkpoint: 900/1678 | PC: 304 | eBay: 513 | Loose upd: 512 | CIB upd: 298 | No match: 83 | ETA: 77min
+[22:12:50]   Checkpoint: 950/1678 | PC: 322 | eBay: 545 | Loose upd: 549 | CIB upd: 331 | No match: 83 | ETA: 72min
+[22:17:25]   Checkpoint: 1000/1678 | PC: 335 | eBay: 574 | Loose upd: 579 | CIB upd: 349 | No match: 91 | ETA: 67min
+[22:22:17]   Checkpoint: 1050/1678 | PC: 352 | eBay: 605 | Loose upd: 616 | CIB upd: 372 | No match: 93 | ETA: 62min
+[22:27:09]   Checkpoint: 1100/1678 | PC: 364 | eBay: 640 | Loose upd: 652 | CIB upd: 385 | No match: 96 | ETA: 57min
+[22:32:01]   Checkpoint: 1150/1678 | PC: 379 | eBay: 673 | Loose upd: 688 | CIB upd: 402 | No match: 98 | ETA: 52min
+[22:36:27]   Checkpoint: 1200/1678 | PC: 395 | eBay: 701 | Loose upd: 718 | CIB upd: 419 | No match: 104 | ETA: 47min
+[22:38:35]   Progress: 1225/1678 | PC: 404 | eBay: 714 | No match: 107 | ETA: 44min
+[22:40:41]   Checkpoint: 1250/1678 | PC: 413 | eBay: 729 | Loose upd: 745 | CIB upd: 433 | No match: 108 | ETA: 42min
+[22:45:11]   Checkpoint: 1300/1678 | PC: 443 | eBay: 749 | Loose upd: 774 | CIB upd: 454 | No match: 108 | ETA: 37min
+[22:50:11]   Checkpoint: 1350/1678 | PC: 451 | eBay: 790 | Loose upd: 817 | CIB upd: 467 | No match: 109 | ETA: 32min
+[23:09:13]   Checkpoint: 1400/1678 | PC: 460 | eBay: 827 | Loose upd: 856 | CIB upd: 490 | No match: 113 | ETA: 30min
+[23:23:04]   Progress: 1425/1678 | PC: 465 | eBay: 845 | No match: 115 | ETA: 29min
+[23:28:56]   Checkpoint: 1450/1678 | PC: 477 | eBay: 856 | Loose upd: 885 | CIB upd: 506 | No match: 117 | ETA: 27min
+[23:33:29]   Checkpoint: 1500/1678 | PC: 497 | eBay: 884 | Loose upd: 919 | CIB upd: 525 | No match: 119 | ETA: 21min
+[23:38:04]   Checkpoint: 1550/1678 | PC: 509 | eBay: 918 | Loose upd: 952 | CIB upd: 541 | No match: 123 | ETA: 15min
+[23:42:19]   Checkpoint: 1600/1678 | PC: 530 | eBay: 944 | Loose upd: 983 | CIB upd: 561 | No match: 126 | ETA: 9min
+[23:46:25] 
+============================================================
+[23:46:25] RESULTS
+[23:46:25] ============================================================
+[23:46:25]   Total products:       1678
+[23:46:25]   PC matches:           553
+[23:46:25]   eBay matches:         969
+[23:46:25]   No match (both failed): 156
+[23:46:25]   Loose prices updated: 1013
+[23:46:25]   CIB prices updated:   575
+[23:46:25]   No change (<$0.50):   967
+[23:46:25]   Errors:               0
+[23:46:25]   Skipped (resume):     0
+[23:46:25]   Time: 187.5 min
+[23:46:25]   Match rate: 90.7%
+
+Log: /home/tristan/Projects/8bit-legacy/data/logs/refresh-unified-20260413_203700.log
+CSV: /home/tristan/Projects/8bit-legacy/data/logs/refresh-unified-20260413_203700.csv

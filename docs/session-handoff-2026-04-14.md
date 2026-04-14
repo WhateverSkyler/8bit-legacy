@@ -1,157 +1,135 @@
 # Session Handoff — 2026-04-14 (Tuesday morning)
 
-**Written:** 2026-04-13 04:42 PM EDT (Monday, end of laptop session)
-**Target:** Tomorrow morning Tristan session (any machine)
-**Status:** Massive progress today. One critical finding (synthetic CIB pricing) needs a durable fix next session.
+**Written:** 2026-04-13 ~11:55 PM EDT (end of Monday-night session)
+**Target:** Tomorrow's session (any machine)
+**Status:** Main sweep landed cleanly. CIB second-pass script is built + smoke-tested but NOT YET APPLIED. Pick up there.
 
 ---
 
-## 🎯 Tomorrow's priority stack — ranked
+## TL;DR — where we are right now
 
-### 🚨 1. Fix the synthetic CIB pricing problem (CRITICAL)
-
-**The issue:** 1,184 of the ~6,112 multi-variant retro games have CIB prices set to `loose × 1.8` rather than real market data. Under-prices rare/valuable CIBs meaningfully. Full audit in `docs/synthetic-cib-audit-2026-04-13.md`, product list in `data/synthetic-cib-products.csv`.
-
-**Worst offenders** (listed CIB vs real market):
-- Earthbound SNES — $718.99 listed / ~$1,200-1,500 real
-- Chrono Trigger SNES — $502.99 / ~$700-900 real
-- 63 products over $100 loose-price; top 25 in the audit doc
-
-**Immediate mitigation** (before anything else, 15 min):
-```bash
-# Manually look up the top 25 on PriceCharting in a browser, edit data/synthetic-cib-products.csv
-# with real CIB market prices, then run a one-shot update script — or do individual Shopify admin edits
-```
-Focus: the 25 titles in `docs/synthetic-cib-audit-2026-04-13.md` "Top 25" table.
-
-**Durable fix** (~2-3 hours, build this next session):
-Build `scripts/refresh-cib-from-ebay.py`:
-- Input: `data/synthetic-cib-products.csv`
-- For each product, query eBay's `findCompletedItems` API with `{title} {console} complete in box`
-- Filter: sold within last 30 days, condition=Used, exclude bulk lots
-- Take median of last 30 sold prices as "real CIB market value"
-- Apply 1.35× multiplier + round down to $X.99
-- Update Shopify via `productVariantUpdate` mutation
-- Safety: only update if new price differs from current by >10%, log every change
-- eBay API creds are already in `.env` (`EBAY_APP_ID`)
-
-Reference: the existing `scripts/ebay-finder.py` shows the API call pattern. Copy its auth setup.
-
-**Why eBay and not PriceCharting retry:**
-- We got IP-blocked from PriceCharting today after ~3K queries (block usually clears in 24-48h)
-- Many of these synthetic-CIB products aren't findable via PC search even when PC has the data
-- eBay sold listings are the gold standard for collector market — no rate-limit drama at 5K calls/day free tier
-
-### 🟡 2. Pre-ads-launch: fix Legend of the Mystical Ninja SNES
-
-**Why:** Only Winners-list product with a synthetic CIB (CIB $145.99 synthetic, real market ~$300-400). Ads will drive traffic directly to this product.
-
-**Two options:**
-- **A:** Manually set its CIB price to ~$350 via Shopify admin → Products → Legend of the Mystical Ninja - SNES Game → Variants → Complete (CIB) → Price. 2 min.
-- **B:** Exclude this SKU from the Winners campaign when building the Google Ads campaign.
-
-Recommend A — it's quicker and fixes the actual problem.
-
-### 🟢 3. Build the 2 Google Ads Shopping campaigns (paused)
-
-Follow `docs/ads-pre-launch-checklist.md` Section F. Create:
-- `8BL-Shopping-Winners` at $6/day (Manual CPC, max $0.75, priority High, Winners SKUs only, campaign-level negatives from `docs/ads-negative-keywords-master.md`)
-- `8BL-Shopping-Discovery` at $4/day (Manual CPC, max $0.35, priority Low, everything except Winners/Pokemon/under-$15/over-$200)
-
-Leave both **Paused**. Enable only after Section G content gate (14 days of social + Podcast Ep 2 scheduled).
-
-Can delegate this whole task to Mac Claude cowork if you prefer. Cowork prompt template in `docs/claude-cowork-brief-2026-04-13.md` for style.
-
-### 🟢 4. Re-run stale-loose refresh overnight (if PC unblocks)
-
-PriceCharting should unblock us 24-48h after today's lockout. When it does:
-
-```bash
-# Verify unblock status
-python3 -c "import requests; r=requests.get('https://www.pricecharting.com/search-products?q=Crystalis+NES&type=videogames', headers={'User-Agent':'Mozilla/5.0'}, timeout=15); print(f'Status: {r.status_code}')"
-# Should be 200, not 403
-
-# Then kick off overnight sweep with longer pacing (10s delays vs today's 2s)
-# Edit SEARCH_DELAY in scripts/search-price-refresh.py from 2.0 to 10.0 before running
-python3 scripts/search-price-refresh.py --apply --only-ids-file data/nomatch-product-ids.json
-# ETA ~6-8 hours with 10s delays, but safer from rate limits
-```
-
-Expected recovery: 200-400 of the remaining 1,100-ish stale products. Doesn't replace the eBay fix but complements it.
+1. **Full unified PC+eBay refresh completed tonight.** `scripts/refresh-prices-unified.py` ran the 1,678-product union (nomatch + stale-loose + synthetic-CIB) with `--apply`. Result: 1,013 loose + 575 CIB prices updated, 0 errors, 187 min runtime. Log: `data/logs/refresh-unified-20260413_203700.*`.
+2. **Synthetic-CIB count dropped 1,184 → 605** after audit script was fixed to recognize the new log format.
+3. **Second-pass CIB script exists.** `scripts/refresh-cib-second-pass.py` — targets those 605 remaining synthetic CIBs with relaxed eBay sampling + a ratio-sanity repair (`CIB ≥ Loose × 1.3`). Smoke-tested on 10 products tonight (report-only). Results look reasonable but need a spot-check before applying.
+4. **Not yet run with `--apply`.** That's the first thing to do next session.
 
 ---
 
-## 📊 What shipped today (Monday 2026-04-13) — for the record
+## Priority 1 — Finish the CIB second-pass (~30-60 min, mostly waiting)
 
-### Pricing (terminal Claude)
-- ✅ CIB==Loose bug confirmed fixed (99.1% of 6,081 games correct)
-- ✅ 4 of 5 genuine CIB edge cases patched (Hot Shots Tennis, Hot Wheels Stunt Track, NBA 09 ×2; ECW below $1 noise floor)
-- ✅ 1,618 stale May-2025 loose variant ids identified; 136 loose + 172 CIB prices refreshed from PriceCharting (24.9% match rate before PC blocked us)
-- ✅ Full compare_at sweep — 8 stuck + 38 inverted Loose>CIB = 46 broken relationships fixed
-- ✅ 55 more NO_MATCH products recovered via multi-query retry before PC blocked
-- 🚨 **DISCOVERED:** 1,184 products have synthetic 1.8× CIB prices (not real market data)
-
-### Theme + UX (cowork)
-- ✅ Variant price display bug fixed — price updates when toggling Game Only ↔ CIB
-- ✅ Sale price display bug fixed — struck-through price also updates + shows/hides correctly
-- ✅ Google Customer Reviews Custom Pixel live (ID 149717026)
-- ✅ Theme state: MAIN = `Copy of bs-kidxtore-home6-v1-7-price-fix` (185256640546), 2 backups retained
-
-### Settings (cowork)
-- ✅ Free shipping $50 → $35
-- ✅ Return policy 30 → 90 days (refund policy + theme settings + announcement bar)
-- ✅ Google Ads 822-210-2291 confirmed linked (stop asking — memory updated)
-
----
-
-## 🔒 Decisions logged from today
-
-1. **Email campaigns deferred** — user wants site + social + ads live first. `feedback_email_sequencing.md` in memory. Do NOT suggest the email welcome flow install until all three are live.
-2. **GCR badge deferred** — wait until 25+ reviews accumulate. Empty badge looks worse than no badge.
-3. **Shopify plan impact** — nothing we've shipped or queued increases the Basic plan cost. If future work needs Plus features, flag before doing anything.
-
----
-
-## 🗂️ Files that matter for tomorrow
-
-**Read these first:**
-- This file
-- `docs/synthetic-cib-audit-2026-04-13.md` (the critical finding)
-- `data/synthetic-cib-products.csv` (the 1,184 products to fix)
-
-**Reference:**
-- `docs/ads-pre-launch-checklist.md` (Section F for campaign build)
-- `docs/ads-winners-curation-list.md` (the 18 Winners)
-- `docs/google-ads-launch-plan-v2.md` (full context)
-- `docs/cowork-session-2026-04-13-pm.md` (what cowork shipped)
-
-**Memory to pick up:**
-- `~/.claude/projects/-Users-tristanaddi1-Projects-8bit-legacy/memory/MEMORY.md` (index)
-- `project_cowork_audit.md` (updated with 2026-04-13 state)
-- `feedback_email_sequencing.md` (email hold rule)
-
----
-
-## 🧭 Suggested opening move tomorrow
+The plan:
 
 ```bash
 cd ~/Projects/8bit-legacy
 git pull --ff-only
+
+# 1) Quick sanity check on tonight's smoke test
+cat data/logs/cib-second-pass-20260413_235147.csv
 ```
 
-Then tell whichever Claude you're using:
+Look at the 10 rows. Tonight's smoke test flagged two issues to be aware of:
 
-> Read `docs/session-handoff-2026-04-14.md` — the synthetic CIB pricing issue is the critical priority. Start by building `scripts/refresh-cib-from-ebay.py` per Option 1 in `docs/synthetic-cib-audit-2026-04-13.md`. Also manually fix Legend of the Mystical Ninja SNES CIB price before that so it's not blocking ads launch.
+- **Two rows have `NO_CONSOLE` status** (`720 - NES Game`, `Alien 3 - SNES Game`). The console-lookup is falling through for some products. Likely because the product wasn't in `live` map or variants aren't tagged with console metadata the script expects. Worth a 5-min look before full run.
+- **All-Star Baseball 2003 GBA** — got CIB $49.99 from only 3 eBay samples while Loose is $10.99 (ratio 4.55×). That's suspicious; cheap sports games shouldn't have a 4× premium. `MIN_EBAY_SAMPLE=2` may be too permissive. Consider bumping to 3 or 4.
 
-That's the cleanest path to getting the remaining pricing work done AND unblocking ads.
+Two low-risk paths forward:
+
+**Path A — ship it as-is and log outliers.** The 605 products that need fixing are mostly cases where Loose updated but CIB didn't; broken ratios are the bigger risk. Running the script as-is applies the 1.8× synthetic fallback when eBay data is thin (which is what we have now) OR picks up a slightly-noisy eBay median (which is still better than the old unrepaired synthetic). Accept and audit.
+
+**Path B — tighten first.** Before `--apply`, edit `MIN_EBAY_SAMPLE = 2` → `3` in `scripts/refresh-cib-second-pass.py`, re-run `--limit 25`, spot-check. Adds ~20 min.
+
+Recommend **Path B** given Earthbound / Chrono Trigger etc. live in the 605 list and a mis-priced $600 CIB is ugly if a customer buys it.
+
+Then:
+
+```bash
+# Full apply run — 605 products × ~3s each = ~30-40 min
+systemd-inhibit --what=idle:sleep --who=claude --why="cib-second-pass refresh" \
+  nohup python3 scripts/refresh-cib-second-pass.py --apply > /tmp/cib-pass2.out 2>&1 &
+
+# Monitor
+tail -F /tmp/cib-pass2.out
+```
+
+After it finishes:
+
+```bash
+# Regenerate synthetic audit
+python3 scripts/audit-synthetic-cib.py
+# Expected: synthetic count drops toward 0 (or near-0 with only ratio_repair fallbacks remaining)
+```
 
 ---
 
-## Outstanding tech debt (no urgency)
+## Priority 2 — Spot-check top-value CIBs
 
-- 107 uncategorized console products in the synthetic-CIB set (the audit script's "other" bucket) — minor tagging cleanup
+Regardless of how the second-pass goes, manually verify the **top 10 by price** in the resulting CIB changes. Real-market cross-reference should be fast:
+
+- Earthbound SNES CIB — should be ~$1,200-1,500 (was $718 synthetic)
+- Chrono Trigger SNES — ~$700-900
+- Legend of the Mystical Ninja SNES — ~$300-400 (Winners-list ad product — MUST be correct before ads)
+- Any other $300+ CIB changes in the second-pass log
+
+If the script undershoots on these, manually set in Shopify admin. They're high-visibility.
+
+---
+
+## Priority 3 — Back to the real work
+
+Once CIB pricing is clean:
+
+1. **Google Ads Shopping campaigns** — `docs/ads-pre-launch-checklist.md` Section F. Build 2 campaigns PAUSED, enable after content gate.
+2. **Winners product audit final pass** — `docs/ads-winners-audit-2026-04-11.md`. Legend of the Mystical Ninja CIB price specifically needs confirmation post-second-pass.
+3. **Outstanding tech debt** — listed at bottom of old handoff text below, still applies.
+
+---
+
+## Tonight's script artifacts (reference)
+
+- **`scripts/refresh-prices-unified.py`** (NEW, ~380 lines) — unified PC+eBay refresh. OAuth2 client-credentials for eBay Browse API. Single broad query per product, classifies loose vs CIB in code, title-similarity filter with Roman→Arabic numeral normalization to block ActRaiser 2 pollution. Supports `--apply`, `--limit`, `--resume`, `--ids-file`, `--no-ebay`.
+- **`scripts/refresh-cib-second-pass.py`** (NEW, ~290 lines) — targeted CIB-only refresh for the 605 remaining synthetic products. Relaxed: `MIN_EBAY_SAMPLE=2`, title overlap 0.5, two-query eBay ("complete in box" + "cib" suffix, price DESC). Ratio sanity repair enforces `CIB ≥ Loose × 1.3`, uses 1.8× synthetic fallback when eBay samples are too thin.
+- **`scripts/audit-synthetic-cib.py`** (MODIFIED) — now walks both `search-refresh-*.csv` AND `refresh-unified-*.csv`, accepts `NO_CHANGE` as a real-market override, filters to CIB-variant rows only.
+- **`data/refresh-union-ids.json`** — 1,678 GIDs (full sweep input list).
+- **`data/remaining-synthetic-ids.json`** — 605 GIDs (second-pass input list).
+- **`data/logs/refresh-unified-20260413_203700.csv`** — full sweep results.
+- **`data/logs/cib-second-pass-20260413_235147.csv`** — tonight's 10-product smoke test.
+
+---
+
+## Quick sanity snippet for opening tomorrow
+
+```bash
+cd ~/Projects/8bit-legacy && git pull --ff-only
+
+# 1) How many synthetic CIBs remain right now?
+python3 scripts/audit-synthetic-cib.py 2>&1 | grep "Synthetic-CIB"
+
+# 2) Inspect tonight's smoke test
+cat data/logs/cib-second-pass-20260413_235147.csv
+```
+
+Then decide Path A vs B above, run, audit, and you're done with pricing.
+
+---
+
+## (Preserved from earlier 04-14 handoff) — everything else still pending
+
+### Pre-ads fix: Legend of the Mystical Ninja SNES CIB
+Only Winners-list product with a synthetic CIB. Second-pass should fix it, but confirm the price lands in ~$300-400 range. If not, manually set via Shopify admin before enabling ads.
+
+### Build 2 Google Ads Shopping campaigns (PAUSED)
+Follow `docs/ads-pre-launch-checklist.md` Section F:
+- `8BL-Shopping-Winners` — $6/day, Manual CPC $0.75, priority High, Winners SKUs only
+- `8BL-Shopping-Discovery` — $4/day, Manual CPC $0.35, priority Low, everything except Winners/Pokemon/under-$15/over-$200
+
+Leave both Paused. Enable only after Section G content gate (14 days social + Podcast Ep 2).
+
+### Outstanding tech debt (no urgency)
+- 107 uncategorized console products in the synthetic-CIB set — minor tagging cleanup
 - VPS dashboard nginx 401 — replace with Next.js-native auth
-- 900+ PC-unfindable titles — tackled by eBay refresh (Option 1 above)
-- CIB inventory regression monitoring — add `fix-cib-inventory.py` to scheduler as daily job
+- `fix-cib-inventory.py` daily scheduler job — for the CIB inventory regression we saw Monday
 
-None of these block ads launch.
+### Decisions still in force
+1. Email campaigns deferred until site + social + ads live
+2. GCR badge deferred until 25+ reviews
+3. Flag any Shopify plan impact before shipping (Basic tier protected)
