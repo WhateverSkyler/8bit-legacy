@@ -1,0 +1,36 @@
+[16:56:05] ============================================================
+[16:56:05] PC-DIRECT REFRESH — APPLY
+[16:56:05] Multiplier: 1.35x | Log: /home/tristan/Projects/8bit-legacy/data/logs/pc-direct-20260415_165605.log
+[16:56:05] ============================================================
+[16:56:05] Processing 944 products (944 remaining)
+[17:00:03]   50/944 | matched 48 | loose 27 | cib 32 | no_match 2 | ETA 71m
+[17:04:59]   100/944 | matched 93 | loose 61 | cib 68 | no_match 7 | ETA 75m
+[17:09:28]   150/944 | matched 142 | loose 93 | cib 105 | no_match 8 | ETA 71m
+[17:13:44]   200/944 | matched 190 | loose 123 | cib 136 | no_match 10 | ETA 66m
+[17:18:16]   250/944 | matched 233 | loose 158 | cib 171 | no_match 17 | ETA 62m
+[17:22:59]   300/944 | matched 272 | loose 192 | cib 203 | no_match 28 | ETA 58m
+[17:27:42]   350/944 | matched 313 | loose 222 | cib 237 | no_match 37 | ETA 54m
+[17:32:32]   400/944 | matched 362 | loose 263 | cib 276 | no_match 38 | ETA 50m
+[17:37:17]   450/944 | matched 403 | loose 289 | cib 306 | no_match 47 | ETA 45m
+[17:41:34]   500/944 | matched 445 | loose 322 | cib 340 | no_match 55 | ETA 40m
+[17:46:08]   550/944 | matched 492 | loose 358 | cib 378 | no_match 58 | ETA 36m
+[17:49:07]   PC fetch error: HTTPSConnectionPool(host='www.pricecharting.com', port=443): Read timed out. (read timeout=15)
+[17:51:46]   600/944 | matched 536 | loose 394 | cib 416 | no_match 64 | ETA 32m
+[18:01:09]   700/944 | matched 624 | loose 461 | cib 490 | no_match 76 | ETA 23m
+[18:05:58]   750/944 | matched 671 | loose 500 | cib 532 | no_match 79 | ETA 18m
+[18:11:05]   800/944 | matched 719 | loose 539 | cib 573 | no_match 81 | ETA 14m
+[18:16:10]   850/944 | matched 765 | loose 575 | cib 607 | no_match 85 | ETA 9m
+[18:21:06]   900/944 | matched 811 | loose 611 | cib 642 | no_match 89 | ETA 4m
+[18:25:09] 
+============================================================
+[18:25:09] RESULTS
+[18:25:09] ============================================================
+[18:25:09]   Total:           944
+[18:25:09]   PC matched:      847  (89.7%)
+[18:25:09]   No match:        92
+[18:25:09]   No console tag:  5
+[18:25:09]   Loose applied:   639
+[18:25:09]   CIB applied:     664
+[18:25:09]   No change:       373
+[18:25:09]   Errors:          0
+[18:25:09]   Time:            89.1 min
