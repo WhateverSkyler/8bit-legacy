@@ -1,0 +1,31 @@
+[14:59:08] ============================================================
+[14:59:08] CIB SECOND-PASS REFRESH — APPLY
+[14:59:08] Sampling: min 3 comps, title overlap 0.5, broader CIB match
+[14:59:08] Ratio floor: CIB ≥ Loose × 1.3 (synthetic 1.8x fallback)
+[14:59:08] Log: /Users/tristanaddi1/Projects/8bit-legacy/data/logs/cib-second-pass-20260415_145908.log
+[14:59:08] CSV: /Users/tristanaddi1/Projects/8bit-legacy/data/logs/cib-second-pass-20260415_145908.csv
+[14:59:08] ============================================================
+[14:59:08] Processing 605 products
+[15:03:56]   Progress: 50/605 | eBay CIB: 23 | Synth repair: 27 | Already OK: 0 | ETA: 53min
+[15:08:45]   Progress: 100/605 | eBay CIB: 39 | Synth repair: 60 | Already OK: 1 | ETA: 49min
+[15:13:16]   Progress: 150/605 | eBay CIB: 63 | Synth repair: 86 | Already OK: 1 | ETA: 43min
+[15:17:48]   Progress: 200/605 | eBay CIB: 88 | Synth repair: 110 | Already OK: 2 | ETA: 38min
+[15:22:45]   Progress: 250/605 | eBay CIB: 112 | Synth repair: 136 | Already OK: 2 | ETA: 34min
+[15:27:49]   Progress: 300/605 | eBay CIB: 138 | Synth repair: 160 | Already OK: 2 | ETA: 29min
+[15:32:34]   Progress: 350/605 | eBay CIB: 159 | Synth repair: 187 | Already OK: 4 | ETA: 24min
+[15:37:09]   Progress: 400/605 | eBay CIB: 185 | Synth repair: 210 | Already OK: 5 | ETA: 19min
+[15:41:36]   Progress: 450/605 | eBay CIB: 213 | Synth repair: 232 | Already OK: 5 | ETA: 15min
+[15:45:37]   Progress: 500/605 | eBay CIB: 247 | Synth repair: 248 | Already OK: 5 | ETA: 10min
+[15:50:12]   Progress: 550/605 | eBay CIB: 268 | Synth repair: 277 | Already OK: 5 | ETA: 5min
+[15:54:39]   Progress: 600/605 | eBay CIB: 295 | Synth repair: 300 | Already OK: 5 | ETA: 0min
+[15:55:01] 
+============================================================
+[15:55:01] RESULTS
+[15:55:01] ============================================================
+[15:55:01]   Total products:     605
+[15:55:01]   eBay CIB matches:   299
+[15:55:01]   Synthetic repairs:  301
+[15:55:01]   Already OK (<$0.50): 5
+[15:55:01]   Missing variants:   0
+[15:55:01]   Errors:             0
+[15:55:01]   Time: 55.9 min

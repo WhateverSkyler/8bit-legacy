@@ -1,0 +1,26 @@
+product,console,source,loose_price,old_cib,new_cib,ratio,status,notes
+720 - NES Game,NES,ebay(11),12.99,11.99,62.99,4.85,PREVIEW,diff=51.0
+A Dinosaur's Tale - Sega Genesis Game,Sega Genesis,ebay(5),22.99,30.99,49.99,2.17,PREVIEW,diff=19.0
+AFL Premiership 2006 - PS2 Game,Playstation 2,synthetic_ratio_repair,113.98,204.99,205.99,1.81,PREVIEW,diff=1.0
+Alien 3 - SNES Game,SNES,ebay(15),22.99,52.99,136.99,5.96,PREVIEW,diff=84.0
+All-Star Baseball 2003 - GBA Game,Gameboy Advance,synthetic_outlier_guard(ebay_was_36.79_n=3),10.99,12.99,19.99,1.82,PREVIEW,diff=7.0
+Animaniacs Ten Pin Alley - PS1 Game,Playstation,synthetic_ratio_repair(ebay_was_11.03),11.99,19.99,21.99,1.83,PREVIEW,diff=2.0
+Animorphs Shattered Reality - PS1 Game,Playstation,synthetic_ratio_repair,14.99,33.99,26.99,1.80,PREVIEW,diff=-7.0
+Are You Smarter Than A 5th Grader? Make the Grade - PS2 Game,Playstation 2,ebay(4),6.48,10.99,9.99,1.54,PREVIEW,diff=-1.0
+Arena Football Road to Glory - PS2 Game,Playstation 2,synthetic_ratio_repair,13.34,23.99,24.99,1.87,PREVIEW,diff=1.0
+Assault Retribution - PS1 Game,Playstation,synthetic_ratio_repair,19.99,23.99,35.99,1.80,PREVIEW,diff=12.0
+Baby Boomer - NES Game,NES,ebay(3),136.99,186.99,178.99,1.31,PREVIEW,diff=-8.0
+Backstreet Billiards - PS1 Game,Playstation,synthetic_ratio_repair,17.99,15.99,32.99,1.83,PREVIEW,diff=17.0
+Backyard Football 2006 - GBA Game,Gameboy Advance,ebay(4),11.99,9.99,20.99,1.75,PREVIEW,diff=11.0
+Bad Boys Miami Takedown - PS2 Game,Playstation 2,ebay(5),8.30,13.99,14.99,1.81,PREVIEW,diff=1.0
+Bad Street Brawler - NES Game,NES,synthetic_ratio_repair,18.99,25.99,34.99,1.84,PREVIEW,diff=9.0
+Bandai Golf Challenge Pebble Beach - NES Game,NES,ebay(19),9.99,8.99,24.99,2.50,PREVIEW,diff=16.0
+Barbie Gotta Have Games - PS1 Game,Playstation,synthetic_ratio_repair(ebay_was_9.20),12.99,16.99,23.99,1.85,PREVIEW,diff=7.0
+Baseball Stars 2 - NES Game,NES,synthetic_ratio_repair,44.99,72.99,80.99,1.80,PREVIEW,diff=8.0
+Bases Loaded 2 Second Season - NES Game,NES,ebay(26),9.99,12.99,32.99,3.30,PREVIEW,diff=20.0
+Batman Beyond - Nintendo 64 Game,Nintendo 64,synthetic_ratio_repair,63.70,113.99,114.99,1.81,PREVIEW,diff=1.0
+Batman Forever - SNES Game,SNES,ebay(25),12.99,21.99,62.99,4.85,PREVIEW,diff=41.0
+Batman Returns - Sega Genesis Game,Sega Genesis,ebay(35),19.39,33.99,37.99,1.96,PREVIEW,diff=4.0
+Batman Revenge of the Joker - Sega Genesis Game,Sega Genesis,synthetic_ratio_repair,86.99,140.99,156.99,1.80,PREVIEW,diff=16.0
+Batman Rise of Sin Tzu - GBA Game,Gameboy Advance,synthetic_ratio_repair,41.99,64.99,75.99,1.81,PREVIEW,diff=11.0
+Battle Bull - Gameboy Game,Gameboy,synthetic_outlier_guard(ebay_was_110.40_n=3),34.99,48.99,62.99,1.80,PREVIEW,diff=14.0

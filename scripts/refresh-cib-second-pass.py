@@ -3,7 +3,7 @@
 Second-pass CIB refresh for synthetic-CIB products the main sweep missed.
 
 Uses RELAXED eBay sampling vs refresh-prices-unified.py:
-- MIN_EBAY_SAMPLE = 2 (vs 4)
+- MIN_EBAY_SAMPLE = 3 (vs 4 main sweep — bumped from 2 after smoke test showed outliers)
 - Sorts by price DESC (CIB listings skew high, not low)
 - Broader CIB keyword match (accepts "in box" or "w/ manual" alone)
 - Secondary query variant: title + console + "cib"
@@ -52,10 +52,12 @@ ROUND_TO = PRICING.get("round_to", 0.99)
 
 EBAY_DELAY = 0.8
 SHOPIFY_DELAY = 0.3
-MIN_EBAY_SAMPLE = 2
+MIN_EBAY_SAMPLE = 3
 EBAY_ACTIVE_DISCOUNT = 0.92
 MAX_MARKET_PRICE = 1500.0           # higher cap for high-value rarities
 RATIO_FLOOR = 1.3                   # CIB must be ≥ Loose × this
+RATIO_CEILING = 3.5                 # CIB/Loose > this w/ thin samples = outlier
+OUTLIER_SAMPLE_THRESHOLD = 8        # trust high ratio only if sample ≥ this
 SYNTHETIC_UPLIFT = 1.8              # clean synthetic when eBay fails
 
 ROMAN_TO_ARABIC = {"ii": "2", "iii": "3", "iv": "4", "v": "5", "vi": "6",
@@ -146,7 +148,9 @@ def _is_cib_listing(title_lower):
     bad = ("lot of", "repro", "bootleg", "pal ", "pal-", "japanese", "japan version",
            "not working", "for parts", "sealed", "brand new", "factory sealed",
            "case only", "manual only", "box only", "empty box", "insert only",
-           "cartridge only", "cart only", "loose cart", "loose cartridge")
+           "cartridge only", "cart only", "loose cart", "loose cartridge",
+           "wata", "vga", " psa ", "cgc", "pca ", "graded", "authenticated",
+           "mint condition", "museum", "collector's grade")
     if any(b in title_lower for b in bad):
         return False
     return any(k in title_lower for k in ("complete", "cib", "in box", "w/ box", "with box",
@@ -299,7 +303,7 @@ def main():
 
     log("=" * 60)
     log(f"CIB SECOND-PASS REFRESH — {'APPLY' if args.apply else 'REPORT'}")
-    log(f"Relaxed sampling: min {MIN_EBAY_SAMPLE} comps, title overlap 0.5, broader CIB match")
+    log(f"Sampling: min {MIN_EBAY_SAMPLE} comps, title overlap 0.5, broader CIB match")
     log(f"Ratio floor: CIB ≥ Loose × {RATIO_FLOOR} (synthetic {SYNTHETIC_UPLIFT}x fallback)")
     log(f"Log: {LOG_FILE}")
     log(f"CSV: {CSV_FILE}")
@@ -330,7 +334,10 @@ def main():
         game_title = strip_console_suffix(title_full)
         console_name = None
         for tag in product.get("tags", []):
-            cn = TAG_TO_CONSOLE.get(tag.lower().strip())
+            t = tag.lower().strip()
+            if t.startswith("console:"):
+                t = t.split(":", 1)[1].strip()
+            cn = TAG_TO_CONSOLE.get(t)
             if cn:
                 console_name = cn
                 break
@@ -363,8 +370,14 @@ def main():
         if eb and eb["market"] > 0:
             new_cib_market = eb["market"]
             new_cib = calc_sell_price(new_cib_market)
-            # Ratio sanity: if eBay says CIB < Loose × 1.05, that's suspect — floor it
-            if new_cib < loose_price * RATIO_FLOOR:
+            ebay_ratio = new_cib / loose_price if loose_price else 0
+            # Ceiling guard: thin-sample high ratios are likely graded/outlier noise
+            if ebay_ratio > RATIO_CEILING and eb["sample_size"] < OUTLIER_SAMPLE_THRESHOLD:
+                new_cib_market = loose_price / MULTIPLIER * SYNTHETIC_UPLIFT
+                new_cib = calc_sell_price(new_cib_market)
+                source = f"synthetic_outlier_guard(ebay_was_{eb['market']:.2f}_n={eb['sample_size']})"
+            # Floor guard: eBay says CIB < Loose × 1.3 — repair
+            elif new_cib < loose_price * RATIO_FLOOR:
                 new_cib_market_synth = loose_price / MULTIPLIER * SYNTHETIC_UPLIFT
                 new_cib_synth = calc_sell_price(new_cib_market_synth)
                 if new_cib_synth > new_cib:

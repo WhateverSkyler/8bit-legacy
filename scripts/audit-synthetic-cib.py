@@ -81,7 +81,8 @@ def walk_search_refresh_history():
     synthetic treatment is effectively validated/replaced, or never actually
     caused the mis-price)."""
     latest = {}
-    patterns = ["data/logs/search-refresh-*.csv", "data/logs/refresh-unified-*.csv"]
+    patterns = ["data/logs/search-refresh-*.csv", "data/logs/refresh-unified-*.csv",
+                "data/logs/cib-second-pass-*.csv"]
     paths = []
     for pat in patterns:
         paths.extend(PROJECT.glob(pat))

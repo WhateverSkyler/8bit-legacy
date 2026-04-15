@@ -1,0 +1,606 @@
+product,console,source,loose_price,old_cib,new_cib,ratio,status,notes
+720 - NES Game,NES,ebay(11),12.99,11.99,62.99,4.85,APPLIED,diff=51.0
+A Dinosaur's Tale - Sega Genesis Game,Sega Genesis,ebay(5),22.99,30.99,49.99,2.17,APPLIED,diff=19.0
+AFL Premiership 2006 - PS2 Game,Playstation 2,synthetic_ratio_repair,113.98,204.99,205.99,1.81,APPLIED,diff=1.0
+Alien 3 - SNES Game,SNES,ebay(15),22.99,52.99,136.99,5.96,APPLIED,diff=84.0
+All-Star Baseball 2003 - GBA Game,Gameboy Advance,synthetic_outlier_guard(ebay_was_36.79_n=3),10.99,12.99,19.99,1.82,APPLIED,diff=7.0
+Animaniacs Ten Pin Alley - PS1 Game,Playstation,synthetic_ratio_repair(ebay_was_11.03),11.99,19.99,21.99,1.83,APPLIED,diff=2.0
+Animorphs Shattered Reality - PS1 Game,Playstation,synthetic_ratio_repair,14.99,33.99,26.99,1.80,APPLIED,diff=-7.0
+Are You Smarter Than A 5th Grader? Make the Grade - PS2 Game,Playstation 2,ebay(4),6.48,10.99,9.99,1.54,APPLIED,diff=-1.0
+Arena Football Road to Glory - PS2 Game,Playstation 2,synthetic_ratio_repair,13.34,23.99,24.99,1.87,APPLIED,diff=1.0
+Assault Retribution - PS1 Game,Playstation,synthetic_ratio_repair,19.99,23.99,35.99,1.80,APPLIED,diff=12.0
+Baby Boomer - NES Game,NES,ebay(3),136.99,186.99,178.99,1.31,APPLIED,diff=-8.0
+Backstreet Billiards - PS1 Game,Playstation,synthetic_ratio_repair,17.99,15.99,32.99,1.83,APPLIED,diff=17.0
+Backyard Football 2006 - GBA Game,Gameboy Advance,ebay(4),11.99,9.99,20.99,1.75,APPLIED,diff=11.0
+Bad Boys Miami Takedown - PS2 Game,Playstation 2,ebay(5),8.30,13.99,14.99,1.81,APPLIED,diff=1.0
+Bad Street Brawler - NES Game,NES,synthetic_ratio_repair,18.99,25.99,34.99,1.84,APPLIED,diff=9.0
+Bandai Golf Challenge Pebble Beach - NES Game,NES,ebay(19),9.99,8.99,24.99,2.50,APPLIED,diff=16.0
+Barbie Gotta Have Games - PS1 Game,Playstation,synthetic_ratio_repair(ebay_was_9.20),12.99,16.99,23.99,1.85,APPLIED,diff=7.0
+Baseball Stars 2 - NES Game,NES,synthetic_ratio_repair,44.99,72.99,80.99,1.80,APPLIED,diff=8.0
+Bases Loaded 2 Second Season - NES Game,NES,ebay(26),9.99,12.99,32.99,3.30,APPLIED,diff=20.0
+Batman Beyond - Nintendo 64 Game,Nintendo 64,synthetic_ratio_repair,63.70,113.99,114.99,1.81,APPLIED,diff=1.0
+Batman Forever - SNES Game,SNES,ebay(25),12.99,21.99,62.99,4.85,APPLIED,diff=41.0
+Batman Returns - Sega Genesis Game,Sega Genesis,ebay(36),19.39,33.99,37.99,1.96,APPLIED,diff=4.0
+Batman Revenge of the Joker - Sega Genesis Game,Sega Genesis,synthetic_ratio_repair,86.99,140.99,156.99,1.80,APPLIED,diff=16.0
+Batman Rise of Sin Tzu - GBA Game,Gameboy Advance,synthetic_ratio_repair,41.99,64.99,75.99,1.81,APPLIED,diff=11.0
+Battle Bull - Gameboy Game,Gameboy,synthetic_outlier_guard(ebay_was_110.40_n=3),34.99,48.99,62.99,1.80,APPLIED,diff=14.0
+Battle Clash - SNES Game,SNES,ebay(25),11.99,17.99,35.99,3.00,APPLIED,diff=18.0
+Battle Hunter - PS1 Game,Playstation,synthetic_ratio_repair(ebay_was_12.49),17.23,30.99,31.99,1.86,APPLIED,diff=1.0
+Battle Master - Sega Genesis Game,Sega Genesis,ebay(6),30.99,39.99,83.99,2.71,APPLIED,diff=44.0
+Battle Squadron - Sega Genesis Game,Sega Genesis,ebay(3),27.48,48.99,49.99,1.82,APPLIED,diff=1.0
+Beetlejuice - Gameboy Game,Gameboy,synthetic_ratio_repair,67.99,135.99,122.99,1.81,APPLIED,diff=-13.0
+Berenstain Bears and the Spooky Old Tree - GBA Game,Gameboy Advance,synthetic_ratio_repair,15.27,26.99,27.99,1.83,APPLIED,diff=1.0
+Beyblade V Force - GBA Game,Gameboy Advance,ebay(4),10.99,8.99,27.99,2.55,APPLIED,diff=19.0
+Biker Mice From Mars - SNES Game,SNES,synthetic_outlier_guard(ebay_was_505.95_n=3),117.99,205.99,212.99,1.81,APPLIED,diff=7.0
+Bill and Ted's Excellent Video Game - NES Game,NES,ebay(9),27.99,45.99,111.99,4.00,APPLIED,diff=66.0
+Bionicle Heroes - Gamecube Game,Gamecube,synthetic_ratio_repair(ebay_was_13.80),18.99,20.99,34.99,1.84,APPLIED,diff=14.0
+Black Bass - NES Game,NES,ebay(18),17.99,22.99,40.99,2.28,APPLIED,diff=18.0
+Blackthornes - SNES Game,SNES,synthetic_ratio_repair,67.66,120.99,121.99,1.80,APPLIED,diff=1.0
+Blades of Thunder - GBA Game,Gameboy Advance,synthetic_ratio_repair,13.75,23.99,24.99,1.82,APPLIED,diff=1.0
+Blast Lacrosse - PS1 Game,Playstation,ebay(3),14.76,25.99,49.99,3.39,APPLIED,diff=24.0
+Blaster Master II - Sega Genesis Game,Sega Genesis,synthetic_ratio_repair,47.13,83.99,84.99,1.80,APPLIED,diff=1.0
+Blender Bros - GBA Game,Gameboy Advance,synthetic_ratio_repair,52.99,134.99,95.99,1.81,APPLIED,diff=-39.0
+Blitz Overtime - PSP Game,PSP,synthetic_ratio_repair,44.99,41.99,80.99,1.80,APPLIED,diff=39.0
+BMX Trick Racer - GBA Game,Gameboy Advance,synthetic_ratio_repair,11.99,8.99,21.99,1.83,APPLIED,diff=13.0
+Bomberman Party Edition - PS1 Game,Playstation,synthetic_ratio_repair(ebay_was_22.99),24.99,33.99,44.99,1.80,APPLIED,diff=11.0
+Bonkers - Sega Genesis Game,Sega Genesis,ebay(5),17.99,35.99,42.99,2.39,APPLIED,diff=7.0
+Boogerman A Pick and Flick Adventure - Sega Genesis Game,Sega Genesis,ebay(4),48.99,63.99,77.99,1.59,APPLIED,diff=14.0
+Bookworm - GBA Game,Gameboy Advance,synthetic_ratio_repair,20.30,35.99,36.99,1.82,APPLIED,diff=1.0
+Boombots - PS1 Game,Playstation,ebay(4),18.99,22.99,34.99,1.84,APPLIED,diff=12.0
+Brave Fencer Musashi - PS1 Game,Playstation,ebay(8),23.99,173.99,210.99,8.79,APPLIED,diff=37.0
+Breath of Fire - SNES Game,SNES,ebay(30),26.99,116.99,221.99,8.22,APPLIED,diff=105.0
+Breath of Fire 3 - PSP Game,PSP,synthetic_ratio_repair(ebay_was_52.90),68.99,60.99,124.99,1.81,APPLIED,diff=64.0
+Breeders' Cup World Thoroughbred Championships - PS2 Game,Playstation 2,ebay(3),6.90,11.99,9.99,1.45,APPLIED,diff=-2.0
+Bubble and Squeak - Sega Genesis Game,Sega Genesis,ebay(6),24.99,53.99,82.99,3.32,APPLIED,diff=29.0
+Buck Rogers Countdown to Doomsday - Sega Genesis Game,Sega Genesis,ebay(11),55.99,85.99,93.99,1.68,APPLIED,diff=8.0
+Bug Riders - PS1 Game,Playstation,synthetic_ratio_repair,11.34,19.99,20.99,1.85,APPLIED,diff=1.0
+Bugs Bunny Rabbit Rampage - SNES Game,SNES,ebay(9),18.99,25.99,60.99,3.21,APPLIED,diff=35.0
+Bujingai The Forsaken City - PS2 Game,Playstation 2,synthetic_ratio_repair,37.24,66.99,67.99,1.83,APPLIED,diff=1.0
+Bust-A-Move 99 - Nintendo 64 Game,Nintendo 64,synthetic_ratio_repair,18.99,99.99,34.99,1.84,APPLIED,diff=-65.0
+Cabela's Alaskan Adventures - PS2 Game,Playstation 2,ebay(3),6.97,11.99,11.99,1.72,NO_CHANGE,diff=0.0
+Cabela's Legendary Adventures - PS2 Game,Playstation 2,ebay(4),10.47,17.99,13.99,1.34,APPLIED,diff=-4.0
+Cabela's Monster Bass - PS2 Game,Playstation 2,synthetic_ratio_repair,5.68,9.99,10.99,1.93,APPLIED,diff=1.0
+Cabela's Trophy Bucks - PS2 Game,Playstation 2,ebay(8),8.08,13.99,11.99,1.48,APPLIED,diff=-2.0
+Cake Mania Baker's Challenge - PS2 Game,Playstation 2,synthetic_ratio_repair,9.33,15.99,16.99,1.82,APPLIED,diff=1.0
+Caliber 50 - Sega Genesis Game,Sega Genesis,ebay(3),77.99,113.99,124.99,1.60,APPLIED,diff=11.0
+California Speed - Nintendo 64 Game,Nintendo 64,synthetic_ratio_repair,23.29,40.99,41.99,1.80,APPLIED,diff=1.0
+CART World Series - PS1 Game,Playstation,ebay(7),9.99,26.99,12.99,1.30,APPLIED,diff=-14.0
+Castlequest - NES Game,NES,ebay(14),18.99,21.99,60.99,3.21,APPLIED,diff=39.0
+Championship Bowling - NES Game,NES,ebay(24),9.99,11.99,31.99,3.20,APPLIED,diff=20.0
+Chiller - NES Game,NES,synthetic_outlier_guard(ebay_was_393.50_n=4),147.28,264.99,265.99,1.81,APPLIED,diff=1.0
+ClayFighter - SNES Game,SNES,ebay(8),23.99,44.99,132.99,5.54,APPLIED,diff=88.0
+ClayFighter 2 Judgment Clay - SNES Game,SNES,ebay(9),27.99,44.99,105.99,3.79,APPLIED,diff=61.0
+Cleopatra's Fortune - PS1 Game,Playstation,synthetic_ratio_repair,7.32,12.99,13.99,1.91,APPLIED,diff=1.0
+Coach K College Basketball - Sega Genesis Game,Sega Genesis,synthetic_ratio_repair,18.99,18.99,34.99,1.84,APPLIED,diff=16.0
+Code Lyoko Quest for Infinity - PS2 Game,Playstation 2,synthetic_ratio_repair,33.36,59.99,60.99,1.83,APPLIED,diff=1.0
+College Hoops 2K7 - PS2 Game,Playstation 2,synthetic_ratio_repair,10.41,17.99,18.99,1.82,APPLIED,diff=1.0
+College Hoops 2K8 - PS2 Game,Playstation 2,synthetic_ratio_repair(ebay_was_9.19),24.61,43.99,44.99,1.83,APPLIED,diff=1.0
+College Slam - Gameboy Game,Gameboy,synthetic_ratio_repair,12.99,25.99,23.99,1.85,APPLIED,diff=-2.0
+Combat Elite W - Wii Game Paratroopers - PS2 Game,Playstation 2,synthetic_ratio_repair,11.86,20.99,21.99,1.85,APPLIED,diff=1.0
+Conan the Mysteries of Time - NES Game,NES,synthetic_outlier_guard(ebay_was_321.99_n=3),114.99,259.99,206.99,1.80,APPLIED,diff=-53.0
+Contra Adventure - PS1 Game,Playstation,ebay(8),22.99,84.99,45.99,2.00,APPLIED,diff=-39.0
+Contra Legacy of War - Sega Saturn Game,Sega Saturn,synthetic_outlier_guard(ebay_was_333.50_n=6),104.99,215.99,188.99,1.80,APPLIED,diff=-27.0
+Cosmo Tank - Gameboy Game,Gameboy,synthetic_outlier_guard(ebay_was_135.69_n=4),24.99,36.99,44.99,1.80,APPLIED,diff=8.0
+Crash 'n' the Boys: Street Challenge - NES Game,NES,synthetic_outlier_guard(ebay_was_459.08_n=3),68.99,98.99,124.99,1.81,APPLIED,diff=26.0
+Crazy Frog Arcade Racer - PS2 Game,Playstation 2,synthetic_ratio_repair(ebay_was_12.13),17.10,29.99,30.99,1.81,APPLIED,diff=1.0
+Crimson Gem Saga - PSP Game,PSP,synthetic_ratio_repair(ebay_was_64.37),68.99,96.99,124.99,1.81,APPLIED,diff=28.0
+Cruis'n Exotica - Gameboy Color Game,Gameboy Color,synthetic_outlier_guard(ebay_was_87.39_n=3),19.99,31.99,35.99,1.80,APPLIED,diff=4.0
+Cruis'n Exotica - Nintendo 64 Game,Nintendo 64,synthetic_ratio_repair,21.99,87.99,39.99,1.82,APPLIED,diff=-48.0
+Cruis'n Velocity - GBA Game,Gameboy Advance,synthetic_ratio_repair,15.99,26.99,28.99,1.81,APPLIED,diff=2.0
+Crushed Baseball - GBA Game,Gameboy Advance,synthetic_outlier_guard(ebay_was_72.49_n=6),9.82,16.99,17.99,1.83,APPLIED,diff=1.0
+Crystal Quest - Gameboy Game,Gameboy,synthetic_ratio_repair,24.99,35.99,44.99,1.80,APPLIED,diff=9.0
+Cyberstadium Series Base Wars - NES Game,NES,synthetic_ratio_repair,16.99,21.99,30.99,1.82,APPLIED,diff=9.0
+Dash Galaxy in the Alien Asylum - NES Game,NES,ebay(12),14.99,13.99,53.99,3.60,APPLIED,diff=40.0
+Dashin' Desperadoes - Sega Genesis Game,Sega Genesis,ebay(4),40.99,46.99,65.99,1.61,APPLIED,diff=19.0
+David Crane's Amazing Tennis - Sega Genesis Game,Sega Genesis,synthetic_ratio_repair(ebay_was_10.11),14.99,13.99,26.99,1.80,APPLIED,diff=13.0
+Davis Cup Tennis - GBA Game,Gameboy Advance,synthetic_ratio_repair,14.99,6.99,26.99,1.80,APPLIED,diff=20.0
+Dead in the Water - PS1 Game,Playstation,synthetic_ratio_repair,17.99,23.99,32.99,1.83,APPLIED,diff=9.0
+Deception III Dark Delusion - PS1 Game,Playstation,ebay(3),51.99,169.99,149.99,2.88,APPLIED,diff=-20.0
+Deer Drive Legends - Wii Game,Wii,synthetic_ratio_repair(ebay_was_7.36),34.99,76.99,62.99,1.80,APPLIED,diff=-14.0
+Deer Hunter - PS2 Game,Playstation 2,synthetic_ratio_repair(ebay_was_7.35),11.12,19.99,20.99,1.89,APPLIED,diff=1.0
+Desert Strike Advance - GBA Game,Gameboy Advance,synthetic_ratio_repair,51.99,42.99,93.99,1.81,APPLIED,diff=51.0
+DICE DNA Integrated Cybernetic - PS2 Game,Playstation 2,synthetic_ratio_repair,4.83,7.99,8.99,1.86,APPLIED,diff=1.0
+Dick Tracy - NES Game,NES,ebay(16),15.99,23.99,77.99,4.88,APPLIED,diff=54.0
+Diva Girls: Divas On Ice - Wii Game,Wii,synthetic_ratio_repair(ebay_was_7.36),9.99,9.99,17.99,1.80,APPLIED,diff=8.0
+Diva Starz Mall Mania - Gameboy Color Game,Gameboy Color,synthetic_ratio_repair,9.99,11.99,17.99,1.80,APPLIED,diff=6.0
+Donald Duck AdvancePAL  - GBA Game,Gameboy Advance,synthetic_ratio_repair,14.95,25.99,26.99,1.81,APPLIED,diff=1.0
+Donald Duck Going Quackers - Gamecube Game,Gamecube,ebay(6),30.13,53.99,47.99,1.59,APPLIED,diff=-6.0
+Donald Duck Going Quackers - PS2 Game,Playstation 2,synthetic_ratio_repair,18.22,31.99,32.99,1.81,APPLIED,diff=1.0
+Donkey Kong Country 2 - SNES Game,SNES,ebay(26),29.99,56.99,136.99,4.57,APPLIED,diff=80.0
+Donkey Kong Country 3 - SNES Game,SNES,ebay(10),15.99,71.99,192.99,12.07,APPLIED,diff=121.0
+Doom - SNES Game,SNES,ebay(24),21.99,117.99,201.99,9.19,APPLIED,diff=84.0
+Double Dragon III The Arcade Game - Sega Genesis Game,Sega Genesis,synthetic_ratio_repair,32.23,57.99,58.99,1.83,APPLIED,diff=1.0
+Double Dragon V The Shadow Falls - SNES Game,SNES,ebay(5),28.99,45.99,93.99,3.24,APPLIED,diff=48.0
+Dr Robotnik's Mean Bean Machine - Sega Genesis Game,Sega Genesis,ebay(8),30.62,54.99,53.99,1.76,APPLIED,diff=-1.0
+Dragon Spirit - NES Game,NES,ebay(12),18.99,27.99,93.99,4.95,APPLIED,diff=66.0
+Dragon Tales Dragon Adventures - GBA Game,Gameboy Advance,synthetic_ratio_repair,18.99,24.99,34.99,1.84,APPLIED,diff=10.0
+Drake and Josh - GBA Game,Gameboy Advance,synthetic_ratio_repair,11.99,14.99,21.99,1.83,APPLIED,diff=7.0
+Drakkhen - SNES Game,SNES,ebay(29),18.99,21.99,70.99,3.74,APPLIED,diff=49.0
+DT Carnage - PS2 Game,Playstation 2,synthetic_ratio_repair,12.27,21.99,22.99,1.87,APPLIED,diff=1.0
+DT Carnage - PSP Game,PSP,synthetic_ratio_repair(ebay_was_22.08),30.99,16.99,55.99,1.81,APPLIED,diff=39.0
+Dual Blades - GBA Game,Gameboy Advance,synthetic_ratio_repair,49.99,41.99,89.99,1.80,APPLIED,diff=48.0
+Dungeon Explorer Warriors of Ancient Arts - PSP Game,PSP,synthetic_ratio_repair(ebay_was_20.64),27.99,37.99,50.99,1.82,APPLIED,diff=13.0
+Dynowarz The Destruction of Spondylus - NES Game,NES,synthetic_outlier_guard(ebay_was_71.29_n=4),13.54,23.99,24.99,1.85,APPLIED,diff=1.0
+Earthworm Jim - SNES Game,SNES,ebay(15),22.99,77.99,198.99,8.66,APPLIED,diff=121.0
+Eggs of Steel - PS1 Game,Playstation,ebay(6),55.99,71.99,114.99,2.05,APPLIED,diff=43.0
+Enchanted Once Upon Andalasia - GBA Game,Gameboy Advance,synthetic_ratio_repair,11.99,16.99,21.99,1.83,APPLIED,diff=5.0
+End War - PSP Game,PSP,synthetic_ratio_repair(ebay_was_8.27),12.99,13.99,23.99,1.85,APPLIED,diff=10.0
+ESPN MLS ExtraTime 2002 - Gamecube Game,Gamecube,ebay(5),22.99,21.99,35.99,1.57,APPLIED,diff=14.0
+Eternal Poison - PS2 Game,Playstation 2,synthetic_ratio_repair,94.98,169.99,170.99,1.80,APPLIED,diff=1.0
+EverGirl - GBA Game,Gameboy Advance,synthetic_ratio_repair,5.37,8.99,9.99,1.86,APPLIED,diff=1.0
+Exo Squad - Sega Genesis Game,Sega Genesis,synthetic_outlier_guard(ebay_was_114.07_n=3),24.99,54.99,44.99,1.80,APPLIED,diff=-10.0
+F-Zero - SNES Game,SNES,ebay(30),15.99,35.99,95.99,6.00,APPLIED,diff=60.0
+Family Feud - PS2 Game,Playstation 2,synthetic_ratio_repair,9.69,16.99,17.99,1.86,APPLIED,diff=1.0
+Fantasia - Sega Genesis Game,Sega Genesis,ebay(18),22.99,28.99,43.99,1.91,APPLIED,diff=15.0
+Fatal Fury - SNES Game,SNES,synthetic_outlier_guard(ebay_was_160.97_n=6),19.99,39.99,35.99,1.80,APPLIED,diff=-4.0
+Fatal Fury Mark of the Wolves - Sega Dreamcast Game,Sega Dreamcast,ebay(4),89.99,123.99,155.99,1.73,APPLIED,diff=32.0
+Fear Factor Unleashed - GBA Game,Gameboy Advance,ebay(4),11.99,13.99,15.99,1.33,APPLIED,diff=2.0
+Fighting Masters - Sega Genesis Game,Sega Genesis,ebay(5),24.99,38.99,49.99,2.00,APPLIED,diff=11.0
+Final Fantasy Adventure - Gameboy Game,Gameboy,ebay(13),31.99,110.99,155.99,4.88,APPLIED,diff=45.0
+Final Fantasy II - SNES Game,SNES,ebay(11),68.99,138.99,309.99,4.49,APPLIED,diff=171.0
+Final Fantasy III - SNES Game,SNES,ebay(34),49.99,181.99,397.99,7.96,APPLIED,diff=216.0
+Final Fantasy Mystic Quest - SNES Game,SNES,ebay(23),18.99,45.99,124.99,6.58,APPLIED,diff=79.0
+Final Fight - SNES Game,SNES,ebay(22),21.99,33.99,131.99,6.00,APPLIED,diff=98.0
+Final Fight 2 - SNES Game,SNES,synthetic_outlier_guard(ebay_was_293.45_n=6),22.99,158.99,41.99,1.83,APPLIED,diff=-117.0
+Force 21 - Gameboy Color Game,Gameboy Color,synthetic_ratio_repair,13.99,14.99,25.99,1.86,APPLIED,diff=11.0
+Ford Bold Moves Street Racing - PSP Game,PSP,synthetic_ratio_repair(ebay_was_20.69),22.99,26.99,41.99,1.83,APPLIED,diff=15.0
+Ford Mustang The Legend Lives - PS2 Game,Playstation 2,ebay(4),7.43,12.99,10.99,1.48,APPLIED,diff=-2.0
+Formula 1 - PS1 Game,Playstation,ebay(21),9.99,96.99,14.99,1.50,APPLIED,diff=-82.0
+Formula One 2000 - Gameboy Color Game,Gameboy Color,synthetic_ratio_repair,24.64,43.99,44.99,1.83,APPLIED,diff=1.0
+Formula One Built To Win - NES Game,NES,synthetic_ratio_repair,49.99,86.99,89.99,1.80,APPLIED,diff=3.0
+Fox Hunt - PS1 Game,Playstation,synthetic_ratio_repair,139.63,250.99,251.99,1.80,APPLIED,diff=1.0
+Freaky Flyers - Gamecube Game,Gamecube,ebay(6),28.99,94.99,68.99,2.38,APPLIED,diff=-26.0
+Friday the 13th - NES Game,NES,synthetic_outlier_guard(ebay_was_124.20_n=7),22.99,38.99,41.99,1.83,APPLIED,diff=3.0
+Frogger - Sega Genesis Game,Sega Genesis,ebay(8),16.99,25.99,25.99,1.53,NO_CHANGE,diff=0.0
+Frogger Ancient Shadow - PS2 Game,Playstation 2,synthetic_ratio_repair,15.11,26.99,27.99,1.85,APPLIED,diff=1.0
+Fugitive Hunter - PS2 Game,Playstation 2,synthetic_ratio_repair,14.16,24.99,25.99,1.84,APPLIED,diff=1.0
+Gadget Twins - Sega Genesis Game,Sega Genesis,ebay(4),21.99,36.99,48.99,2.23,APPLIED,diff=12.0
+Gain Ground - Sega Genesis Game,Sega Genesis,ebay(5),43.99,117.99,73.99,1.68,APPLIED,diff=-44.0
+Galidor Defenders of the Outer Dimension - GBA Game,Gameboy Advance,ebay(4),11.99,9.99,31.99,2.67,APPLIED,diff=22.0
+Gex 3: Deep Cover Gecko - Gameboy Color Game,Gameboy Color,ebay(3),18.99,19.99,49.99,2.63,APPLIED,diff=30.0
+Golgo 13 Top Secret Episode - NES Game,NES,ebay(19),12.99,19.99,62.99,4.85,APPLIED,diff=43.0
+Gradius Galaxies - GBA Game,Gameboy Advance,ebay(5),46.99,80.99,121.99,2.60,APPLIED,diff=41.0
+Gradius III - SNES Game,SNES,ebay(24),24.99,42.99,110.99,4.44,APPLIED,diff=68.0
+Gran Turismo Concept 2002 Tokyo-Geneva - PS2 Game,Playstation 2,synthetic_ratio_repair,17.99,37.99,32.99,1.83,APPLIED,diff=-5.0
+Grand Slam - Sega Saturn Game,Sega Saturn,synthetic_ratio_repair(ebay_was_36.86),64.99,106.99,116.99,1.80,APPLIED,diff=10.0
+Growl - Sega Genesis Game,Sega Genesis,synthetic_ratio_repair,180.99,196.99,325.99,1.80,APPLIED,diff=129.0
+Gyruss - NES Game,NES,ebay(8),16.99,22.99,65.99,3.88,APPLIED,diff=43.0
+Hammerin' Hero - PSP Game,PSP,ebay(3),79.98,142.99,186.99,2.34,APPLIED,diff=44.0
+Hannspree Ten Kate Honda SBK Superbike World Championship - PSP Game,PSP,synthetic_ratio_repair(ebay_was_8.50),10.99,11.99,19.99,1.82,APPLIED,diff=8.0
+Hardcore Pinball - GBA Game,Gameboy Advance,synthetic_ratio_repair,23.16,40.99,41.99,1.81,APPLIED,diff=1.0
+Harley Davidson Race Across America - Gameboy Color Game,Gameboy Color,synthetic_ratio_repair,14.04,24.99,25.99,1.85,APPLIED,diff=1.0
+Harry Potter Sorcerers Stone - PS2 Game,Playstation 2,synthetic_ratio_repair(ebay_was_18.83),107.90,193.99,194.99,1.81,APPLIED,diff=1.0
+Harvest Moon Save the Homeland - PS2 Game,Playstation 2,synthetic_ratio_repair,15.98,27.99,28.99,1.81,APPLIED,diff=1.0
+Heatseeker - PS2 Game,Playstation 2,synthetic_ratio_repair(ebay_was_6.75),9.50,16.99,17.99,1.89,APPLIED,diff=1.0
+Heavy Shreddin' - NES Game,NES,ebay(10),12.99,15.99,50.99,3.93,APPLIED,diff=35.0
+High Rollers Casino - PS2 Game,Playstation 2,synthetic_ratio_repair,6.14,10.99,11.99,1.95,APPLIED,diff=1.0
+High Stakes - Gameboy Game,Gameboy,synthetic_ratio_repair,13.99,16.99,25.99,1.86,APPLIED,diff=9.0
+Home Alone 2 Lost In New York - SNES Game,SNES,synthetic_outlier_guard(ebay_was_45.99_n=5),12.99,25.99,23.99,1.85,APPLIED,diff=-2.0
+Home Improvement - SNES Game,SNES,ebay(5),129.99,198.99,422.99,3.25,APPLIED,diff=224.0
+Hooters Road Trip - PS1 Game,Playstation,synthetic_ratio_repair,15.20,26.99,27.99,1.84,APPLIED,diff=1.0
+IGPX - PS2 Game,Playstation 2,synthetic_ratio_repair,37.75,66.99,67.99,1.80,APPLIED,diff=1.0
+Illusion of Gaia - SNES Game,SNES,ebay(32),37.99,76.99,164.99,4.34,APPLIED,diff=88.0
+Indiana Jones and the Last Crusade - Sega Genesis Game,Sega Genesis,ebay(9),52.99,43.99,74.99,1.42,APPLIED,diff=31.0
+Indiana Jones Infernal Machine - Nintendo 64 Game,Nintendo 64,synthetic_ratio_repair,130.50,233.99,234.99,1.80,APPLIED,diff=1.0
+Instruments of Chaos Starring Young Indiana Jones - Sega Genesis Game,Sega Genesis,ebay(6),18.99,31.99,41.99,2.21,APPLIED,diff=10.0
+International Superstar Soccer Deluxe - SNES Game,SNES,ebay(7),173.99,147.99,471.99,2.71,APPLIED,diff=324.0
+Iron Helix - Sega CD Game,Sega CD,ebay(6),24.99,72.99,43.99,1.76,APPLIED,diff=-29.0
+Izzy's Quest for the Olympic Rings - Sega Genesis Game,Sega Genesis,ebay(7),12.99,19.99,18.99,1.46,APPLIED,diff=-1.0
+Jackie Chan's Stunt Master - PS1 Game,Playstation,synthetic_ratio_repair,85.50,152.99,153.99,1.80,APPLIED,diff=1.0
+James Pond 2 Codename Robocod - Sega Genesis Game,Sega Genesis,ebay(8),31.99,33.99,48.99,1.53,APPLIED,diff=15.0
+James Pond 3 Operation Starfish - Sega Genesis Game,Sega Genesis,ebay(6),31.99,38.99,43.99,1.38,APPLIED,diff=5.0
+Jeopardy - PS2 Game,Playstation 2,ebay(5),6.99,14.99,11.99,1.72,APPLIED,diff=-3.0
+Jeopardy Platinum Edition - Gameboy Game,Gameboy,synthetic_ratio_repair,15.94,27.99,28.99,1.82,APPLIED,diff=1.0
+Jeopardy Sports Edition - Gameboy Game,Gameboy,synthetic_ratio_repair,16.99,28.99,30.99,1.82,APPLIED,diff=2.0
+Jeopardy Teen Tournament - Gameboy Game,Gameboy,synthetic_ratio_repair,13.31,22.99,23.99,1.80,APPLIED,diff=1.0
+Jet Grind Radio - GBA Game,Gameboy Advance,synthetic_ratio_repair,134.75,241.99,242.99,1.80,APPLIED,diff=1.0
+Jet X2O - PS2 Game,Playstation 2,ebay(4),9.41,15.99,18.99,2.02,APPLIED,diff=3.0
+Joe and Mac - Sega Genesis Game,Sega Genesis,ebay(4),56.55,100.99,121.99,2.16,APPLIED,diff=21.0
+Joe and Mac - SNES Game,SNES,ebay(9),24.99,45.99,130.99,5.24,APPLIED,diff=85.0
+Joe and Mac 2 Lost in the Tropics - SNES Game,SNES,synthetic_outlier_guard(ebay_was_413.99_n=3),93.99,194.99,169.99,1.81,APPLIED,diff=-25.0
+John Elway's Quarterback - NES Game,NES,ebay(25),6.51,10.99,30.99,4.76,APPLIED,diff=20.0
+Jordan vs Bird One on One - NES Game,NES,ebay(11),12.99,16.99,55.99,4.31,APPLIED,diff=39.0
+JumpStart Dino Adventure Field Trip - Gameboy Color Game,Gameboy Color,synthetic_ratio_repair,9.99,16.99,17.99,1.80,APPLIED,diff=1.0
+Jurassic Park 2 The Chaos Continues - SNES Game,SNES,synthetic_outlier_guard(ebay_was_114.08_n=5),31.99,61.99,57.99,1.81,APPLIED,diff=-4.0
+Justice League Chronicles - GBA Game,Gameboy Advance,synthetic_outlier_guard(ebay_was_68.95_n=5),14.99,40.99,26.99,1.80,APPLIED,diff=-14.0
+Justice League Task Force - Sega Genesis Game,Sega Genesis,ebay(4),21.99,33.99,39.99,1.82,APPLIED,diff=6.0
+Kartia Word of Fate - PS1 Game,Playstation,synthetic_ratio_repair,49.99,138.99,89.99,1.80,APPLIED,diff=-49.0
+Ken Griffey Jr Major League Baseball - SNES Game,SNES,ebay(7),21.99,23.99,70.99,3.23,APPLIED,diff=47.0
+Kerplunk / Toss Across / Tip It - GBA Game,Gameboy Advance,synthetic_ratio_repair,9.99,13.99,17.99,1.80,APPLIED,diff=4.0
+Kid's Cards - GBA Game,Gameboy Advance,ebay(5),9.99,6.99,16.99,1.70,APPLIED,diff=10.0
+Killer Instinct - SNES Game,SNES,ebay(28),22.99,36.99,136.99,5.96,APPLIED,diff=100.0
+Kim Possible 3 - GBA Game,Gameboy Advance,synthetic_ratio_repair,11.99,17.99,21.99,1.83,APPLIED,diff=4.0
+Kinetica - PS2 Game,Playstation 2,synthetic_ratio_repair,13.26,22.99,23.99,1.81,APPLIED,diff=1.0
+King's Field Ancient City - PS2 Game,Playstation 2,synthetic_ratio_repair,118.16,211.99,212.99,1.80,APPLIED,diff=1.0
+Kirby Super Star - SNES Game,SNES,synthetic_outlier_guard(ebay_was_266.80_n=7),31.99,140.99,57.99,1.81,APPLIED,diff=-83.0
+Kirby Tilt and Tumble - Gameboy Color Game,Gameboy Color,ebay(7),91.99,155.99,167.99,1.83,APPLIED,diff=12.0
+Kirby's Avalanche - SNES Game,SNES,ebay(22),24.99,50.99,105.99,4.24,APPLIED,diff=55.0
+Kirby's Dream Course - SNES Game,SNES,ebay(9),37.99,77.99,248.99,6.55,APPLIED,diff=171.0
+Klax - Gameboy Color Game,Gameboy Color,synthetic_outlier_guard(ebay_was_50.55_n=3),10.99,17.99,19.99,1.82,APPLIED,diff=2.0
+Knights of the Round - SNES Game,SNES,ebay(3),248.99,240.99,558.99,2.25,APPLIED,diff=318.0
+Konami Arcade Classics - PS1 Game,Playstation,synthetic_ratio_repair,14.99,119.99,26.99,1.80,APPLIED,diff=-93.0
+Kung Fu Heroes - NES Game,NES,ebay(21),12.83,22.99,68.99,5.38,APPLIED,diff=46.0
+Kurt Warner's Arena Football Unleashed - PS1 Game,Playstation,synthetic_ratio_repair,32.99,20.99,59.99,1.82,APPLIED,diff=39.0
+Landstalker Treasures of King Nole - Sega Genesis Game,Sega Genesis,synthetic_ratio_repair,53.36,95.99,96.99,1.82,APPLIED,diff=1.0
+Laser Invasion - NES Game,NES,ebay(6),31.99,42.99,76.99,2.41,APPLIED,diff=34.0
+Lawnmower Man - Sega Genesis Game,Sega Genesis,ebay(4),37.99,53.99,55.99,1.47,APPLIED,diff=2.0
+Legend of Alon D'Ar - PS2 Game,Playstation 2,ebay(4),8.70,14.99,18.99,2.18,APPLIED,diff=4.0
+Legend of the Mystical Ninja - SNES Game,SNES,ebay(5),86.99,145.99,202.99,2.33,APPLIED,diff=57.0
+Legendary Wings - NES Game,NES,ebay(15),19.99,29.99,76.99,3.85,APPLIED,diff=47.0
+Lemmings 2 The Tribes - Sega Genesis Game,Sega Genesis,ebay(4),24.99,47.99,43.99,1.76,APPLIED,diff=-4.0
+Let's Play Garden - Wii Game,Wii,synthetic_ratio_repair(ebay_was_9.03),11.99,16.99,21.99,1.83,APPLIED,diff=5.0
+Lethal Enforcers - SNES Game,SNES,ebay(8),17.99,25.99,259.99,14.45,APPLIED,diff=234.0
+Lethal Enforcers 1 and 2 - PS1 Game,Playstation,synthetic_ratio_repair,52.23,93.99,94.99,1.82,APPLIED,diff=1.0
+Lightening Force Quest for the Darkstar - Sega Genesis Game,Sega Genesis,synthetic_ratio_repair,140.99,175.99,253.99,1.80,APPLIED,diff=78.0
+Lizzie McGuire 3 - GBA Game,Gameboy Advance,synthetic_ratio_repair,11.99,9.99,21.99,1.83,APPLIED,diff=12.0
+Lost World Jurassic Park - Sega Genesis Game,Sega Genesis,synthetic_ratio_repair(ebay_was_20.70),78.99,111.99,142.99,1.81,APPLIED,diff=31.0
+Lufia and The Fortress of Doom - SNES Game,SNES,ebay(13),99.99,181.99,285.99,2.86,APPLIED,diff=104.0
+Lufia Ruins of Lore - GBA Game,Gameboy Advance,ebay(5),107.99,141.99,309.99,2.87,APPLIED,diff=168.0
+Mad Dog II Lost Gold - Sega CD Game,Sega CD,synthetic_ratio_repair,128.99,210.99,232.99,1.81,APPLIED,diff=22.0
+Madden 2001 - Gameboy Color Game,Gameboy Color,synthetic_ratio_repair,11.99,15.99,21.99,1.83,APPLIED,diff=6.0
+Madden 2002 - Gameboy Color Game,Gameboy Color,ebay(3),11.50,19.99,31.99,2.78,APPLIED,diff=12.0
+Madden 2004 - GBA Game,Gameboy Advance,ebay(3),11.99,12.99,29.99,2.50,APPLIED,diff=17.0
+Madden 2007 - Gamecube Game,Gamecube,synthetic_ratio_repair(ebay_was_7.36),9.99,11.99,17.99,1.80,APPLIED,diff=6.0
+Madden 2008 - Gamecube Game,Gamecube,synthetic_ratio_repair,23.99,44.99,43.99,1.83,APPLIED,diff=-1.0
+Madden 97 - Gameboy Game,Gameboy,synthetic_ratio_repair,21.99,21.99,39.99,1.82,APPLIED,diff=18.0
+Madden NFL '95 - Sega Genesis Game,Sega Genesis,ebay(21),11.99,9.99,15.99,1.33,APPLIED,diff=6.0
+Madden NFL 12 - PSP Game,PSP,synthetic_ratio_repair,39.99,52.99,71.99,1.80,APPLIED,diff=19.0
+Magi-Nation - Gameboy Color Game,Gameboy Color,synthetic_outlier_guard(ebay_was_72.67_n=3),22.99,53.99,41.99,1.83,APPLIED,diff=-12.0
+Magic Pengel The Quest For Color - PS2 Game,Playstation 2,ebay(3),47.41,84.99,99.99,2.11,APPLIED,diff=15.0
+Magician - NES Game,NES,synthetic_outlier_guard(ebay_was_179.40_n=6),58.88,104.99,105.99,1.80,APPLIED,diff=1.0
+Magmax - NES Game,NES,ebay(21),14.99,22.99,53.99,3.60,APPLIED,diff=31.0
+Marble Madness - Sega Genesis Game,Sega Genesis,ebay(7),24.99,38.99,37.99,1.52,APPLIED,diff=-1.0
+Mario is Missing - SNES Game,SNES,ebay(14),20.33,35.99,96.99,4.77,APPLIED,diff=61.0
+Mario Paint - SNES Game,SNES,ebay(12),10.99,13.99,173.99,15.83,APPLIED,diff=160.0
+Maui Mallard in Cold Shadow - Gameboy Game,Gameboy,synthetic_ratio_repair,40.99,70.99,73.99,1.81,APPLIED,diff=3.0
+Max Steel Covert Missions - Sega Dreamcast Game,Sega Dreamcast,ebay(6),18.99,24.99,37.99,2.00,APPLIED,diff=13.0
+Maximum Force Pull the Trigger - PS1 Game,Playstation,synthetic_ratio_repair,27.63,48.99,49.99,1.81,APPLIED,diff=1.0
+Mazes of Fate - GBA Game,Gameboy Advance,synthetic_ratio_repair,74.99,85.99,134.99,1.80,APPLIED,diff=49.0
+Mega Bomberman - Sega Genesis Game,Sega Genesis,ebay(3),49.99,64.99,105.99,2.12,APPLIED,diff=41.0
+Mega Man Anniversary Collection - PS2 Game,Playstation 2,ebay(3),9.99,16.99,17.99,1.80,APPLIED,diff=1.0
+Mega Man Soccer - SNES Game,SNES,synthetic_outlier_guard(ebay_was_368.00_n=3),103.99,189.99,187.99,1.81,APPLIED,diff=-2.0
+MegaRace - Sega CD Game,Sega CD,ebay(3),61.99,75.99,89.99,1.45,APPLIED,diff=14.0
+Metal Slug - Sega Saturn Game,Sega Saturn,synthetic_ratio_repair(ebay_was_133.86),260.99,193.99,469.99,1.80,APPLIED,diff=276.0
+Michael Jordan Chaos in the Windy City - SNES Game,SNES,synthetic_outlier_guard(ebay_was_174.79_n=3),37.99,40.99,68.99,1.82,APPLIED,diff=28.0
+Mickey Mania - SNES Game,SNES,ebay(17),24.99,25.99,93.99,3.76,APPLIED,diff=68.0
+Micro Machi - NES Game V4 - PSP Game,PSP,synthetic_ratio_repair,12.58,21.99,22.99,1.83,APPLIED,diff=1.0
+Mighty Beanz Pocket Puzzles - GBA Game,Gameboy Advance,synthetic_ratio_repair,8.00,13.99,14.99,1.87,APPLIED,diff=1.0
+Mighty Morphin Power Rangers - SNES Game,SNES,ebay(22),24.99,60.99,198.99,7.96,APPLIED,diff=138.0
+Millipede - NES Game,NES,ebay(16),11.99,24.99,40.99,3.42,APPLIED,diff=16.0
+Milon's Secret Castle - NES Game,NES,ebay(20),13.30,22.99,55.99,4.21,APPLIED,diff=33.0
+Miner 2049er - Gameboy Game,Gameboy,synthetic_ratio_repair,31.99,55.99,57.99,1.81,APPLIED,diff=2.0
+Miss Spiders Tea Party - PS1 Game,Playstation,synthetic_ratio_repair(ebay_was_7.35),11.99,13.99,21.99,1.83,APPLIED,diff=8.0
+Mister Mosquito - PS2 Game,Playstation 2,synthetic_ratio_repair,82.14,146.99,147.99,1.80,APPLIED,diff=1.0
+MLB 98 - PS1 Game,Playstation,ebay(6),7.99,11.99,12.99,1.63,APPLIED,diff=1.0
+MLB 99 - PS1 Game,Playstation,ebay(20),2.99,16.99,14.99,5.01,APPLIED,diff=-2.0
+MLB Slugfest 2004 - GBA Game,Gameboy Advance,synthetic_ratio_repair,20.99,27.99,37.99,1.81,APPLIED,diff=10.0
+MLB Slugfest Loaded - PS2 Game,Playstation 2,synthetic_ratio_repair,14.61,25.99,26.99,1.85,APPLIED,diff=1.0
+Mobil 1 Rally Championship - PS1 Game,Playstation,synthetic_ratio_repair(ebay_was_12.39),13.99,16.99,25.99,1.86,APPLIED,diff=9.0
+Monopoly - SNES Game,SNES,ebay(37),9.99,15.99,28.99,2.90,APPLIED,diff=13.0
+Monster 4x4 Masters of Metal - PS2 Game,Playstation 2,synthetic_ratio_repair,7.39,12.99,13.99,1.89,APPLIED,diff=1.0
+Monster Party - NES Game,NES,synthetic_ratio_repair,34.99,51.99,62.99,1.80,APPLIED,diff=11.0
+Monster Rancher Hop-A-Bout - PS1 Game,Playstation,synthetic_ratio_repair,28.41,50.99,51.99,1.83,APPLIED,diff=1.0
+Mortal Kombat - SNES Game,SNES,ebay(10),7.99,32.99,71.99,9.01,APPLIED,diff=39.0
+Mortal Kombat 3 - SNES Game,SNES,ebay(23),16.68,29.99,142.99,8.57,APPLIED,diff=113.0
+Mortal Kombat II - SNES Game,SNES,ebay(19),24.99,42.99,111.99,4.48,APPLIED,diff=69.0
+Mortal Kombat Tournament Edition - GBA Game,Gameboy Advance,ebay(7),86.99,143.99,118.99,1.37,APPLIED,diff=-25.0
+Mother 1+2 [Homebrew] - GBA Game,Gameboy Advance,synthetic_outlier_guard(ebay_was_109.60_n=5),32.96,58.99,59.99,1.82,APPLIED,diff=1.0
+Mother 3 [Homebrew] - GBA Game,Gameboy Advance,ebay(14),25.33,44.99,125.99,4.97,APPLIED,diff=81.0
+Moto GP 07 - PS2 Game,Playstation 2,synthetic_ratio_repair(ebay_was_8.27),10.99,18.99,19.99,1.82,APPLIED,diff=1.0
+Motor City Patrol - NES Game,NES,ebay(3),117.87,211.99,285.99,2.43,APPLIED,diff=74.0
+Mouse Trap / Operation / Simon - GBA Game,Gameboy Advance,ebay(4),8.99,11.99,17.99,2.00,APPLIED,diff=6.0
+Mr. Chin's Gourmet Paradise - Gameboy Game,Gameboy,synthetic_outlier_guard(ebay_was_142.60_n=3),24.99,32.99,44.99,1.80,APPLIED,diff=12.0
+Ms. Pac-Man - SNES Game,SNES,ebay(31),12.99,27.99,37.99,2.92,APPLIED,diff=10.0
+Ms. Pac-Man [Namco] - NES Game,NES,synthetic_ratio_repair(ebay_was_55.20),74.99,142.99,134.99,1.80,APPLIED,diff=-8.0
+Ms. Pac-Man [Tengen] - NES Game,NES,ebay(42),24.99,70.99,57.99,2.32,APPLIED,diff=-13.0
+MTV Remote Control - NES Game,NES,ebay(10),13.99,18.99,42.99,3.07,APPLIED,diff=24.0
+Mucha Lucha: Mascaritas of the Lost Code - GBA Game,Gameboy Advance,synthetic_ratio_repair,12.99,16.99,23.99,1.85,APPLIED,diff=7.0
+MUSCLE - NES Game,NES,synthetic_ratio_repair,17.99,43.99,32.99,1.83,APPLIED,diff=-11.0
+Mutant League Hockey - Sega Genesis Game,Sega Genesis,ebay(17),57.99,193.99,76.99,1.33,APPLIED,diff=-117.0
+Mutant Virus - NES Game,NES,ebay(4),73.99,117.99,242.99,3.28,APPLIED,diff=125.0
+My Disney Kitchen - PS1 Game,Playstation,synthetic_ratio_repair,22.72,39.99,40.99,1.80,APPLIED,diff=1.0
+N2O Nitrous Oxide - PS1 Game,Playstation,synthetic_ratio_repair,23.99,23.99,43.99,1.83,APPLIED,diff=20.0
+Namco Museum - Nintendo 64 Game,Nintendo 64,synthetic_ratio_repair,9.99,26.99,17.99,1.80,APPLIED,diff=-9.0
+Nancy Drew Message in a Haunted Mansion - GBA Game,Gameboy Advance,synthetic_ratio_repair,22.99,34.99,41.99,1.83,APPLIED,diff=7.0
+NASCAR 2001 - PS2 Game,Playstation 2,ebay(17),8.99,10.99,13.99,1.56,APPLIED,diff=3.0
+NASCAR Dirt to Daytona - PS2 Game,Playstation 2,ebay(3),18.62,32.99,26.99,1.45,APPLIED,diff=-6.0
+NASCAR Heat - Gameboy Color Game,Gameboy Color,ebay(5),14.99,13.99,41.99,2.80,APPLIED,diff=28.0
+NASCAR Racers - Gameboy Color Game,Gameboy Color,ebay(7),13.99,9.99,41.99,3.00,APPLIED,diff=32.0
+NBA 3 on 3 Featuring Kobe Bryant - Gameboy Color Game,Gameboy Color,synthetic_ratio_repair,12.99,18.99,23.99,1.85,APPLIED,diff=5.0
+NBA Ballers Phenom - PS2 Game,Playstation 2,ebay(4),18.98,33.99,24.99,1.32,APPLIED,diff=-9.0
+NBA Hang Time - PS1 Game,Playstation,synthetic_ratio_repair,75.98,135.99,136.99,1.80,APPLIED,diff=1.0
+NBA In the Zone '99 - PS1 Game,Playstation,synthetic_ratio_repair(ebay_was_13.79),17.99,32.99,32.99,1.83,NO_CHANGE,diff=0.0
+NBA Jam - SNES Game,SNES,ebay(30),11.99,34.99,65.99,5.50,APPLIED,diff=31.0
+NBA Jam Tournament Edition - Sega Genesis Game,Sega Genesis,ebay(28),16.99,22.99,25.99,1.53,APPLIED,diff=3.0
+NBA Jam Tournament Edition - SNES Game,SNES,ebay(27),24.99,39.99,65.99,2.64,APPLIED,diff=26.0
+NBA Live 95 - Sega Genesis Game,Sega Genesis,ebay(13),9.99,10.99,13.99,1.40,APPLIED,diff=3.0
+NBA Live 96 - Sega Genesis Game,Sega Genesis,ebay(11),8.99,14.99,14.99,1.67,NO_CHANGE,diff=0.0
+NCAA GameBreaker '98 - PS1 Game,Playstation,ebay(7),9.99,12.99,13.99,1.40,APPLIED,diff=1.0
+NFL Blitz 2000 - Gameboy Color Game,Gameboy Color,ebay(4),12.99,13.99,39.99,3.08,APPLIED,diff=26.0
+NFL Blitz Pro - PS2 Game,Playstation 2,synthetic_ratio_repair,13.34,23.99,24.99,1.87,APPLIED,diff=1.0
+NFL Football - NES Game,NES,ebay(34),9.99,13.99,31.99,3.20,APPLIED,diff=18.0
+NFL Full Contact - PS1 Game,Playstation,synthetic_ratio_repair,16.99,15.99,30.99,1.82,APPLIED,diff=15.0
+NFL GameDay 2000 - PS1 Game,Playstation,ebay(14),6.99,9.99,11.99,1.72,APPLIED,diff=2.0
+NFL Head Coach - PS2 Game,Playstation 2,synthetic_ratio_repair,10.11,17.99,18.99,1.88,APPLIED,diff=1.0
+NHL 2K10 - PS2 Game,Playstation 2,synthetic_ratio_repair,12.05,20.99,21.99,1.82,APPLIED,diff=1.0
+NHL 94 - SNES Game,SNES,ebay(12),15.99,26.99,49.99,3.13,APPLIED,diff=23.0
+NHL Hitz Pro - Gamecube Game,Gamecube,synthetic_ratio_repair(ebay_was_22.99),26.99,50.99,48.99,1.82,APPLIED,diff=-2.0
+NHL Open Ice 2 on 2 Challenge - PS1 Game,Playstation,ebay(3),69.99,124.99,118.99,1.70,APPLIED,diff=-6.0
+NHL Stanley Cup - SNES Game,SNES,ebay(27),8.99,9.99,21.99,2.45,APPLIED,diff=12.0
+"Ni Hao, Kai-lan: Super Game Day - PS2 Game",Playstation 2,synthetic_ratio_repair,7.54,12.99,13.99,1.86,APPLIED,diff=1.0
+Nicktoons Racing - Gameboy Color Game,Gameboy Color,synthetic_ratio_repair,12.99,13.99,23.99,1.85,APPLIED,diff=10.0
+Nightmare Creatures - Nintendo 64 Game,Nintendo 64,synthetic_ratio_repair,18.99,54.99,34.99,1.84,APPLIED,diff=-20.0
+Ninja Crusaders - NES Game,NES,synthetic_outlier_guard(ebay_was_437.00_n=7),62.99,104.99,113.99,1.81,APPLIED,diff=9.0
+Ninja Gaiden III Ancient Ship of Doom - NES Game,NES,synthetic_outlier_guard(ebay_was_450.79_n=5),136.99,259.99,246.99,1.80,APPLIED,diff=-13.0
+Normy's Beach Babe-O-Rama - Sega Genesis Game,Sega Genesis,synthetic_ratio_repair(ebay_was_39.46),55.99,121.99,100.99,1.80,APPLIED,diff=-21.0
+NRA Gun Club - PS2 Game,Playstation 2,synthetic_ratio_repair,7.92,13.99,14.99,1.89,APPLIED,diff=1.0
+NSYNC Get to the Show - Gameboy Color Game,Gameboy Color,ebay(3),8.99,6.99,19.99,2.22,APPLIED,diff=13.0
+Obscure The Aftermath - PS2 Game,Playstation 2,synthetic_ratio_repair,43.13,76.99,77.99,1.81,APPLIED,diff=1.0
+One - PS1 Game,Playstation,synthetic_ratio_repair(ebay_was_12.42),20.99,36.99,37.99,1.81,APPLIED,diff=1.0
+Oriental Blue [Homebrew] - GBA Game,Gameboy Advance,synthetic_ratio_repair,36.26,64.99,65.99,1.82,APPLIED,diff=1.0
+Othello - NES Game,NES,ebay(30),9.99,12.99,30.99,3.10,APPLIED,diff=18.0
+Out of Gas - Gameboy Game,Gameboy,synthetic_ratio_repair,43.99,58.99,79.99,1.82,APPLIED,diff=21.0
+OutRunners - Sega Genesis Game,Sega Genesis,ebay(3),85.99,66.99,180.99,2.10,APPLIED,diff=114.0
+Pac-Man World Rally - Gamecube Game,Gamecube,synthetic_ratio_repair,23.99,40.99,43.99,1.83,APPLIED,diff=3.0
+Panel Action Bingo - Gameboy Game,Gameboy,synthetic_ratio_repair,20.99,21.99,37.99,1.81,APPLIED,diff=16.0
+Pangya: Fantasy Golf - PSP Game,PSP,synthetic_ratio_repair,52.99,30.99,95.99,1.81,APPLIED,diff=65.0
+Payout Poker and Casino - PSP Game,PSP,synthetic_ratio_repair(ebay_was_7.36),18.99,23.99,34.99,1.84,APPLIED,diff=11.0
+Peace Keepers - SNES Game,SNES,ebay(6),106.99,167.99,246.99,2.31,APPLIED,diff=79.0
+Pete Sampras Tennis - Sega Genesis Game,Sega Genesis,ebay(4),18.99,30.99,45.99,2.42,APPLIED,diff=15.0
+Phantom Brave: The Hermuda Triangle - PSP Game,PSP,synthetic_ratio_repair(ebay_was_18.31),29.99,39.99,53.99,1.80,APPLIED,diff=14.0
+Phil of the Future - GBA Game,Gameboy Advance,synthetic_ratio_repair,9.99,9.99,17.99,1.80,APPLIED,diff=8.0
+Phix the Adventure - PS1 Game,Playstation,synthetic_ratio_repair,16.15,28.99,29.99,1.86,APPLIED,diff=1.0
+Pilotwings - SNES Game,SNES,ebay(16),18.15,31.99,77.99,4.30,APPLIED,diff=46.0
+Pinocchio - Sega Genesis Game,Sega Genesis,ebay(4),62.99,74.99,107.99,1.71,APPLIED,diff=33.0
+Pipe Dreams 3D - PS1 Game,Playstation,ebay(5),6.02,9.99,15.99,2.66,APPLIED,diff=6.0
+Pirates of Dark Water - Sega Genesis Game,Sega Genesis,ebay(3),105.99,154.99,188.99,1.78,APPLIED,diff=34.0
+Pitfall Mayan Adventure - SNES Game,SNES,ebay(30),14.99,18.99,55.99,3.74,APPLIED,diff=37.0
+Play Action Football - Gameboy Game,Gameboy,ebay(8),9.35,15.99,32.99,3.53,APPLIED,diff=17.0
+Play Action Football - NES Game,NES,ebay(37),6.99,6.99,31.99,4.58,APPLIED,diff=25.0
+Pocahontas - Sega Genesis Game,Sega Genesis,ebay(4),80.99,93.99,114.99,1.42,APPLIED,diff=21.0
+Pocket Pool - PSP Game,PSP,synthetic_ratio_repair,18.74,32.99,33.99,1.81,APPLIED,diff=1.0
+Polaris SnoCross - PS1 Game,Playstation,synthetic_ratio_repair(ebay_was_6.15),7.99,17.99,14.99,1.88,APPLIED,diff=-3.0
+Pong The Next Level - Gameboy Color Game,Gameboy Color,ebay(6),12.99,21.99,24.99,1.92,APPLIED,diff=3.0
+Pong The Next Level - PS1 Game,Playstation,synthetic_ratio_repair(ebay_was_8.62),10.99,16.99,19.99,1.82,APPLIED,diff=3.0
+Populous - SNES Game,SNES,ebay(29),11.99,11.99,49.99,4.17,APPLIED,diff=38.0
+Portal Runner - Gameboy Color Game,Gameboy Color,synthetic_ratio_repair,17.99,24.99,32.99,1.83,APPLIED,diff=8.0
+Power Play Sports Trivia - PS1 Game,Playstation,ebay(4),7.99,10.99,11.99,1.50,APPLIED,diff=1.0
+Power Punch II - NES Game,NES,synthetic_ratio_repair,49.99,90.99,89.99,1.80,APPLIED,diff=-1.0
+Powerpuff Girls - Nintendo 64 Game,Nintendo 64,synthetic_ratio_repair,26.58,46.99,47.99,1.81,APPLIED,diff=1.0
+Primal Rage - SNES Game,SNES,ebay(18),19.99,32.99,65.99,3.30,APPLIED,diff=33.0
+Prince of Persia Arabian Nights - Sega Dreamcast Game,Sega Dreamcast,synthetic_ratio_repair(ebay_was_66.70),71.99,123.99,129.99,1.81,APPLIED,diff=6.0
+Pro Fishing Challenge - Xbox Game,Xbox,synthetic_ratio_repair,17.99,24.99,32.99,1.83,APPLIED,diff=8.0
+Punky Skunk - PS1 Game,Playstation,synthetic_ratio_repair,59.99,94.99,107.99,1.80,APPLIED,diff=13.0
+Puppy Luv Spa and Resort - GBA Game,Gameboy Advance,ebay(3),7.99,9.99,16.99,2.13,APPLIED,diff=7.0
+Puzzle Challenge Crosswords and More - PS2 Game,Playstation 2,ebay(5),6.99,9.99,10.99,1.57,APPLIED,diff=1.0
+Q*bert - Gameboy Color Game,Gameboy Color,synthetic_outlier_guard(ebay_was_69.04_n=4),22.33,39.99,40.99,1.84,APPLIED,diff=1.0
+Q*bert - NES Game,NES,ebay(16),17.99,34.99,49.99,2.78,APPLIED,diff=15.0
+Race Driver 2006 - PSP Game,PSP,ebay(5),17.99,37.99,24.99,1.39,APPLIED,diff=-13.0
+Rad Racer II - NES Game,NES,ebay(12),18.99,25.99,60.99,3.21,APPLIED,diff=35.0
+Rambo - NES Game,NES,ebay(21),17.99,24.99,124.99,6.95,APPLIED,diff=100.0
+Rambo III - Sega Genesis Game,Sega Genesis,synthetic_ratio_repair(ebay_was_49.68),52.99,78.99,95.99,1.81,APPLIED,diff=17.0
+Rastan Saga II - Sega Genesis Game,Sega Genesis,ebay(3),47.99,62.99,62.99,1.31,NO_CHANGE,diff=0.0
+Ray Crisis - PS1 Game,Playstation,synthetic_ratio_repair,148.20,265.99,266.99,1.80,APPLIED,diff=1.0
+Razor Freestyle Scooter - PS1 Game,Playstation,synthetic_ratio_repair(ebay_was_7.35),9.99,9.99,17.99,1.80,APPLIED,diff=8.0
+RBI Baseball 94 - Sega Genesis Game,Sega Genesis,ebay(7),12.99,19.99,18.99,1.46,APPLIED,diff=-1.0
+Rescue Copter - PS1 Game,Playstation,synthetic_ratio_repair,12.99,15.99,23.99,1.85,APPLIED,diff=8.0
+Rescue Heroes Billy Blazes - GBA Game,Gameboy Advance,synthetic_ratio_repair,14.99,22.99,26.99,1.80,APPLIED,diff=4.0
+Rescue Heroes Fire Frenzy - Gameboy Color Game,Gameboy Color,synthetic_ratio_repair,8.99,9.99,16.99,1.89,APPLIED,diff=7.0
+Resident Evil Essentials - PS2 Game,Playstation 2,synthetic_ratio_repair,54.91,97.99,98.99,1.80,APPLIED,diff=1.0
+Rhapsody A Musical Adventure - PS1 Game,Playstation,ebay(4),93.99,202.99,186.99,1.99,APPLIED,diff=-16.0
+Ridge Racer 2 - PSP Game,PSP,synthetic_ratio_repair(ebay_was_28.92),36.99,52.99,66.99,1.81,APPLIED,diff=14.0
+Rings of Power - Sega Genesis Game,Sega Genesis,ebay(4),57.99,96.99,129.99,2.24,APPLIED,diff=33.0
+Risk / Battleship / Clue - GBA Game,Gameboy Advance,ebay(10),10.99,12.99,16.99,1.55,APPLIED,diff=4.0
+Road Runner - NES Game,NES,ebay(16),17.99,38.99,68.99,3.83,APPLIED,diff=30.0
+Robocop vs The Terminator - SNES Game,SNES,synthetic_outlier_guard(ebay_was_211.59_n=7),37.99,49.99,68.99,1.82,APPLIED,diff=19.0
+Rock 'n Roll Racing - Sega Genesis Game,Sega Genesis,ebay(3),62.99,133.99,149.99,2.38,APPLIED,diff=16.0
+Rock em Sock em Robots Arena - PS1 Game,Playstation,synthetic_ratio_repair(ebay_was_14.71),18.99,31.99,34.99,1.84,APPLIED,diff=3.0
+Rocket Power Beach Bandits - GBA Game,Gameboy Advance,ebay(3),9.99,8.99,24.99,2.50,APPLIED,diff=16.0
+Rocko's Modern Life - SNES Game,SNES,synthetic_outlier_guard(ebay_was_224.88_n=4),31.99,64.99,57.99,1.81,APPLIED,diff=-7.0
+Rolling Thunder 3 - Sega Genesis Game,Sega Genesis,ebay(3),65.99,207.99,229.99,3.49,APPLIED,diff=22.0
+Run Saber - SNES Game,SNES,synthetic_outlier_guard(ebay_was_369.46_n=4),138.99,266.99,250.99,1.81,APPLIED,diff=-16.0
+Saiyuki Journey West - PS1 Game,Playstation,synthetic_outlier_guard(ebay_was_119.59_n=5),24.99,175.99,44.99,1.80,APPLIED,diff=-131.0
+Santa Claus Jr. Advance - GBA Game,Gameboy Advance,synthetic_ratio_repair,49.99,88.99,89.99,1.80,APPLIED,diff=1.0
+Saturday Night Slam Masters - Sega Genesis Game,Sega Genesis,synthetic_ratio_repair,55.99,124.99,100.99,1.80,APPLIED,diff=-24.0
+Saturday Night Slam Masters - SNES Game,SNES,ebay(3),43.99,66.99,142.99,3.25,APPLIED,diff=76.0
+Scooby Doo Mystery - SNES Game,SNES,ebay(12),14.99,18.99,62.99,4.20,APPLIED,diff=44.0
+Scooby-Doo Mystery - Sega Genesis Game,Sega Genesis,ebay(3),89.99,148.99,184.99,2.06,APPLIED,diff=36.0
+Sea-Doo Hydrocross - PS1 Game,Playstation,ebay(3),6.94,11.99,10.99,1.58,APPLIED,diff=-1.0
+Seaman [Mic Bundle] - Sega Dreamcast Game,Sega Dreamcast,synthetic_ratio_repair,139.99,250.99,251.99,1.80,APPLIED,diff=1.0
+Secret of Mana - SNES Game,SNES,ebay(34),22.99,136.99,296.99,12.92,APPLIED,diff=160.0
+Separation Anxiety - SNES Game,SNES,synthetic_ratio_repair,38.99,78.99,70.99,1.82,APPLIED,diff=-8.0
+Shadow of Destiny - PS2 Game,Playstation 2,ebay(3),28.46,50.99,62.99,2.21,APPLIED,diff=12.0
+Shadowrun - SNES Game,SNES,ebay(14),93.61,167.99,359.99,3.85,APPLIED,diff=192.0
+Shaq Fu - SNES Game,SNES,ebay(9),14.99,24.99,73.99,4.94,APPLIED,diff=49.0
+Sheep Raider - PS1 Game,Playstation,synthetic_ratio_repair,12.99,102.99,23.99,1.85,APPLIED,diff=-79.0
+Shinobi - NES Game,NES,synthetic_outlier_guard(ebay_was_91.99_n=3),24.59,43.99,44.99,1.83,APPLIED,diff=1.0
+Shooting Range - NES Game,NES,ebay(10),17.99,33.99,34.99,1.94,APPLIED,diff=1.0
+Short Order/Eggsplode - NES Game,NES,synthetic_ratio_repair,18.99,31.99,34.99,1.84,APPLIED,diff=3.0
+Silent Hill Experience - PSP Game,PSP,ebay(10),52.99,94.99,114.99,2.17,APPLIED,diff=20.0
+Silk Worm - NES Game,NES,synthetic_outlier_guard(ebay_was_139.83_n=5),42.99,53.99,77.99,1.81,APPLIED,diff=24.0
+SimCity - SNES Game,SNES,ebay(22),12.99,29.99,71.99,5.54,APPLIED,diff=42.0
+Ski and Shoot - PS2 Game,Playstation 2,ebay(3),4.03,6.99,12.99,3.22,APPLIED,diff=6.0
+Skitchin - Sega Genesis Game,Sega Genesis,ebay(3),27.99,37.99,49.99,1.79,APPLIED,diff=12.0
+Sky Gunner - PS2 Game,Playstation 2,synthetic_ratio_repair,54.99,185.99,98.99,1.80,APPLIED,diff=-87.0
+Skydiving Extreme - PS1 Game,Playstation,synthetic_ratio_repair(ebay_was_6.61),7.99,9.99,14.99,1.88,APPLIED,diff=5.0
+Slots - PS1 Game,Playstation,ebay(3),9.37,15.99,18.99,2.03,APPLIED,diff=3.0
+Snoopy vs. the Red Baron - PS2 Game,Playstation 2,synthetic_ratio_repair(ebay_was_19.30),25.19,44.99,45.99,1.83,APPLIED,diff=1.0
+Soccer Mania - GBA Game,Gameboy Advance,synthetic_outlier_guard(ebay_was_91.98_n=4),12.99,12.99,23.99,1.85,APPLIED,diff=11.0
+Sonic Classics - Sega Genesis Game,Sega Genesis,synthetic_ratio_repair(ebay_was_25.76),27.99,35.99,50.99,1.82,APPLIED,diff=15.0
+Space Invaders - SNES Game,SNES,ebay(26),13.99,30.99,37.99,2.72,APPLIED,diff=7.0
+Spawn - Gameboy Color Game,Gameboy Color,synthetic_ratio_repair,62.99,118.99,113.99,1.81,APPLIED,diff=-5.0
+Spawn - SNES Game,SNES,synthetic_outlier_guard(ebay_was_183.99_n=5),31.99,41.99,57.99,1.81,APPLIED,diff=16.0
+Speedball 2 - Sega Genesis Game,Sega Genesis,ebay(6),37.99,47.99,52.99,1.39,APPLIED,diff=5.0
+Speedy Gonzales Los Gatos Bandidos - SNES Game,SNES,synthetic_outlier_guard(ebay_was_55.65_n=6),18.99,29.99,34.99,1.84,APPLIED,diff=5.0
+Spiderman - Nintendo 64 Game,Nintendo 64,synthetic_ratio_repair,31.99,82.99,57.99,1.81,APPLIED,diff=-25.0
+Spiderman X-Men Arcade's Revenge - SNES Game,SNES,ebay(14),18.99,28.99,82.99,4.37,APPLIED,diff=54.0
+SpongeBob's Atlantis SquarePantis - GBA Game,Gameboy Advance,synthetic_ratio_repair,12.82,22.99,23.99,1.87,APPLIED,diff=1.0
+Sports Illustrated Golf Classic - Gameboy Game,Gameboy,synthetic_outlier_guard(ebay_was_36.79_n=4),11.99,13.99,21.99,1.83,APPLIED,diff=8.0
+Spot Goes To Hollywood - Sega Genesis Game,Sega Genesis,ebay(3),31.99,49.99,52.99,1.66,APPLIED,diff=3.0
+Spy Kids Challenger - GBA Game,Gameboy Advance,ebay(6),8.99,11.99,27.99,3.11,APPLIED,diff=16.0
+Spyro Attack of the Rhynocs - GBA Game,Gameboy Advance,ebay(3),21.99,36.99,74.99,3.41,APPLIED,diff=38.0
+Star Fox - SNES Game,SNES,ebay(22),11.99,44.99,132.99,11.09,APPLIED,diff=88.0
+Star Soldier - NES Game,NES,ebay(19),13.99,17.99,62.99,4.50,APPLIED,diff=45.0
+Street Fighter 2010 the Final Fight - NES Game,NES,ebay(10),19.99,38.99,108.99,5.45,APPLIED,diff=70.0
+Street Fighter II - SNES Game,SNES,ebay(38),9.99,33.99,99.99,10.01,APPLIED,diff=66.0
+Street Fighter II Turbo - SNES Game,SNES,ebay(34),18.99,49.99,102.99,5.42,APPLIED,diff=53.0
+Street Jam Basketball - GBA Game,Gameboy Advance,synthetic_ratio_repair,13.99,13.99,25.99,1.86,APPLIED,diff=12.0
+Street Smart - Sega Genesis Game,Sega Genesis,ebay(4),31.99,43.99,75.99,2.38,APPLIED,diff=32.0
+Strider - NES Game,NES,ebay(14),18.99,27.99,105.99,5.58,APPLIED,diff=78.0
+Strike Point - PS1 Game,Playstation,synthetic_ratio_repair,13.99,5.99,25.99,1.86,APPLIED,diff=20.0
+Stunt Race FX - SNES Game,SNES,ebay(21),17.99,26.99,68.99,3.83,APPLIED,diff=42.0
+Sub Terrania - Sega Genesis Game,Sega Genesis,ebay(22),15.99,20.99,26.99,1.69,APPLIED,diff=6.0
+Sum of All Fears - PS2 Game,Playstation 2,synthetic_ratio_repair,11.65,19.99,20.99,1.80,APPLIED,diff=1.0
+Super Black Bass - SNES Game,SNES,ebay(19),8.99,23.99,37.99,4.23,APPLIED,diff=14.0
+Super Bomberman 2 - SNES Game,SNES,ebay(12),30.99,82.99,152.99,4.94,APPLIED,diff=70.0
+Super Bonk - SNES Game,SNES,ebay(8),93.99,196.99,372.99,3.97,APPLIED,diff=176.0
+Super Bubble Pop - PS1 Game,Playstation,ebay(3),9.50,16.99,15.99,1.68,APPLIED,diff=-1.0
+Super Caesar's Palace - SNES Game,SNES,ebay(27),6.99,8.99,21.99,3.15,APPLIED,diff=13.0
+Super Castlevania IV - SNES Game,SNES,ebay(29),68.99,116.99,248.99,3.61,APPLIED,diff=132.0
+Super Dodge Ball - NES Game,NES,synthetic_ratio_repair,19.99,39.99,35.99,1.80,APPLIED,diff=-4.0
+Super Double Dragon - SNES Game,SNES,ebay(9),37.99,100.99,229.99,6.05,APPLIED,diff=129.0
+Super Ghouls 'N Ghosts - SNES Game,SNES,ebay(26),27.99,74.99,208.99,7.47,APPLIED,diff=134.0
+Super Glove Ball - NES Game,NES,ebay(7),12.99,16.99,37.99,2.92,APPLIED,diff=21.0
+Super Mario All-Stars - SNES Game,SNES,ebay(36),24.99,50.99,124.99,5.00,APPLIED,diff=74.0
+Super Mario All-stars and Super Mario World - SNES Game,SNES,ebay(36),78.99,95.99,130.99,1.66,APPLIED,diff=35.0
+Super Mario Ball - GBA Game,Gameboy Advance,synthetic_ratio_repair,27.99,42.99,50.99,1.82,APPLIED,diff=8.0
+Super Mario Kart - SNES Game,SNES,ebay(32),43.99,84.99,145.99,3.32,APPLIED,diff=61.0
+Super Mario RPG - SNES Game,SNES,ebay(32),18.99,237.99,350.99,18.48,APPLIED,diff=113.0
+Super Mario World - SNES Game,SNES,ebay(26),18.99,51.99,677.99,35.70,APPLIED,diff=626.0
+Super Mario World 2 Yoshi's Island - SNES Game,SNES,ebay(29),21.99,99.99,217.99,9.91,APPLIED,diff=118.0
+Super Nova - SNES Game,SNES,synthetic_outlier_guard(ebay_was_142.58_n=4),49.99,93.99,89.99,1.80,APPLIED,diff=-4.0
+Super Off Road - SNES Game,SNES,ebay(14),12.99,37.99,40.99,3.16,APPLIED,diff=3.0
+Super PickUps - Wii Game,Wii,ebay(3),10.99,14.99,18.99,1.73,APPLIED,diff=4.0
+Super Pinball Behind the Mask - SNES Game,SNES,ebay(23),12.99,18.99,30.99,2.39,APPLIED,diff=12.0
+Super Play Action Football - SNES Game,SNES,ebay(27),7.99,10.99,24.99,3.13,APPLIED,diff=14.0
+Super R-Type - SNES Game,SNES,ebay(28),18.99,35.99,119.99,6.32,APPLIED,diff=84.0
+Super Scope 6 - SNES Game,SNES,ebay(13),10.99,23.99,211.99,19.29,APPLIED,diff=188.0
+Super Shot Soccer - PS1 Game,Playstation,synthetic_ratio_repair,30.97,54.99,55.99,1.81,APPLIED,diff=1.0
+Super Smash TV - Sega Genesis Game,Sega Genesis,synthetic_ratio_repair,29.99,49.99,53.99,1.80,APPLIED,diff=4.0
+Super Star Wars - SNES Game,SNES,ebay(38),17.18,29.99,77.99,4.54,APPLIED,diff=48.0
+Super Star Wars Empire Strikes Back - SNES Game,SNES,ebay(26),23.99,47.99,64.99,2.71,APPLIED,diff=17.0
+Super Street Fighter II - SNES Game,SNES,ebay(36),12.99,48.99,99.99,7.70,APPLIED,diff=51.0
+Super Team Games - NES Game,NES,ebay(12),12.99,15.99,46.99,3.62,APPLIED,diff=31.0
+Supercross Circuit - PS1 Game,Playstation,synthetic_ratio_repair(ebay_was_7.08),12.99,20.99,23.99,1.85,APPLIED,diff=3.0
+Swashbucklers - PS2 Game,Playstation 2,synthetic_ratio_repair,13.28,22.99,23.99,1.81,APPLIED,diff=1.0
+Tall Infinity - PS1 Game,Playstation,synthetic_ratio_repair,9.35,15.99,16.99,1.82,APPLIED,diff=1.0
+Task Force Harrier - Sega Genesis Game,Sega Genesis,ebay(3),62.99,90.99,101.99,1.62,APPLIED,diff=11.0
+Taz-Mania - Sega Genesis Game,Sega Genesis,ebay(32),12.99,18.99,22.99,1.77,APPLIED,diff=4.0
+Taz-Mania - SNES Game,SNES,ebay(29),12.99,20.99,49.99,3.85,APPLIED,diff=29.0
+Tecmo Super Bowl - PS1 Game,Playstation,synthetic_ratio_repair,19.99,56.99,35.99,1.80,APPLIED,diff=-21.0
+Tecmo Super Bowl - SNES Game,SNES,ebay(17),10.99,39.99,49.99,4.55,APPLIED,diff=10.0
+Teen Titans 2 - GBA Game,Gameboy Advance,synthetic_outlier_guard(ebay_was_93.55_n=3),35.99,47.99,64.99,1.81,APPLIED,diff=17.0
+Teenage Mutant Ninja Turtles III Radical Rescue - Gameboy Game,Gameboy,synthetic_ratio_repair,155.99,199.99,280.99,1.80,APPLIED,diff=81.0
+Teenage Mutant Ninja Turtles Tournament Fighters - SNES Game,SNES,ebay(11),29.99,51.99,155.99,5.20,APPLIED,diff=104.0
+Ten Pin Alley - Sega Saturn Game,Sega Saturn,synthetic_outlier_guard(ebay_was_46.00_n=3),17.99,29.99,32.99,1.83,APPLIED,diff=3.0
+Tenchu 3 Wrath of Heaven - PS2 Game,Playstation 2,synthetic_ratio_repair(ebay_was_27.59),33.99,43.99,61.99,1.82,APPLIED,diff=18.0
+Test Drive 2001 - Gameboy Color Game,Gameboy Color,synthetic_ratio_repair,15.99,19.99,28.99,1.81,APPLIED,diff=9.0
+Test Drive Cycles - Gameboy Color Game,Gameboy Color,synthetic_ratio_repair,12.99,6.99,23.99,1.85,APPLIED,diff=17.0
+Tetris 2 - SNES Game,SNES,ebay(29),12.99,26.99,37.99,2.92,APPLIED,diff=11.0
+Tetris and Dr. Mario - SNES Game,SNES,ebay(18),16.99,70.99,89.99,5.30,APPLIED,diff=19.0
+Tetris Attack - SNES Game,SNES,ebay(16),22.99,39.99,54.99,2.39,APPLIED,diff=15.0
+The Adventures of Rocky and Bullwinkle and Friends - Sega Genesis Game,Sega Genesis,ebay(6),37.99,47.99,57.99,1.53,APPLIED,diff=10.0
+The Bible Game - GBA Game,Gameboy Advance,synthetic_outlier_guard(ebay_was_46.92_n=4),16.99,21.99,30.99,1.82,APPLIED,diff=9.0
+The Divide Enemies Within - PS1 Game,Playstation,synthetic_ratio_repair,43.30,76.99,77.99,1.80,APPLIED,diff=1.0
+The Great Circus Mystery Starring Mickey and Minnie - SNES Game,SNES,synthetic_outlier_guard(ebay_was_83.12_n=6),28.99,56.99,52.99,1.83,APPLIED,diff=-4.0
+The Hustle Detroit Streets - PS2 Game,Playstation 2,ebay(9),7.14,11.99,12.99,1.82,APPLIED,diff=1.0
+The Karate Kid - NES Game,NES,ebay(25),17.99,25.99,62.99,3.50,APPLIED,diff=37.0
+The Lion King - SNES Game,SNES,ebay(31),16.99,26.99,68.99,4.06,APPLIED,diff=42.0
+The Lost Vikings - Sega Genesis Game,Sega Genesis,ebay(10),22.99,27.99,60.99,2.65,APPLIED,diff=33.0
+The Mask - SNES Game,SNES,ebay(9),12.99,209.99,37.99,2.92,APPLIED,diff=-172.0
+The Punisher - Gameboy Game,Gameboy,synthetic_outlier_guard(ebay_was_533.59_n=4),29.99,57.99,53.99,1.80,APPLIED,diff=-4.0
+The Punisher - NES Game,NES,synthetic_outlier_guard(ebay_was_183.91_n=7),35.99,69.99,64.99,1.81,APPLIED,diff=-5.0
+The Ren and Stimpy Show Buckeroos - NES Game,NES,synthetic_outlier_guard(ebay_was_171.11_n=3),37.85,67.99,68.99,1.82,APPLIED,diff=1.0
+The Ren and Stimpy Show Fire Dogs - SNES Game,SNES,synthetic_outlier_guard(ebay_was_229.95_n=7),68.76,122.99,123.99,1.80,APPLIED,diff=1.0
+The Ren and Stimpy Show Stimpy's Invention - Sega Genesis Game,Sega Genesis,ebay(8),18.99,18.99,35.99,1.90,APPLIED,diff=17.0
+The Three Stooges - PS1 Game,Playstation,synthetic_ratio_repair,23.73,41.99,42.99,1.81,APPLIED,diff=1.0
+Theme Park - Sega Genesis Game,Sega Genesis,synthetic_ratio_repair(ebay_was_63.48),77.99,98.99,140.99,1.81,APPLIED,diff=42.0
+Threads of Fate - PS1 Game,Playstation,ebay(6),37.99,117.99,114.99,3.03,APPLIED,diff=-3.0
+Thunder Alley - GBA Game,Gameboy Advance,synthetic_ratio_repair,11.99,15.99,21.99,1.83,APPLIED,diff=6.0
+Thunder Fox - Sega Genesis Game,Sega Genesis,ebay(4),58.99,65.99,100.99,1.71,APPLIED,diff=35.0
+Tokyo Xtreme Racer Advance - GBA Game,Gameboy Advance,synthetic_ratio_repair,21.99,27.99,39.99,1.82,APPLIED,diff=12.0
+Tom and Jerry War of Whiskers - Gamecube Game,Gamecube,synthetic_ratio_repair,34.99,55.99,62.99,1.80,APPLIED,diff=7.0
+Tomb Raider [Black Label] - PS1 Game,Playstation,ebay(9),12.99,33.99,24.99,1.92,APPLIED,diff=-9.0
+Tombs and Treasure - NES Game,NES,ebay(5),53.99,81.99,142.99,2.65,APPLIED,diff=61.0
+Tonka On The Job - GBA Game,Gameboy Advance,synthetic_ratio_repair,9.99,6.99,17.99,1.80,APPLIED,diff=11.0
+Tonka Space Station - PS1 Game,Playstation,synthetic_ratio_repair(ebay_was_8.51),12.99,15.99,23.99,1.85,APPLIED,diff=8.0
+Tony Hawk 3 - Nintendo 64 Game,Nintendo 64,synthetic_outlier_guard(ebay_was_200.48_n=3),68.99,129.99,124.99,1.81,APPLIED,diff=-5.0
+Toobin' - Gameboy Color Game,Gameboy Color,synthetic_ratio_repair,16.99,27.99,30.99,1.82,APPLIED,diff=3.0
+Top Gear - SNES Game,SNES,ebay(18),14.99,31.99,84.99,5.67,APPLIED,diff=53.0
+Top Gun Firestorm Advance - GBA Game,Gameboy Advance,ebay(4),9.99,11.99,22.99,2.30,APPLIED,diff=11.0
+Torneko The Last Hope - PS1 Game,Playstation,ebay(3),162.64,291.99,226.99,1.40,APPLIED,diff=-65.0
+Toxic Crusaders - NES Game,NES,synthetic_outlier_guard(ebay_was_459.97_n=4),161.99,261.99,291.99,1.80,APPLIED,diff=30.0
+Toy Story - SNES Game,SNES,synthetic_outlier_guard(ebay_was_46.87_n=6),14.99,33.99,26.99,1.80,APPLIED,diff=-7.0
+Transworld Surf Next Wave - Gamecube Game,Gamecube,synthetic_ratio_repair(ebay_was_27.60),29.99,26.99,53.99,1.80,APPLIED,diff=27.0
+Treasure Master - NES Game,NES,synthetic_outlier_guard(ebay_was_92.00_n=3),33.99,43.99,61.99,1.82,APPLIED,diff=18.0
+TRIBES Aerial Assault - PS2 Game,Playstation 2,synthetic_ratio_repair,7.52,12.99,13.99,1.86,APPLIED,diff=1.0
+True Lies - SNES Game,SNES,ebay(5),81.99,105.99,235.99,2.88,APPLIED,diff=130.0
+Turbo Turtle Adventure - GBA Game,Gameboy Advance,synthetic_ratio_repair,33.99,51.99,61.99,1.82,APPLIED,diff=10.0
+Twisted Metal Head On - PS2 Game,Playstation 2,synthetic_ratio_repair(ebay_was_38.64),52.99,50.99,95.99,1.81,APPLIED,diff=45.0
+Twisted Metal Small Brawl - PS1 Game,Playstation,synthetic_ratio_repair,21.99,124.99,39.99,1.82,APPLIED,diff=-85.0
+Tyco RC - PS1 Game,Playstation,synthetic_ratio_repair(ebay_was_8.27),9.99,12.99,17.99,1.80,APPLIED,diff=5.0
+Tyrants Fight Through Time - Sega Genesis Game,Sega Genesis,ebay(6),18.99,36.99,41.99,2.21,APPLIED,diff=5.0
+Ultima Exodus - NES Game,NES,ebay(32),18.99,28.99,71.99,3.79,APPLIED,diff=43.0
+Ultimate Arcade Games - GBA Game,Gameboy Advance,synthetic_ratio_repair,17.39,30.99,31.99,1.84,APPLIED,diff=1.0
+Ultimate Mortal Kombat 3 - Sega Genesis Game,Sega Genesis,synthetic_ratio_repair(ebay_was_31.97),39.99,64.99,71.99,1.80,APPLIED,diff=7.0
+Ultimate Winter Games - GBA Game,Gameboy Advance,synthetic_ratio_repair,16.88,29.99,30.99,1.84,APPLIED,diff=1.0
+UN Squadron - SNES Game,SNES,ebay(9),43.99,76.99,124.99,2.84,APPLIED,diff=48.0
+Unfabulous - GBA Game,Gameboy Advance,ebay(6),9.99,9.99,12.99,1.30,APPLIED,diff=3.0
+Unison Rebels of Rhythm and Dance - PS2 Game,Playstation 2,synthetic_ratio_repair,12.12,20.99,21.99,1.81,APPLIED,diff=1.0
+Universal Soldier - Sega Genesis Game,Sega Genesis,ebay(3),40.99,57.99,69.99,1.71,APPLIED,diff=12.0
+Vampire Hunter D - PS1 Game,Playstation,ebay(5),49.99,101.99,124.99,2.50,APPLIED,diff=23.0
+Vanguard Bandits - PS1 Game,Playstation,synthetic_outlier_guard(ebay_was_183.99_n=3),26.99,303.99,48.99,1.82,APPLIED,diff=-255.0
+Vapor Trail: Hyper Offence Formation - Sega Genesis Game,Sega Genesis,synthetic_ratio_repair,77.26,138.99,139.99,1.81,APPLIED,diff=1.0
+Vegas Dream - NES Game,NES,ebay(28),9.98,16.99,35.99,3.61,APPLIED,diff=19.0
+Vegas Stakes - SNES Game,SNES,ebay(25),8.99,16.99,23.99,2.67,APPLIED,diff=7.0
+Viewpoint - Sega Genesis Game,Sega Genesis,ebay(6),39.99,57.99,62.99,1.58,APPLIED,diff=5.0
+Vigilante 8 - Gameboy Color Game,Gameboy Color,synthetic_ratio_repair,18.99,69.99,34.99,1.84,APPLIED,diff=-35.0
+Virtua Fighter 2 - Sega Genesis Game,Sega Genesis,synthetic_outlier_guard(ebay_was_78.20_n=5),23.99,32.99,43.99,1.83,APPLIED,diff=11.0
+Virtual Bart - Sega Genesis Game,Sega Genesis,ebay(3),29.99,60.99,80.99,2.70,APPLIED,diff=20.0
+Virtual Pool 3 - PS1 Game,Playstation,synthetic_ratio_repair,14.38,24.99,25.99,1.81,APPLIED,diff=1.0
+Volvo Drive for Life - Xbox Game,Xbox,ebay(3),12.99,10.99,18.99,1.46,APPLIED,diff=8.0
+Wave Rally - PS2 Game,Playstation 2,synthetic_ratio_repair,8.89,15.99,16.99,1.91,APPLIED,diff=1.0
+WCW World Championship Wrestling - NES Game,NES,synthetic_outlier_guard(ebay_was_160.99_n=6),23.99,38.99,43.99,1.83,APPLIED,diff=5.0
+WeaponLord - Sega Genesis Game,Sega Genesis,ebay(3),43.99,49.99,80.99,1.84,APPLIED,diff=31.0
+Wheel of Fortune - PS2 Game,Playstation 2,synthetic_ratio_repair,5.99,15.99,10.99,1.83,APPLIED,diff=-5.0
+Where in Time is Carmen Sandiego - NES Game,NES,ebay(14),18.99,30.99,86.99,4.58,APPLIED,diff=56.0
+Wii Music - Wii Game,Wii,ebay(12),7.28,12.99,13.99,1.92,APPLIED,diff=1.0
+Wii Play - Wii Game,Wii,ebay(33),3.99,20.99,13.99,3.51,APPLIED,diff=-7.0
+Wild Thornberry's Rambler - Gameboy Color Game,Gameboy Color,synthetic_ratio_repair,11.99,10.99,21.99,1.83,APPLIED,diff=11.0
+Win Lose or Draw - NES Game,NES,ebay(17),11.99,13.99,36.99,3.09,APPLIED,diff=23.0
+Wings of Wor - Sega Genesis Game,Sega Genesis,synthetic_ratio_repair,85.99,183.99,154.99,1.80,APPLIED,diff=-29.0
+Wonder Boy in Monster World - Sega Genesis Game,Sega Genesis,ebay(4),55.99,61.99,106.99,1.91,APPLIED,diff=45.0
+Wordtris - Gameboy Game,Gameboy,synthetic_outlier_guard(ebay_was_45.51_n=6),14.99,17.99,26.99,1.80,APPLIED,diff=9.0
+World Cup USA 94 - Sega Genesis Game,Sega Genesis,ebay(5),11.02,18.99,15.99,1.45,APPLIED,diff=-3.0
+WWF Royal Rumble - SNES Game,SNES,synthetic_outlier_guard(ebay_was_78.19_n=4),16.99,27.99,30.99,1.82,APPLIED,diff=3.0
+WWF Super Wrestlemania - SNES Game,SNES,ebay(19),12.99,14.99,79.99,6.16,APPLIED,diff=65.0
+X-Men Mutant Apocalypse - SNES Game,SNES,ebay(17),32.99,49.99,118.99,3.61,APPLIED,diff=69.0
+X-Men vs. Street Fighter - Sega Saturn Game,Sega Saturn,ebay(9),47.98,85.99,120.99,2.52,APPLIED,diff=35.0
+X-Perts - Sega Genesis Game,Sega Genesis,synthetic_ratio_repair,18.99,28.99,34.99,1.84,APPLIED,diff=6.0
+Xenophobe - NES Game,NES,ebay(17),16.99,20.99,62.99,3.71,APPLIED,diff=42.0
+Young Indiana Jones Chronicles - NES Game,NES,synthetic_ratio_repair(ebay_was_82.79),149.99,222.99,269.99,1.80,APPLIED,diff=47.0
+Ys III Wanderers from Ys - Sega Genesis Game,Sega Genesis,synthetic_ratio_repair,142.99,150.99,257.99,1.80,APPLIED,diff=107.0
+Yu-Gi-Oh Eternal Duelist Soul - GBA Game,Gameboy Advance,ebay(8),12.99,29.99,59.99,4.62,APPLIED,diff=30.0
+Zany Golf - Sega Genesis Game,Sega Genesis,synthetic_ratio_repair(ebay_was_9.20),20.99,46.99,37.99,1.81,APPLIED,diff=-9.0
+Zaxxon Motherbase 2000 - Sega 32X Game,Sega 32X,synthetic_ratio_repair(ebay_was_92.00),122.99,128.99,221.99,1.80,APPLIED,diff=93.0
+Zebco Fishing - Gameboy Color Game,Gameboy Color,ebay(4),18.99,41.99,43.99,2.32,APPLIED,diff=2.0
+Zelda Link to the Past - SNES Game,SNES,ebay(34),21.99,89.99,322.99,14.69,APPLIED,diff=233.0
+Zoboomafoo - PS1 Game,Playstation,synthetic_ratio_repair,12.99,12.99,23.99,1.85,APPLIED,diff=11.0
+Earthbound - SNES Game,SNES,synthetic_ratio_repair,618.99,718.99,1114.99,1.80,APPLIED,diff=396.0
+Chrono Trigger - SNES Game,SNES,ebay(27),21.99,502.99,1179.99,53.66,APPLIED,diff=677.0
+AAAHH Real Monsters - SNES Game,SNES,synthetic_outlier_guard(ebay_was_55.19_n=3),17.99,33.99,32.99,1.83,APPLIED,diff=-1.0
+ActRaiser - SNES Game,SNES,synthetic_outlier_guard(ebay_was_126.96_n=5),26.99,112.99,48.99,1.82,APPLIED,diff=-64.0
+Adventures of Dino Riki - NES Game,NES,ebay(13),18.99,29.99,62.99,3.32,APPLIED,diff=33.0
+Adventures of Dr Franken - SNES Game,SNES,ebay(3),28.99,36.99,93.99,3.24,APPLIED,diff=57.0
+Aladdin - SNES Game,SNES,ebay(22),13.99,38.99,69.99,5.00,APPLIED,diff=31.0
+All-Star Baseball 2001 - Gameboy Color Game,Gameboy Color,ebay(3),13.99,15.99,31.99,2.29,APPLIED,diff=16.0
+Aquatic Games Starring James Pond - Sega Genesis Game,Sega Genesis,ebay(6),20.99,24.99,38.99,1.86,APPLIED,diff=14.0
+Army Men Air Combat Elite Missions - Gamecube Game,Gamecube,synthetic_ratio_repair,47.99,47.99,86.99,1.81,APPLIED,diff=39.0
+Batman Returns - SNES Game,SNES,ebay(22),43.99,90.99,83.99,1.91,APPLIED,diff=-7.0
+Bugs Bunny Crazy Castle - NES Game,NES,ebay(12),18.99,47.99,68.99,3.63,APPLIED,diff=21.0
+Hook - SNES Game,SNES,synthetic_outlier_guard(ebay_was_105.80_n=5),17.99,85.99,32.99,1.83,APPLIED,diff=-53.0
+Pac-Man 2 The New Adventures - SNES Game,SNES,ebay(31),12.99,34.99,44.99,3.46,APPLIED,diff=10.0
+Super Adventure Island II - SNES Game,SNES,synthetic_ratio_repair,157.99,237.99,284.99,1.80,APPLIED,diff=47.0
+Super Battleship - SNES Game,SNES,ebay(22),12.99,24.99,31.99,2.46,APPLIED,diff=7.0
+Super Bomberman - SNES Game,SNES,ebay(11),16.99,151.99,471.99,27.78,APPLIED,diff=320.0
+Tiny Toon Adventures Buster Busts Loose - SNES Game,SNES,ebay(21),18.99,34.99,68.99,3.63,APPLIED,diff=34.0
