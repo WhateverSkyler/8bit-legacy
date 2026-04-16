@@ -1,7 +1,7 @@
 import "server-only";
 import { db } from "@db/index";
-import { settings } from "@db/schema";
-import { eq } from "drizzle-orm";
+import { settings, googleAdsPerformance } from "@db/schema";
+import { eq, gte, sql } from "drizzle-orm";
 
 // ── Hard Limits (cannot be overridden without code change) ─────────
 
@@ -276,5 +276,150 @@ export function getAllCircuitBreakerStatus(): Record<CircuitBreakerName, { tripp
   return {
     pricing: isCircuitBreakerTripped("pricing"),
     google_ads: isCircuitBreakerTripped("google_ads"),
+  };
+}
+
+// ── Ads Safety Auto-Trip Conditions ───────────────────────────────
+
+export interface AdsSafetyCheckResult {
+  passed: boolean;
+  checks: Array<{
+    name: string;
+    passed: boolean;
+    detail: string;
+  }>;
+  tripped: boolean;
+  tripReason?: string;
+}
+
+/**
+ * Run all automatic safety checks for Google Ads.
+ * Called by the ads-safety-check scheduled job every 6 hours.
+ *
+ * Uses the googleAdsPerformance table for spend/conversion data.
+ * If any check fails, trips the google_ads circuit breaker.
+ */
+export function runAdsSafetyChecks(): AdsSafetyCheckResult {
+  const checks: AdsSafetyCheckResult["checks"] = [];
+  let shouldTrip = false;
+  let tripReason = "";
+
+  // Already tripped — skip checks
+  const breaker = isCircuitBreakerTripped("google_ads");
+  if (breaker.tripped) {
+    return {
+      passed: false,
+      checks: [{ name: "circuit_breaker_status", passed: false, detail: `Already tripped: ${breaker.reason}` }],
+      tripped: false,
+    };
+  }
+
+  // ── Check 1: Daily spend > $25 hard limit ──
+  const todayStr = new Date().toISOString().split("T")[0];
+  const todaySpend = db
+    .select({ total: sql<number>`coalesce(sum(cost), 0)` })
+    .from(googleAdsPerformance)
+    .where(eq(googleAdsPerformance.date, todayStr))
+    .get();
+
+  const dailySpend = todaySpend?.total ?? 0;
+  const spendPassed = dailySpend <= HARD_LIMITS.MAX_DAILY_AD_SPEND;
+  checks.push({
+    name: "daily_spend_limit",
+    passed: spendPassed,
+    detail: `Today's spend: $${dailySpend.toFixed(2)} / $${HARD_LIMITS.MAX_DAILY_AD_SPEND} limit`,
+  });
+  if (!spendPassed) {
+    shouldTrip = true;
+    tripReason = `Daily spend $${dailySpend.toFixed(2)} exceeded $${HARD_LIMITS.MAX_DAILY_AD_SPEND} hard limit`;
+  }
+
+  // ── Check 2: 3 consecutive days with $10+ spend and 0 conversions ──
+  const threeDaysAgo = new Date(Date.now() - 3 * 86400000).toISOString().split("T")[0];
+  const recentDays = db
+    .select({
+      date: googleAdsPerformance.date,
+      dayCost: sql<number>`sum(cost)`,
+      dayConversions: sql<number>`sum(conversions)`,
+    })
+    .from(googleAdsPerformance)
+    .where(gte(googleAdsPerformance.date, threeDaysAgo))
+    .groupBy(googleAdsPerformance.date)
+    .orderBy(googleAdsPerformance.date)
+    .all();
+
+  // Need exactly 3 days of data with each day having $10+ spend and 0 conversions
+  const qualifyingDays = recentDays.filter(d => d.dayCost >= 10 && d.dayConversions === 0);
+  const noConvPassed = qualifyingDays.length < 3;
+  checks.push({
+    name: "consecutive_no_conversions",
+    passed: noConvPassed,
+    detail: `${qualifyingDays.length}/3 days with $10+ spend and 0 conversions`,
+  });
+  if (!noConvPassed && !shouldTrip) {
+    shouldTrip = true;
+    const totalWasted = qualifyingDays.reduce((sum, d) => sum + d.dayCost, 0);
+    tripReason = `3 consecutive days with $10+ spend ($${totalWasted.toFixed(2)} total) and 0 conversions`;
+  }
+
+  // ── Check 3: Store downtime ──
+  // This is an async check that should be called separately.
+  // We record the last known state here. The job handler does the actual fetch.
+  checks.push({
+    name: "store_uptime",
+    passed: true,
+    detail: "Checked by job handler (async)",
+  });
+
+  // ── Check 4: Rolling 3-day ROAS < 200% after 7+ days of data ──
+  const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
+  const hasEnoughData = db
+    .select({ count: sql<number>`count(distinct date)` })
+    .from(googleAdsPerformance)
+    .where(gte(googleAdsPerformance.date, sevenDaysAgo))
+    .get();
+
+  if ((hasEnoughData?.count ?? 0) >= 7) {
+    const rollingPerf = db
+      .select({
+        totalCost: sql<number>`coalesce(sum(cost), 0)`,
+        totalValue: sql<number>`coalesce(sum(conversion_value), 0)`,
+      })
+      .from(googleAdsPerformance)
+      .where(gte(googleAdsPerformance.date, threeDaysAgo))
+      .get();
+
+    const cost = rollingPerf?.totalCost ?? 0;
+    const value = rollingPerf?.totalValue ?? 0;
+    const rollingRoas = cost > 0 ? (value / cost) * 100 : 0;
+    const roasPassed = rollingRoas >= 200 || cost === 0;
+
+    checks.push({
+      name: "rolling_roas_floor",
+      passed: roasPassed,
+      detail: `3-day ROAS: ${Math.round(rollingRoas)}% (floor: 200%, requires 7+ days data)`,
+    });
+    if (!roasPassed && !shouldTrip) {
+      shouldTrip = true;
+      tripReason = `Rolling 3-day ROAS dropped to ${Math.round(rollingRoas)}% (below 200% floor after 7+ days of data)`;
+    }
+  } else {
+    checks.push({
+      name: "rolling_roas_floor",
+      passed: true,
+      detail: `Only ${hasEnoughData?.count ?? 0}/7 days of data — ROAS check deferred`,
+    });
+  }
+
+  // Trip the breaker if any check failed
+  if (shouldTrip) {
+    tripCircuitBreaker("google_ads", tripReason);
+  }
+
+  return {
+    passed: !shouldTrip,
+    checks,
+    tripped: shouldTrip,
+    tripReason: shouldTrip ? tripReason : undefined,
   };
 }

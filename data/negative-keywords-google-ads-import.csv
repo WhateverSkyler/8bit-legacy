@@ -1,0 +1,335 @@
+Campaign,Keyword,Match Type
+8BL-Shopping-All,"rom",Phrase
+8BL-Shopping-All,"roms",Phrase
+8BL-Shopping-All,"romhack",Phrase
+8BL-Shopping-All,"rom hack",Phrase
+8BL-Shopping-All,"rom hacks",Phrase
+8BL-Shopping-All,"emulator",Phrase
+8BL-Shopping-All,"emulators",Phrase
+8BL-Shopping-All,"emulation",Phrase
+8BL-Shopping-All,"emulated",Phrase
+8BL-Shopping-All,"iso",Phrase
+8BL-Shopping-All,"isos",Phrase
+8BL-Shopping-All,"download",Phrase
+8BL-Shopping-All,"downloads",Phrase
+8BL-Shopping-All,"downloadable",Phrase
+8BL-Shopping-All,"free",Exact
+8BL-Shopping-All,"freeware",Phrase
+8BL-Shopping-All,"warez",Phrase
+8BL-Shopping-All,"torrent",Phrase
+8BL-Shopping-All,"torrents",Phrase
+8BL-Shopping-All,"pirated",Phrase
+8BL-Shopping-All,"piracy",Phrase
+8BL-Shopping-All,"crack",Phrase
+8BL-Shopping-All,"cracked",Phrase
+8BL-Shopping-All,"cracking",Phrase
+8BL-Shopping-All,"patch",Phrase
+8BL-Shopping-All,"patched",Phrase
+8BL-Shopping-All,"patchfile",Phrase
+8BL-Shopping-All,"dump",Phrase
+8BL-Shopping-All,"dumped",Phrase
+8BL-Shopping-All,"repro",Phrase
+8BL-Shopping-All,"reproduction",Phrase
+8BL-Shopping-All,"repro cart",Phrase
+8BL-Shopping-All,"repro cartridge",Phrase
+8BL-Shopping-All,"bootleg",Phrase
+8BL-Shopping-All,"bootlegged",Phrase
+8BL-Shopping-All,"fake",Phrase
+8BL-Shopping-All,"replica",Phrase
+8BL-Shopping-All,"replicas",Phrase
+8BL-Shopping-All,"counterfeit",Phrase
+8BL-Shopping-All,"counterfeits",Phrase
+8BL-Shopping-All,"knockoff",Phrase
+8BL-Shopping-All,"knock off",Phrase
+8BL-Shopping-All,"flash cart",Phrase
+8BL-Shopping-All,"flashcart",Phrase
+8BL-Shopping-All,"everdrive",Phrase
+8BL-Shopping-All,"ezflash",Phrase
+8BL-Shopping-All,"r4 card",Phrase
+8BL-Shopping-All,"review",Exact
+8BL-Shopping-All,"reviews",Phrase
+8BL-Shopping-All,"reviewed",Phrase
+8BL-Shopping-All,"rating",Phrase
+8BL-Shopping-All,"ratings",Phrase
+8BL-Shopping-All,"walkthrough",Phrase
+8BL-Shopping-All,"walkthroughs",Phrase
+8BL-Shopping-All,"playthrough",Phrase
+8BL-Shopping-All,"playthroughs",Phrase
+8BL-Shopping-All,"guide",Phrase
+8BL-Shopping-All,"guides",Phrase
+8BL-Shopping-All,"strategy guide",Phrase
+8BL-Shopping-All,"cheats",Phrase
+8BL-Shopping-All,"cheat codes",Phrase
+8BL-Shopping-All,"cheat code",Phrase
+8BL-Shopping-All,"tips",Phrase
+8BL-Shopping-All,"tips and tricks",Phrase
+8BL-Shopping-All,"hints",Phrase
+8BL-Shopping-All,"wiki",Phrase
+8BL-Shopping-All,"wikia",Phrase
+8BL-Shopping-All,"price",Phrase
+8BL-Shopping-All,"prices",Phrase
+8BL-Shopping-All,"pricing",Phrase
+8BL-Shopping-All,"worth",Phrase
+8BL-Shopping-All,"value",Phrase
+8BL-Shopping-All,"values",Phrase
+8BL-Shopping-All,"how much",Phrase
+8BL-Shopping-All,"what is",Phrase
+8BL-Shopping-All,"when was",Phrase
+8BL-Shopping-All,"release date",Phrase
+8BL-Shopping-All,"released",Phrase
+8BL-Shopping-All,"released date",Phrase
+8BL-Shopping-All,"developer",Phrase
+8BL-Shopping-All,"developers",Phrase
+8BL-Shopping-All,"history",Phrase
+8BL-Shopping-All,"ost",Phrase
+8BL-Shopping-All,"soundtrack",Phrase
+8BL-Shopping-All,"soundtracks",Phrase
+8BL-Shopping-All,"music",Phrase
+8BL-Shopping-All,"ending",Phrase
+8BL-Shopping-All,"endings",Phrase
+8BL-Shopping-All,"spoilers",Phrase
+8BL-Shopping-All,"best game",Phrase
+8BL-Shopping-All,"best games",Phrase
+8BL-Shopping-All,"top 10",Phrase
+8BL-Shopping-All,"top ten",Phrase
+8BL-Shopping-All,"ranked",Phrase
+8BL-Shopping-All,"ranking",Phrase
+8BL-Shopping-All,"rankings",Phrase
+8BL-Shopping-All,"youtube",Phrase
+8BL-Shopping-All,"twitch",Phrase
+8BL-Shopping-All,"stream",Phrase
+8BL-Shopping-All,"streaming",Phrase
+8BL-Shopping-All,"let's play",Phrase
+8BL-Shopping-All,"lets play",Phrase
+8BL-Shopping-All,"gameplay",Phrase
+8BL-Shopping-All,"trailer",Phrase
+8BL-Shopping-All,"trailers",Phrase
+8BL-Shopping-All,"teaser",Phrase
+8BL-Shopping-All,"teasers",Phrase
+8BL-Shopping-All,"cutscene",Phrase
+8BL-Shopping-All,"cutscenes",Phrase
+8BL-Shopping-All,"intro",Phrase
+8BL-Shopping-All,"opening",Phrase
+8BL-Shopping-All,"lukie games",Phrase
+8BL-Shopping-All,"lukiegames",Phrase
+8BL-Shopping-All,"dkoldies",Phrase
+8BL-Shopping-All,"dk oldies",Phrase
+8BL-Shopping-All,"dk old",Phrase
+8BL-Shopping-All,"dkolds",Phrase
+8BL-Shopping-All,"retroplace",Phrase
+8BL-Shopping-All,"retroplace.com",Phrase
+8BL-Shopping-All,"price charting",Phrase
+8BL-Shopping-All,"pricecharting",Phrase
+8BL-Shopping-All,"videogamesnewyork",Phrase
+8BL-Shopping-All,"video games new york",Phrase
+8BL-Shopping-All,"gamestop",Phrase
+8BL-Shopping-All,"game stop",Phrase
+8BL-Shopping-All,"gamestop.com",Phrase
+8BL-Shopping-All,"ebay",Phrase
+8BL-Shopping-All,"ebay.com",Phrase
+8BL-Shopping-All,"amazon",Phrase
+8BL-Shopping-All,"amazon.com",Phrase
+8BL-Shopping-All,"walmart",Phrase
+8BL-Shopping-All,"target",Phrase
+8BL-Shopping-All,"best buy",Phrase
+8BL-Shopping-All,"retrogamingworld",Phrase
+8BL-Shopping-All,"retro gaming world",Phrase
+8BL-Shopping-All,"stone age gamer",Phrase
+8BL-Shopping-All,"stoneagegamer",Phrase
+8BL-Shopping-All,"cex",Phrase
+8BL-Shopping-All,"cex.co.uk",Phrase
+8BL-Shopping-All,"j2games",Phrase
+8BL-Shopping-All,"j2 games",Phrase
+8BL-Shopping-All,"gohastings",Phrase
+8BL-Shopping-All,"hastings",Phrase
+8BL-Shopping-All,"second spin",Phrase
+8BL-Shopping-All,"secondspin",Phrase
+8BL-Shopping-All,"retrons",Phrase
+8BL-Shopping-All,"retron",Phrase
+8BL-Shopping-All,"modded",Phrase
+8BL-Shopping-All,"mod chip",Phrase
+8BL-Shopping-All,"modchip",Phrase
+8BL-Shopping-All,"region free",Phrase
+8BL-Shopping-All,"region-free",Phrase
+8BL-Shopping-All,"region mod",Phrase
+8BL-Shopping-All,"multi region",Phrase
+8BL-Shopping-All,"multiregion",Phrase
+8BL-Shopping-All,"hdmi mod",Phrase
+8BL-Shopping-All,"rgb mod",Phrase
+8BL-Shopping-All,"osd mod",Phrase
+8BL-Shopping-All,"freeloader",Phrase
+8BL-Shopping-All,"action replay",Phrase
+8BL-Shopping-All,"gameshark",Phrase
+8BL-Shopping-All,"game genie",Phrase
+8BL-Shopping-All,"dev cart",Phrase
+8BL-Shopping-All,"development",Phrase
+8BL-Shopping-All,"devkit",Phrase
+8BL-Shopping-All,"dev kit",Phrase
+8BL-Shopping-All,"repair service",Phrase
+8BL-Shopping-All,"repair kit",Phrase
+8BL-Shopping-All,"repair shell",Phrase
+8BL-Shopping-All,"replacement shell",Phrase
+8BL-Shopping-All,"new shell",Phrase
+8BL-Shopping-All,"clear shell",Phrase
+8BL-Shopping-All,"custom shell",Phrase
+8BL-Shopping-All,"recap",Phrase
+8BL-Shopping-All,"recapped",Phrase
+8BL-Shopping-All,"capacitor kit",Phrase
+8BL-Shopping-All,"capacitor",Phrase
+8BL-Shopping-All,"capacitors",Phrase
+8BL-Shopping-All,"replacement lens",Phrase
+8BL-Shopping-All,"laser replacement",Phrase
+8BL-Shopping-All,"new laser",Phrase
+8BL-Shopping-All,"poster",Phrase
+8BL-Shopping-All,"posters",Phrase
+8BL-Shopping-All,"print",Phrase
+8BL-Shopping-All,"prints",Phrase
+8BL-Shopping-All,"t-shirt",Phrase
+8BL-Shopping-All,"tshirt",Phrase
+8BL-Shopping-All,"t shirt",Phrase
+8BL-Shopping-All,"shirt",Phrase
+8BL-Shopping-All,"shirts",Phrase
+8BL-Shopping-All,"hoodie",Phrase
+8BL-Shopping-All,"hoodies",Phrase
+8BL-Shopping-All,"sweatshirt",Phrase
+8BL-Shopping-All,"mug",Phrase
+8BL-Shopping-All,"mugs",Phrase
+8BL-Shopping-All,"pin",Phrase
+8BL-Shopping-All,"pins",Phrase
+8BL-Shopping-All,"enamel pin",Phrase
+8BL-Shopping-All,"keychain",Phrase
+8BL-Shopping-All,"keychains",Phrase
+8BL-Shopping-All,"sticker",Phrase
+8BL-Shopping-All,"stickers",Phrase
+8BL-Shopping-All,"decal",Phrase
+8BL-Shopping-All,"decals",Phrase
+8BL-Shopping-All,"funko",Phrase
+8BL-Shopping-All,"funko pop",Phrase
+8BL-Shopping-All,"pop figure",Phrase
+8BL-Shopping-All,"amiibo",Phrase
+8BL-Shopping-All,"amiibos",Phrase
+8BL-Shopping-All,"statue",Phrase
+8BL-Shopping-All,"statues",Phrase
+8BL-Shopping-All,"figure",Phrase
+8BL-Shopping-All,"figurine",Phrase
+8BL-Shopping-All,"figurines",Phrase
+8BL-Shopping-All,"plush",Phrase
+8BL-Shopping-All,"plushie",Phrase
+8BL-Shopping-All,"plushies",Phrase
+8BL-Shopping-All,"lego",Phrase
+8BL-Shopping-All,"lego set",Phrase
+8BL-Shopping-All,"cosplay",Phrase
+8BL-Shopping-All,"costume",Phrase
+8BL-Shopping-All,"costumes",Phrase
+8BL-Shopping-All,"bedsheet",Phrase
+8BL-Shopping-All,"blanket",Phrase
+8BL-Shopping-All,"pillow",Phrase
+8BL-Shopping-All,"broken",Phrase
+8BL-Shopping-All,"not working",Phrase
+8BL-Shopping-All,"doesn't work",Phrase
+8BL-Shopping-All,"doesnt work",Phrase
+8BL-Shopping-All,"for parts",Phrase
+8BL-Shopping-All,"parts only",Phrase
+8BL-Shopping-All,"as is",Phrase
+8BL-Shopping-All,"as-is",Phrase
+8BL-Shopping-All,"damaged",Phrase
+8BL-Shopping-All,"missing",Phrase
+8BL-Shopping-All,"incomplete",Phrase
+8BL-Shopping-All,"project",Phrase
+8BL-Shopping-All,"repair project",Phrase
+8BL-Shopping-All,"to fix",Phrase
+8BL-Shopping-All,"needs work",Phrase
+8BL-Shopping-All,"scrap",Phrase
+8BL-Shopping-All,"junk",Phrase
+8BL-Shopping-All,"non working",Phrase
+8BL-Shopping-All,"nonworking",Phrase
+8BL-Shopping-All,"non-working",Phrase
+8BL-Shopping-All,"dead",Phrase
+8BL-Shopping-All,"won't turn on",Phrase
+8BL-Shopping-All,"wont turn on",Phrase
+8BL-Shopping-All,"blinking light",Phrase
+8BL-Shopping-All,"compatible",Phrase
+8BL-Shopping-All,"compatibility",Phrase
+8BL-Shopping-All,"works with",Phrase
+8BL-Shopping-All,"will work",Phrase
+8BL-Shopping-All,"difference between",Phrase
+8BL-Shopping-All,"vs",Phrase
+8BL-Shopping-All,"versus",Phrase
+8BL-Shopping-All,"which is better",Phrase
+8BL-Shopping-All,"should i",Phrase
+8BL-Shopping-All,"should i buy",Phrase
+8BL-Shopping-All,"is it good",Phrase
+8BL-Shopping-All,"any good",Phrase
+8BL-Shopping-All,"worth it",Phrase
+8BL-Shopping-All,"worth buying",Phrase
+8BL-Shopping-All,"worth the money",Phrase
+8BL-Shopping-All,"reddit",Phrase
+8BL-Shopping-All,"forum",Phrase
+8BL-Shopping-All,"discord",Phrase
+8BL-Shopping-All,"quora",Phrase
+8BL-Shopping-All,"stack exchange",Phrase
+8BL-Shopping-All,"android",Phrase
+8BL-Shopping-All,"ios",Phrase
+8BL-Shopping-All,"iphone",Phrase
+8BL-Shopping-All,"ipad",Phrase
+8BL-Shopping-All,"app",Phrase
+8BL-Shopping-All,"app store",Phrase
+8BL-Shopping-All,"google play",Phrase
+8BL-Shopping-All,"play store",Phrase
+8BL-Shopping-All,"mobile",Phrase
+8BL-Shopping-All,"phone",Phrase
+8BL-Shopping-All,"tablet",Phrase
+8BL-Shopping-All,"switch port",Phrase
+8BL-Shopping-All,"switch version",Phrase
+8BL-Shopping-All,"nintendo switch online",Phrase
+8BL-Shopping-All,"nso",Phrase
+8BL-Shopping-All,"steam",Phrase
+8BL-Shopping-All,"pc version",Phrase
+8BL-Shopping-All,"pc download",Phrase
+8BL-Shopping-All,"virtual console",Phrase
+8BL-Shopping-All,"digital download",Phrase
+8BL-Shopping-All,"digital edition",Phrase
+8BL-Shopping-All,"digital copy",Phrase
+8BL-Shopping-All,"psn",Phrase
+8BL-Shopping-All,"ps now",Phrase
+8BL-Shopping-All,"ps plus",Phrase
+8BL-Shopping-All,"xbox live",Phrase
+8BL-Shopping-All,"game pass",Phrase
+8BL-Shopping-All,"gamepass",Phrase
+8BL-Shopping-All,"for kids",Phrase
+8BL-Shopping-All,"kids games",Phrase
+8BL-Shopping-All,"children",Phrase
+8BL-Shopping-All,"child",Phrase
+8BL-Shopping-All,"toddler",Phrase
+8BL-Shopping-All,"educational",Phrase
+8BL-Shopping-All,"learning",Phrase
+8BL-Shopping-All,"school",Phrase
+8BL-Shopping-All,"classroom",Phrase
+8BL-Shopping-All,"homework",Phrase
+8BL-Shopping-All,"what",Phrase
+8BL-Shopping-All,"who",Phrase
+8BL-Shopping-All,"when",Phrase
+8BL-Shopping-All,"why",Phrase
+8BL-Shopping-All,"how to",Phrase
+8BL-Shopping-All,"how do",Phrase
+8BL-Shopping-All,"explain",Phrase
+8BL-Shopping-All,"meaning",Phrase
+8BL-Shopping-All,"definition",Phrase
+8BL-Shopping-All,"define",Phrase
+8BL-Shopping-All,"tutorial",Phrase
+8BL-Shopping-All,"lesson",Phrase
+8BL-Shopping-All,"lecture",Phrase
+8BL-Shopping-All,"documentary",Phrase
+8BL-Shopping-All,"podcast about",Phrase
+8BL-Shopping-All,"retroarch",Phrase
+8BL-Shopping-All,"homebrew",Phrase
+8BL-Shopping-All,"bios",Phrase
+8BL-Shopping-All,"cia file",Phrase
+8BL-Shopping-All,"nsp",Phrase
+8BL-Shopping-All,"xci",Phrase
+8BL-Shopping-All,"wikipedia",Phrase
+8BL-Shopping-All,"fandom",Phrase
+8BL-Shopping-All,"ebook",Phrase
+8BL-Shopping-All,"pdf",Phrase
+8BL-Shopping-All,"how to play",Phrase
+8BL-Shopping-All,"retrospective",Phrase

@@ -1,12 +1,13 @@
 import { registerJob } from "./scheduler";
 import { getShopifyConfig, getGoogleAdsConfig } from "./config";
 import { fetchAllProducts, fetchUnfulfilledOrders } from "./shopify";
-import { isGoogleAdsConfigured } from "./google-ads";
+import { isGoogleAdsConfigured, pauseAllCampaigns } from "./google-ads";
 import { validateOrderPrices } from "./order-validator";
 import { refreshPokemonCardPrices } from "./pokemon-price-sync";
 import { refreshGamePricesBatch } from "./game-price-sync";
+import { runAdsSafetyChecks, tripCircuitBreaker } from "./safety";
 import { db } from "@db/index";
-import { products, variants, orders, orderLineItems } from "@db/schema";
+import { products, variants, orders, orderLineItems, googleAdsActions } from "@db/schema";
 import { eq, like } from "drizzle-orm";
 
 /**
@@ -103,7 +104,7 @@ export function registerAllJobs(): void {
   // ── Google Ads Performance Sync ───────────────────────────────────
   registerJob({
     name: "google-ads-sync",
-    cron: "0 1 * * *", // daily at 1 AM ET
+    cron: "0 */6 * * *", // every 6 hours (launch window — revert to daily after 14 days)
     enabled: true,
     description: "Pull campaign performance data from Google Ads",
     handler: async () => {
@@ -224,6 +225,80 @@ export function registerAllJobs(): void {
           needsReview: result.needsReview,
           rejected: result.rejected,
           errors: result.errors,
+        },
+      };
+    },
+  });
+
+  // ── Ads Safety Check (Circuit Breaker Auto-Trip) ─────────────────
+  registerJob({
+    name: "ads-safety-check",
+    cron: "0 */6 * * *", // every 6 hours, aligned with google-ads-sync
+    enabled: true,
+    description: "Run automated safety checks on Google Ads — trips circuit breaker on violations",
+    handler: async () => {
+      const config = getGoogleAdsConfig();
+
+      // Run DB-based safety checks (spend limits, conversion checks, ROAS floor)
+      const result = runAdsSafetyChecks();
+      const now = new Date().toISOString();
+
+      // Async check: store uptime
+      let storeUp = true;
+      try {
+        const resp = await fetch("https://8bitlegacy.com", {
+          signal: AbortSignal.timeout(15_000),
+        });
+        storeUp = resp.ok;
+      } catch {
+        storeUp = false;
+      }
+
+      if (!storeUp) {
+        tripCircuitBreaker("google_ads", "Store is down — 8bitlegacy.com unreachable");
+        result.tripped = true;
+        result.tripReason = "Store is down — 8bitlegacy.com unreachable";
+        result.checks.push({
+          name: "store_uptime",
+          passed: false,
+          detail: "8bitlegacy.com failed health check",
+        });
+      }
+
+      // If circuit breaker was tripped, attempt to pause campaigns via API
+      if (result.tripped && isGoogleAdsConfigured(config)) {
+        const pauseResult = await pauseAllCampaigns(config);
+
+        db.insert(googleAdsActions).values({
+          actionType: "pause_campaign",
+          targetEntityType: "campaign",
+          targetEntityId: "all",
+          targetEntityName: "All campaigns (safety trip)",
+          oldValue: "enabled",
+          newValue: "paused",
+          reason: result.tripReason ?? "Safety check failed",
+          executedAt: now,
+          success: pauseResult.success ? 1 : 0,
+          errorMessage: pauseResult.error ?? null,
+        }).run();
+
+        console.error(`[Ads Safety] CIRCUIT BREAKER TRIPPED: ${result.tripReason}`);
+        if (pauseResult.success) {
+          console.error(`[Ads Safety] Paused ${pauseResult.paused} campaign(s) via Google Ads API`);
+        } else {
+          console.error(`[Ads Safety] FAILED to pause campaigns: ${pauseResult.error}`);
+        }
+      }
+
+      return {
+        itemsProcessed: result.checks.length,
+        itemsChanged: result.tripped ? 1 : 0,
+        metadata: {
+          passed: result.passed,
+          tripped: result.tripped,
+          tripReason: result.tripReason,
+          checks: result.checks,
+          storeUp,
         },
       };
     },

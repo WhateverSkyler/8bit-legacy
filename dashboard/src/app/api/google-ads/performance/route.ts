@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@db/index";
 import { googleAdsPerformance } from "@db/schema";
 import { desc, eq, gte, sql } from "drizzle-orm";
+import { getAllCircuitBreakerStatus } from "@/lib/safety";
 
 const SAMPLE_PERFORMANCE = {
   summary: {
@@ -99,6 +100,46 @@ export async function GET(request: NextRequest) {
         }));
     }
 
+    // ── Promo credit tracking ──
+    const PROMO_CREDIT_TOTAL = 700;
+    const PROMO_EXPIRY = "2026-05-31";
+    const allTimeSpend = db
+      .select({ total: sql<number>`coalesce(sum(cost), 0)` })
+      .from(googleAdsPerformance)
+      .get();
+    const cumulativeSpend = allTimeSpend?.total ?? 0;
+    const creditRemaining = Math.max(0, PROMO_CREDIT_TOTAL - cumulativeSpend);
+    const daysUntilExpiry = Math.max(0, Math.ceil((new Date(PROMO_EXPIRY).getTime() - Date.now()) / 86400000));
+    const requiredDailySpend = daysUntilExpiry > 0 ? creditRemaining / daysUntilExpiry : 0;
+
+    // 7-day average daily spend
+    const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
+    const recentSpend = db
+      .select({ total: sql<number>`coalesce(sum(cost), 0)`, days: sql<number>`count(distinct date)` })
+      .from(googleAdsPerformance)
+      .where(gte(googleAdsPerformance.date, sevenDaysAgo))
+      .get();
+    const avgDailySpend = (recentSpend?.days ?? 0) > 0
+      ? (recentSpend?.total ?? 0) / (recentSpend?.days ?? 1)
+      : 0;
+
+    // ── Rolling 3-day ROAS ──
+    const threeDaysAgo = new Date(Date.now() - 3 * 86400000).toISOString().split("T")[0];
+    const rolling3d = db
+      .select({
+        cost: sql<number>`coalesce(sum(cost), 0)`,
+        value: sql<number>`coalesce(sum(conversion_value), 0)`,
+      })
+      .from(googleAdsPerformance)
+      .where(gte(googleAdsPerformance.date, threeDaysAgo))
+      .get();
+    const rolling3dRoas = (rolling3d?.cost ?? 0) > 0
+      ? Math.round(((rolling3d?.value ?? 0) / (rolling3d?.cost ?? 1)) * 100)
+      : 0;
+
+    // ── Circuit breaker status ──
+    const circuitBreakers = getAllCircuitBreakerStatus();
+
     return NextResponse.json({
       summary: {
         totalSpend: Math.round(totalSpend * 100) / 100,
@@ -109,7 +150,20 @@ export async function GET(request: NextRequest) {
           : 0,
         totalClicks: summary?.totalClicks ?? 0,
         totalConversions: summary?.totalConversions ?? 0,
+        totalImpressions: summary?.totalImpressions ?? 0,
       },
+      promoCredit: {
+        total: PROMO_CREDIT_TOTAL,
+        spent: Math.round(cumulativeSpend * 100) / 100,
+        remaining: Math.round(creditRemaining * 100) / 100,
+        expiryDate: PROMO_EXPIRY,
+        daysUntilExpiry,
+        requiredDailySpend: Math.round(requiredDailySpend * 100) / 100,
+        avgDailySpend: Math.round(avgDailySpend * 100) / 100,
+        onTrack: avgDailySpend >= requiredDailySpend * 0.8,
+      },
+      rolling3dRoas,
+      circuitBreakers,
       daily,
       entities,
       source: "database",

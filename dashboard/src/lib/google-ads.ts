@@ -245,3 +245,103 @@ export async function addNegativeKeyword(
     return { success: false, error: String(err) };
   }
 }
+
+/**
+ * Pause all enabled campaigns in the account.
+ * Called by the circuit breaker when safety conditions are violated.
+ */
+export async function pauseAllCampaigns(
+  config: GoogleAdsConfig
+): Promise<{ success: boolean; paused: number; error?: string }> {
+  try {
+    const accessToken = await getAccessToken(config);
+    const customerId = config.customerId.replace(/-/g, "");
+
+    // First, find all enabled campaigns
+    const campaigns = await searchGoogleAds(config, `
+      SELECT campaign.id, campaign.name, campaign.status
+      FROM campaign
+      WHERE campaign.status = 'ENABLED'
+    `);
+
+    if (campaigns.length === 0) {
+      return { success: true, paused: 0 };
+    }
+
+    // Pause each campaign
+    const operations = campaigns.map((c: any) => ({
+      update: {
+        resourceName: `customers/${customerId}/campaigns/${c.campaign.id}`,
+        status: "PAUSED",
+      },
+      updateMask: "status",
+    }));
+
+    const resp = await fetch(
+      `${BASE_URL}/customers/${customerId}/campaigns:mutate`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "developer-token": config.developerToken,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ operations }),
+      }
+    );
+
+    if (!resp.ok) {
+      const error = await resp.text();
+      return { success: false, paused: 0, error };
+    }
+
+    return { success: true, paused: campaigns.length };
+  } catch (err) {
+    return { success: false, paused: 0, error: String(err) };
+  }
+}
+
+/**
+ * Enable (unpause) a specific campaign by ID.
+ */
+export async function enableCampaign(
+  config: GoogleAdsConfig,
+  campaignId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const accessToken = await getAccessToken(config);
+    const customerId = config.customerId.replace(/-/g, "");
+
+    const resp = await fetch(
+      `${BASE_URL}/customers/${customerId}/campaigns:mutate`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "developer-token": config.developerToken,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          operations: [
+            {
+              update: {
+                resourceName: `customers/${customerId}/campaigns/${campaignId}`,
+                status: "ENABLED",
+              },
+              updateMask: "status",
+            },
+          ],
+        }),
+      }
+    );
+
+    if (!resp.ok) {
+      const error = await resp.text();
+      return { success: false, error };
+    }
+
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: String(err) };
+  }
+}
