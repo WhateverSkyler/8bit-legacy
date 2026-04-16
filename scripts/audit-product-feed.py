@@ -30,6 +30,8 @@ Usage:
   python3 scripts/audit-product-feed.py --json       # JSON output
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import os

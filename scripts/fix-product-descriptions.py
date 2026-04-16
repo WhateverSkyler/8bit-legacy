@@ -12,6 +12,8 @@ Usage:
   python3 scripts/fix-product-descriptions.py --limit 50   # Process 50 products
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import os
