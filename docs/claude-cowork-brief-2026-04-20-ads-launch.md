@@ -34,7 +34,49 @@ If pull fails, STOP and tell Tristan.
 
 ---
 
-## Task 1 — Refresh the Google Ads OAuth token 🔴 (~5 min, CRITICAL)
+## Task 1 — Refresh the Google Ads OAuth token 🟡 (DEFERRED — not blocking Tasks 2-6)
+
+> **Status 2026-04-20 3:26 PM EDT:** Cowork attempted the original `oob` flow and
+> hit `redirect_uri_mismatch` — the existing client ID in `config/.env` is a
+> **Web application** type, and Google no longer allows `urn:ietf:wg:oauth:2.0:oob`
+> for Web clients.
+>
+> **Paused by user.** Resume this task in a later cowork session when capacity
+> allows. **Tasks 2-6 do NOT depend on Task 1** — they use Tristan's normal
+> Google Ads login in the browser, not the API token. Skip Task 1 and continue
+> with Task 2.
+>
+> **Resume plan (when picking this back up):**
+> 1. GCP Console → find the project owning the existing Web OAuth client
+>    (client ID prefix `585154028800-30b12ji9qdncj1ng4lv8f8i3atnafce9`) —
+>    shown on the Credentials page of whichever project listed it
+> 2. In that same project → APIs & Services → Credentials →
+>    **+ Create Credentials → OAuth 2.0 Client ID → Application type: Desktop app**
+>    Name: `8bit-legacy-ads-desktop`
+> 3. Copy the new client_id + client_secret
+> 4. Update `config/.env` AND `dashboard/.env.local` on the Mac:
+>    ```bash
+>    sed -i.bak 's|^GOOGLE_ADS_CLIENT_ID=.*|GOOGLE_ADS_CLIENT_ID=<new_id>|' config/.env
+>    sed -i.bak 's|^GOOGLE_ADS_CLIENT_SECRET=.*|GOOGLE_ADS_CLIENT_SECRET=<new_secret>|' config/.env
+>    # repeat for dashboard/.env.local
+>    rm -f config/.env.bak dashboard/.env.local.bak
+>    ```
+> 5. Then re-run the auth URL flow below — this time with the Desktop client_id,
+>    the `oob` redirect is allowed natively.
+> 6. Old Web client can stay registered (harmless) or be deleted later.
+>
+> **What stays broken until this is done:**
+> - Dashboard's Google Ads monitoring jobs (google-ads-sync, ads-safety-check) —
+>   they run but can't pull data; scheduler will log errors silently
+> - Automated circuit-breaker pause via API — breaker CAN still trip based on
+>   stored data, but it can't call the Ads API to actually pause campaigns.
+>   Manual pause from Google Ads UI is available at any time.
+> - Main-session ability to pull campaign stats / optimize bids via script
+>
+> **What's NOT broken:** the campaign itself runs normally once enabled. Tristan
+> can monitor and manually pause via the Google Ads UI. Safety's just less automated.
+
+### Original steps (use with the new Desktop client when resuming)
 
 The existing refresh token in `config/.env` and `dashboard/.env.local` returns `invalid_grant`. Blocks: API-based campaign edits, dashboard monitoring jobs, circuit breaker's automated pause. The main session can't do this — needs a live browser sign-in.
 
