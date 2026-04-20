@@ -29,8 +29,8 @@ If pull fails, STOP and tell Tristan.
 ## Pre-flight confirmations with Tristan
 
 1. **Campaign rename OK?** Current name is `8BL-Shopping-All` (Campaign ID `23766662629`, Paused). Plan is to rename → `8BL-Shopping-Games`. If Tristan prefers a different name, use that and update the negatives CSV's campaign column to match.
-2. **Budget $17/day OK?** Math is $700 promo ÷ 41 days ≈ $17.07. If he wants more conservative ($14) or aggressive ($20), adjust.
-3. **First real test purchase?** Placing a $5-10 order via the store + refunding afterward fires the Purchase conversion and flips it from "Inactive" to "Recording". Recommended before Day 0 — lets us verify end-to-end tracking on a real transaction. Ask Tristan if he wants to do this today.
+2. **Budget $20/day OK?** Math is $700 promo ÷ 41 days ≈ $20.07. If he wants more conservative ($14) or aggressive ($20), adjust.
+3. **No test purchase needed** (confirmed with Tristan 2026-04-20). Instead, during Task 3 — when you click into `Google Shopping App Purchase` conversion action — just verify it shows status **`Created`** (pixel wired up, awaiting real-customer data). If it shows `Misconfigured` / `Inactive due to error` / `Needs attention`, THEN escalate. `Created` + awaiting data is fine — first real customer order will flip it to Recording naturally.
 
 ---
 
@@ -171,7 +171,7 @@ Expected: ~6,100 rows. If the file doesn't exist yet, flag to Tristan — the ge
 ### 5.2 Update budget
 
 1. Campaigns → `8BL-Shopping-Games` → Settings → Daily budget
-2. Change from `$14` → **`$17`**
+2. Change from `$14` → **`$20`**
 3. Save
 
 ### 5.3 Product group subdivisions (the bid tree)
@@ -221,7 +221,7 @@ Walk through Campaign Settings one more time and confirm:
 - [ ] Networks: **Google Search Network only** (no Search Partners, no Display)
 - [ ] Location: United States
 - [ ] Bidding: **Manual CPC** (no Enhanced CPC — Google deprecated it for Shopping)
-- [ ] Daily budget: $17
+- [ ] Daily budget: $20
 - [ ] Campaign priority: High
 - [ ] Status: **Paused**
 
@@ -254,7 +254,7 @@ If ANY Winner has a broken landing page: flag to Tristan, do NOT enable campaign
 
 - **Do NOT enable the campaign.** Leave Paused at the end of this session. Tristan flips it.
 - **Do NOT commit any secrets** (API keys, refresh tokens, auth codes). All stay in `config/.env`, `dashboard/.env.local`, or local terminal sessions.
-- **Do NOT raise the daily budget above $17** without Tristan's approval.
+- **Do NOT raise the daily budget above $20** without Tristan's approval.
 - **Do NOT change safety.ts** — main session has already patched it; changes get rebuilt + redeployed separately.
 - **Do NOT import keywords with a campaign name other than `8BL-Shopping-Games`** — the CSV will pair them with the wrong campaign.
 - **Do NOT skip Task 3** — launching without confirmed conversion tracking means blind spend.
@@ -294,7 +294,7 @@ If ANY Winner has a broken landing page: flag to Tristan, do NOT enable campaign
 - [ ] Google Ads OAuth refresh token refreshed, valid, written to both `.env` files
 - [ ] Merchant Center diagnostics audited, < 50 disapproved, no account-level issues
 - [ ] All 4 conversion goals: Recording or No recent conversions (NOT Inactive/Misconfigured)
-- [ ] Campaign renamed to `8BL-Shopping-Games`, budget $17, settings verified
+- [ ] Campaign renamed to `8BL-Shopping-Games`, budget $20, settings verified
 - [ ] Product group subdivisions saved: over_50 = $0.35, 20_to_50 = $0.12, everything else EXCLUDED
 - [ ] 334 negative keywords imported
 - [ ] CIB supplemental feed uploaded (or flagged if format doesn't match)

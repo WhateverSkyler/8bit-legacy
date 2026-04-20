@@ -44,8 +44,8 @@ Three sentences:
 | Product | Game Only | CIB | Tags correct | In stock |
 |---------|-----------|-----|--------------|----------|
 | Galerians (PS1) | $59.99 | $132.99 | ✓ | ✓ |
-| Mystical Ninja Starring Goemon (N64) | $174.99 | $452.99 | ✓ | ✓ |
-| Silent Hill 2 (PS2) | $175.99 | $258.99 | ✓ | ✓ |
+| Mystical Ninja Starring Goemon (N64) | $204.99 | $452.99 | ✓ | ✓ |
+| Silent Hill 2 (PS2) | $205.99 | $258.99 | ✓ | ✓ |
 | Phantasy Star Online I & II (GC) | $162.99 | $303.99 | ✓ | ✓ |
 
 All ACTIVE, correctly tagged (`category:game`, `console:*`, `margin:medium`, `price_tier:over_50`), both variants purchasable, image + SEO meta present, `mm-google-shopping.custom_product=true` metafield (GTIN bypass for used goods). **Winners list is feed-healthy.**
@@ -106,7 +106,7 @@ Per explicit direction, the strategy is:
 | Geo | United States only | Dropship constraint |
 | Language | English | |
 | Bidding | **Manual CPC** | Best for cold store; switch to Target ROAS only after 20+ conversions |
-| Budget | **$17/day** | $700 promo ÷ 41 days ≈ $17.07; burns full credit before 2026-05-31 expiry |
+| Budget | **$20/day** | $700 promo ÷ 41 days ≈ $20.07; burns full credit before 2026-05-31 expiry |
 | Priority | High | Only one campaign — priority meaningless but set high |
 | Status | Paused (until all pre-launch blockers green) | |
 
@@ -185,7 +185,7 @@ Expected row count: ~6,112 CIB variants (per prior audits).
 
 | Check | Current threshold | Verdict |
 |-------|-------------------|---------|
-| MAX_DAILY_AD_SPEND | $25 | **Too low for $17/day base** — Google can 2x daily budget ($34), would false-trip. Recommend $40. |
+| MAX_DAILY_AD_SPEND | $25 | **Too low for $20/day base** — Google can 2x daily budget ($34), would false-trip. Recommend $40. |
 | 3 consecutive days with $10+ spend and 0 conversions | 3 days × $10 = $30 before trip | Close to user's $50 rule but slower. **Replace or augment.** |
 | Store downtime (async) | Handler-level | Keep |
 | Rolling 3-day ROAS < 200% after 7+ days | Floor at 200% | Keep |
@@ -218,7 +218,7 @@ Requires dashboard rebuild + VPS redeploy. Deferred as a follow-up since dashboa
 
 ### 4.3 Check cadence
 
-Currently `ads-safety-check` runs every 6 hours per `scheduler.ts`. At $17/day base with a failing campaign, $50 hits in ~3 days. 6-hour check means max lag between trip and pause is 6 hours. At worst, ~$4 of overshoot. Acceptable.
+Currently `ads-safety-check` runs every 6 hours per `scheduler.ts`. At $20/day base with a failing campaign, $50 hits in ~3 days. 6-hour check means max lag between trip and pause is 6 hours. At worst, ~$4 of overshoot. Acceptable.
 
 Bumping to every 2 hours would reduce overshoot to ~$1.40 max but adds API load. **Not worth it in Phase 1.** Revisit if we actually trip.
 
@@ -283,7 +283,7 @@ See Part 4.2. Edit + dashboard rebuild + VPS redeploy.
 ### Day 1 — First 24 hours
 
 Check every 6 hours. Look for:
-- **Spend pacing** — should be near $17/day after 24h. $0 = feed issue or bid too low. $30+ = budget escape (trip safety).
+- **Spend pacing** — should be near $20/day after 24h. $0 = feed issue or bid too low. $30+ = budget escape (trip safety).
 - **Impressions** — expect 500-2,000 on first day across ~2,480 products.
 - **CTR** — Shopping ads baseline is 0.7-1.5%. Below 0.5% = title/image/price issue.
 - **Search terms** — read the top 20 even at this early point. Add any junk to negatives.
@@ -363,7 +363,7 @@ None of these block cowork work but good to pre-answer before Day 0:
 1. **Subdividing `over_50` into `50_to_100` and `over_100`?** My recommendation is NOT in Phase 1 (too-thin data per sub-tier). Revisit end of week 2. Agree?
 2. **Per-console bid modifiers?** I'm skipping for Phase 1. Would you want a higher bid on N64 / PS1 specifically (observed organic bestsellers)?
 3. **First sanity real-purchase test?** Placing a $5-10 real order + refund would fire the Purchase conversion action and flip it from "Inactive" to "Recording". Safer than waiting for first real customer. Worth doing?
-4. **Promo credit expiry plan:** $700 burns to ~$0 by 2026-05-31. Post-expiry, continue at $17/day out of pocket, OR drop to $5-7/day baseline? Depends on ROAS.
+4. **Promo credit expiry plan:** $700 burns to ~$0 by 2026-05-31. Post-expiry, continue at $20/day out of pocket, OR drop to $5-7/day baseline? Depends on ROAS.
 
 ---
 
