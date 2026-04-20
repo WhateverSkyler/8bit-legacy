@@ -82,14 +82,23 @@ def emit_navi_task(
 
     On network failure, appends to data/logs/failed-alerts.jsonl so nothing is silently dropped —
     the next successful call can flush those.
+
+    Task shape notes (learned the hard way 2026-04-20):
+    - `text` is what Navi's Core UI renders — if it's missing, the `.replace()` call in
+      core.html throws, the render loop aborts mid-iteration, and the UI freezes.
+    - `type`, `done`, `dueDate` are all REQUIRED for Navi to render tasks correctly.
+    - `priority` and `description` are ignored by Navi but kept here for debugging.
     """
     task = {
         "id": f"{source}-{uuid.uuid4().hex[:8]}",
-        "title": title,
-        "description": description,
+        "text": title,             # Navi Core renders this — MUST be set
+        "type": "task",            # vs "project" — required field
+        "done": False,             # required — false = active, true = completed
+        "dueDate": None,           # required (nullable) — ISO date string or null
         "source": source,
         "status": "todo",
-        "priority": priority,
+        "priority": priority,      # ignored by Navi; useful for debugging
+        "description": description, # ignored by Navi; useful for debugging
         "created": datetime.now().astimezone().isoformat(),
     }
 
