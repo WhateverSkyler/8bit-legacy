@@ -21,6 +21,8 @@ Usage:
   python3 scripts/podcast/render_clip.py --batch data/podcast/clips_plan/_all.json --episode "Episode April 14th 2026"
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import random

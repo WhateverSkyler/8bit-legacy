@@ -23,6 +23,8 @@ Usage:
   python3 scripts/podcast/pipeline.py --episode "..." --dry-run
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import subprocess

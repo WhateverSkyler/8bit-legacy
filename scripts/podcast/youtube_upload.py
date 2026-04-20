@@ -14,6 +14,8 @@ Usage:
   python3 scripts/podcast/youtube_upload.py --batch data/podcast/source/1080p/ --schedule schedule.json
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import sys

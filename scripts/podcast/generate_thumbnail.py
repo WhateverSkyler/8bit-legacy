@@ -13,6 +13,8 @@ Usage:
   python3 scripts/podcast/generate_thumbnail.py --batch data/podcast/source/1080p/ --metadata data/podcast/metadata/
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import subprocess
