@@ -1,0 +1,335 @@
+Campaign,Keyword,Match Type
+8BL-Shopping-Games,"rom",Phrase
+8BL-Shopping-Games,"roms",Phrase
+8BL-Shopping-Games,"romhack",Phrase
+8BL-Shopping-Games,"rom hack",Phrase
+8BL-Shopping-Games,"rom hacks",Phrase
+8BL-Shopping-Games,"emulator",Phrase
+8BL-Shopping-Games,"emulators",Phrase
+8BL-Shopping-Games,"emulation",Phrase
+8BL-Shopping-Games,"emulated",Phrase
+8BL-Shopping-Games,"iso",Phrase
+8BL-Shopping-Games,"isos",Phrase
+8BL-Shopping-Games,"download",Phrase
+8BL-Shopping-Games,"downloads",Phrase
+8BL-Shopping-Games,"downloadable",Phrase
+8BL-Shopping-Games,"free",Exact
+8BL-Shopping-Games,"freeware",Phrase
+8BL-Shopping-Games,"warez",Phrase
+8BL-Shopping-Games,"torrent",Phrase
+8BL-Shopping-Games,"torrents",Phrase
+8BL-Shopping-Games,"pirated",Phrase
+8BL-Shopping-Games,"piracy",Phrase
+8BL-Shopping-Games,"crack",Phrase
+8BL-Shopping-Games,"cracked",Phrase
+8BL-Shopping-Games,"cracking",Phrase
+8BL-Shopping-Games,"patch",Phrase
+8BL-Shopping-Games,"patched",Phrase
+8BL-Shopping-Games,"patchfile",Phrase
+8BL-Shopping-Games,"dump",Phrase
+8BL-Shopping-Games,"dumped",Phrase
+8BL-Shopping-Games,"repro",Phrase
+8BL-Shopping-Games,"reproduction",Phrase
+8BL-Shopping-Games,"repro cart",Phrase
+8BL-Shopping-Games,"repro cartridge",Phrase
+8BL-Shopping-Games,"bootleg",Phrase
+8BL-Shopping-Games,"bootlegged",Phrase
+8BL-Shopping-Games,"fake",Phrase
+8BL-Shopping-Games,"replica",Phrase
+8BL-Shopping-Games,"replicas",Phrase
+8BL-Shopping-Games,"counterfeit",Phrase
+8BL-Shopping-Games,"counterfeits",Phrase
+8BL-Shopping-Games,"knockoff",Phrase
+8BL-Shopping-Games,"knock off",Phrase
+8BL-Shopping-Games,"flash cart",Phrase
+8BL-Shopping-Games,"flashcart",Phrase
+8BL-Shopping-Games,"everdrive",Phrase
+8BL-Shopping-Games,"ezflash",Phrase
+8BL-Shopping-Games,"r4 card",Phrase
+8BL-Shopping-Games,"review",Exact
+8BL-Shopping-Games,"reviews",Phrase
+8BL-Shopping-Games,"reviewed",Phrase
+8BL-Shopping-Games,"rating",Phrase
+8BL-Shopping-Games,"ratings",Phrase
+8BL-Shopping-Games,"walkthrough",Phrase
+8BL-Shopping-Games,"walkthroughs",Phrase
+8BL-Shopping-Games,"playthrough",Phrase
+8BL-Shopping-Games,"playthroughs",Phrase
+8BL-Shopping-Games,"guide",Phrase
+8BL-Shopping-Games,"guides",Phrase
+8BL-Shopping-Games,"strategy guide",Phrase
+8BL-Shopping-Games,"cheats",Phrase
+8BL-Shopping-Games,"cheat codes",Phrase
+8BL-Shopping-Games,"cheat code",Phrase
+8BL-Shopping-Games,"tips",Phrase
+8BL-Shopping-Games,"tips and tricks",Phrase
+8BL-Shopping-Games,"hints",Phrase
+8BL-Shopping-Games,"wiki",Phrase
+8BL-Shopping-Games,"wikia",Phrase
+8BL-Shopping-Games,"price",Phrase
+8BL-Shopping-Games,"prices",Phrase
+8BL-Shopping-Games,"pricing",Phrase
+8BL-Shopping-Games,"worth",Phrase
+8BL-Shopping-Games,"value",Phrase
+8BL-Shopping-Games,"values",Phrase
+8BL-Shopping-Games,"how much",Phrase
+8BL-Shopping-Games,"what is",Phrase
+8BL-Shopping-Games,"when was",Phrase
+8BL-Shopping-Games,"release date",Phrase
+8BL-Shopping-Games,"released",Phrase
+8BL-Shopping-Games,"released date",Phrase
+8BL-Shopping-Games,"developer",Phrase
+8BL-Shopping-Games,"developers",Phrase
+8BL-Shopping-Games,"history",Phrase
+8BL-Shopping-Games,"ost",Phrase
+8BL-Shopping-Games,"soundtrack",Phrase
+8BL-Shopping-Games,"soundtracks",Phrase
+8BL-Shopping-Games,"music",Phrase
+8BL-Shopping-Games,"ending",Phrase
+8BL-Shopping-Games,"endings",Phrase
+8BL-Shopping-Games,"spoilers",Phrase
+8BL-Shopping-Games,"best game",Phrase
+8BL-Shopping-Games,"best games",Phrase
+8BL-Shopping-Games,"top 10",Phrase
+8BL-Shopping-Games,"top ten",Phrase
+8BL-Shopping-Games,"ranked",Phrase
+8BL-Shopping-Games,"ranking",Phrase
+8BL-Shopping-Games,"rankings",Phrase
+8BL-Shopping-Games,"youtube",Phrase
+8BL-Shopping-Games,"twitch",Phrase
+8BL-Shopping-Games,"stream",Phrase
+8BL-Shopping-Games,"streaming",Phrase
+8BL-Shopping-Games,"let's play",Phrase
+8BL-Shopping-Games,"lets play",Phrase
+8BL-Shopping-Games,"gameplay",Phrase
+8BL-Shopping-Games,"trailer",Phrase
+8BL-Shopping-Games,"trailers",Phrase
+8BL-Shopping-Games,"teaser",Phrase
+8BL-Shopping-Games,"teasers",Phrase
+8BL-Shopping-Games,"cutscene",Phrase
+8BL-Shopping-Games,"cutscenes",Phrase
+8BL-Shopping-Games,"intro",Phrase
+8BL-Shopping-Games,"opening",Phrase
+8BL-Shopping-Games,"lukie games",Phrase
+8BL-Shopping-Games,"lukiegames",Phrase
+8BL-Shopping-Games,"dkoldies",Phrase
+8BL-Shopping-Games,"dk oldies",Phrase
+8BL-Shopping-Games,"dk old",Phrase
+8BL-Shopping-Games,"dkolds",Phrase
+8BL-Shopping-Games,"retroplace",Phrase
+8BL-Shopping-Games,"retroplace.com",Phrase
+8BL-Shopping-Games,"price charting",Phrase
+8BL-Shopping-Games,"pricecharting",Phrase
+8BL-Shopping-Games,"videogamesnewyork",Phrase
+8BL-Shopping-Games,"video games new york",Phrase
+8BL-Shopping-Games,"gamestop",Phrase
+8BL-Shopping-Games,"game stop",Phrase
+8BL-Shopping-Games,"gamestop.com",Phrase
+8BL-Shopping-Games,"ebay",Phrase
+8BL-Shopping-Games,"ebay.com",Phrase
+8BL-Shopping-Games,"amazon",Phrase
+8BL-Shopping-Games,"amazon.com",Phrase
+8BL-Shopping-Games,"walmart",Phrase
+8BL-Shopping-Games,"target",Phrase
+8BL-Shopping-Games,"best buy",Phrase
+8BL-Shopping-Games,"retrogamingworld",Phrase
+8BL-Shopping-Games,"retro gaming world",Phrase
+8BL-Shopping-Games,"stone age gamer",Phrase
+8BL-Shopping-Games,"stoneagegamer",Phrase
+8BL-Shopping-Games,"cex",Phrase
+8BL-Shopping-Games,"cex.co.uk",Phrase
+8BL-Shopping-Games,"j2games",Phrase
+8BL-Shopping-Games,"j2 games",Phrase
+8BL-Shopping-Games,"gohastings",Phrase
+8BL-Shopping-Games,"hastings",Phrase
+8BL-Shopping-Games,"second spin",Phrase
+8BL-Shopping-Games,"secondspin",Phrase
+8BL-Shopping-Games,"retrons",Phrase
+8BL-Shopping-Games,"retron",Phrase
+8BL-Shopping-Games,"modded",Phrase
+8BL-Shopping-Games,"mod chip",Phrase
+8BL-Shopping-Games,"modchip",Phrase
+8BL-Shopping-Games,"region free",Phrase
+8BL-Shopping-Games,"region-free",Phrase
+8BL-Shopping-Games,"region mod",Phrase
+8BL-Shopping-Games,"multi region",Phrase
+8BL-Shopping-Games,"multiregion",Phrase
+8BL-Shopping-Games,"hdmi mod",Phrase
+8BL-Shopping-Games,"rgb mod",Phrase
+8BL-Shopping-Games,"osd mod",Phrase
+8BL-Shopping-Games,"freeloader",Phrase
+8BL-Shopping-Games,"action replay",Phrase
+8BL-Shopping-Games,"gameshark",Phrase
+8BL-Shopping-Games,"game genie",Phrase
+8BL-Shopping-Games,"dev cart",Phrase
+8BL-Shopping-Games,"development",Phrase
+8BL-Shopping-Games,"devkit",Phrase
+8BL-Shopping-Games,"dev kit",Phrase
+8BL-Shopping-Games,"repair service",Phrase
+8BL-Shopping-Games,"repair kit",Phrase
+8BL-Shopping-Games,"repair shell",Phrase
+8BL-Shopping-Games,"replacement shell",Phrase
+8BL-Shopping-Games,"new shell",Phrase
+8BL-Shopping-Games,"clear shell",Phrase
+8BL-Shopping-Games,"custom shell",Phrase
+8BL-Shopping-Games,"recap",Phrase
+8BL-Shopping-Games,"recapped",Phrase
+8BL-Shopping-Games,"capacitor kit",Phrase
+8BL-Shopping-Games,"capacitor",Phrase
+8BL-Shopping-Games,"capacitors",Phrase
+8BL-Shopping-Games,"replacement lens",Phrase
+8BL-Shopping-Games,"laser replacement",Phrase
+8BL-Shopping-Games,"new laser",Phrase
+8BL-Shopping-Games,"poster",Phrase
+8BL-Shopping-Games,"posters",Phrase
+8BL-Shopping-Games,"print",Phrase
+8BL-Shopping-Games,"prints",Phrase
+8BL-Shopping-Games,"t-shirt",Phrase
+8BL-Shopping-Games,"tshirt",Phrase
+8BL-Shopping-Games,"t shirt",Phrase
+8BL-Shopping-Games,"shirt",Phrase
+8BL-Shopping-Games,"shirts",Phrase
+8BL-Shopping-Games,"hoodie",Phrase
+8BL-Shopping-Games,"hoodies",Phrase
+8BL-Shopping-Games,"sweatshirt",Phrase
+8BL-Shopping-Games,"mug",Phrase
+8BL-Shopping-Games,"mugs",Phrase
+8BL-Shopping-Games,"pin",Phrase
+8BL-Shopping-Games,"pins",Phrase
+8BL-Shopping-Games,"enamel pin",Phrase
+8BL-Shopping-Games,"keychain",Phrase
+8BL-Shopping-Games,"keychains",Phrase
+8BL-Shopping-Games,"sticker",Phrase
+8BL-Shopping-Games,"stickers",Phrase
+8BL-Shopping-Games,"decal",Phrase
+8BL-Shopping-Games,"decals",Phrase
+8BL-Shopping-Games,"funko",Phrase
+8BL-Shopping-Games,"funko pop",Phrase
+8BL-Shopping-Games,"pop figure",Phrase
+8BL-Shopping-Games,"amiibo",Phrase
+8BL-Shopping-Games,"amiibos",Phrase
+8BL-Shopping-Games,"statue",Phrase
+8BL-Shopping-Games,"statues",Phrase
+8BL-Shopping-Games,"figure",Phrase
+8BL-Shopping-Games,"figurine",Phrase
+8BL-Shopping-Games,"figurines",Phrase
+8BL-Shopping-Games,"plush",Phrase
+8BL-Shopping-Games,"plushie",Phrase
+8BL-Shopping-Games,"plushies",Phrase
+8BL-Shopping-Games,"lego",Phrase
+8BL-Shopping-Games,"lego set",Phrase
+8BL-Shopping-Games,"cosplay",Phrase
+8BL-Shopping-Games,"costume",Phrase
+8BL-Shopping-Games,"costumes",Phrase
+8BL-Shopping-Games,"bedsheet",Phrase
+8BL-Shopping-Games,"blanket",Phrase
+8BL-Shopping-Games,"pillow",Phrase
+8BL-Shopping-Games,"broken",Phrase
+8BL-Shopping-Games,"not working",Phrase
+8BL-Shopping-Games,"doesn't work",Phrase
+8BL-Shopping-Games,"doesnt work",Phrase
+8BL-Shopping-Games,"for parts",Phrase
+8BL-Shopping-Games,"parts only",Phrase
+8BL-Shopping-Games,"as is",Phrase
+8BL-Shopping-Games,"as-is",Phrase
+8BL-Shopping-Games,"damaged",Phrase
+8BL-Shopping-Games,"missing",Phrase
+8BL-Shopping-Games,"incomplete",Phrase
+8BL-Shopping-Games,"project",Phrase
+8BL-Shopping-Games,"repair project",Phrase
+8BL-Shopping-Games,"to fix",Phrase
+8BL-Shopping-Games,"needs work",Phrase
+8BL-Shopping-Games,"scrap",Phrase
+8BL-Shopping-Games,"junk",Phrase
+8BL-Shopping-Games,"non working",Phrase
+8BL-Shopping-Games,"nonworking",Phrase
+8BL-Shopping-Games,"non-working",Phrase
+8BL-Shopping-Games,"dead",Phrase
+8BL-Shopping-Games,"won't turn on",Phrase
+8BL-Shopping-Games,"wont turn on",Phrase
+8BL-Shopping-Games,"blinking light",Phrase
+8BL-Shopping-Games,"compatible",Phrase
+8BL-Shopping-Games,"compatibility",Phrase
+8BL-Shopping-Games,"works with",Phrase
+8BL-Shopping-Games,"will work",Phrase
+8BL-Shopping-Games,"difference between",Phrase
+8BL-Shopping-Games,"vs",Phrase
+8BL-Shopping-Games,"versus",Phrase
+8BL-Shopping-Games,"which is better",Phrase
+8BL-Shopping-Games,"should i",Phrase
+8BL-Shopping-Games,"should i buy",Phrase
+8BL-Shopping-Games,"is it good",Phrase
+8BL-Shopping-Games,"any good",Phrase
+8BL-Shopping-Games,"worth it",Phrase
+8BL-Shopping-Games,"worth buying",Phrase
+8BL-Shopping-Games,"worth the money",Phrase
+8BL-Shopping-Games,"reddit",Phrase
+8BL-Shopping-Games,"forum",Phrase
+8BL-Shopping-Games,"discord",Phrase
+8BL-Shopping-Games,"quora",Phrase
+8BL-Shopping-Games,"stack exchange",Phrase
+8BL-Shopping-Games,"android",Phrase
+8BL-Shopping-Games,"ios",Phrase
+8BL-Shopping-Games,"iphone",Phrase
+8BL-Shopping-Games,"ipad",Phrase
+8BL-Shopping-Games,"app",Phrase
+8BL-Shopping-Games,"app store",Phrase
+8BL-Shopping-Games,"google play",Phrase
+8BL-Shopping-Games,"play store",Phrase
+8BL-Shopping-Games,"mobile",Phrase
+8BL-Shopping-Games,"phone",Phrase
+8BL-Shopping-Games,"tablet",Phrase
+8BL-Shopping-Games,"switch port",Phrase
+8BL-Shopping-Games,"switch version",Phrase
+8BL-Shopping-Games,"nintendo switch online",Phrase
+8BL-Shopping-Games,"nso",Phrase
+8BL-Shopping-Games,"steam",Phrase
+8BL-Shopping-Games,"pc version",Phrase
+8BL-Shopping-Games,"pc download",Phrase
+8BL-Shopping-Games,"virtual console",Phrase
+8BL-Shopping-Games,"digital download",Phrase
+8BL-Shopping-Games,"digital edition",Phrase
+8BL-Shopping-Games,"digital copy",Phrase
+8BL-Shopping-Games,"psn",Phrase
+8BL-Shopping-Games,"ps now",Phrase
+8BL-Shopping-Games,"ps plus",Phrase
+8BL-Shopping-Games,"xbox live",Phrase
+8BL-Shopping-Games,"game pass",Phrase
+8BL-Shopping-Games,"gamepass",Phrase
+8BL-Shopping-Games,"for kids",Phrase
+8BL-Shopping-Games,"kids games",Phrase
+8BL-Shopping-Games,"children",Phrase
+8BL-Shopping-Games,"child",Phrase
+8BL-Shopping-Games,"toddler",Phrase
+8BL-Shopping-Games,"educational",Phrase
+8BL-Shopping-Games,"learning",Phrase
+8BL-Shopping-Games,"school",Phrase
+8BL-Shopping-Games,"classroom",Phrase
+8BL-Shopping-Games,"homework",Phrase
+8BL-Shopping-Games,"what",Phrase
+8BL-Shopping-Games,"who",Phrase
+8BL-Shopping-Games,"when",Phrase
+8BL-Shopping-Games,"why",Phrase
+8BL-Shopping-Games,"how to",Phrase
+8BL-Shopping-Games,"how do",Phrase
+8BL-Shopping-Games,"explain",Phrase
+8BL-Shopping-Games,"meaning",Phrase
+8BL-Shopping-Games,"definition",Phrase
+8BL-Shopping-Games,"define",Phrase
+8BL-Shopping-Games,"tutorial",Phrase
+8BL-Shopping-Games,"lesson",Phrase
+8BL-Shopping-Games,"lecture",Phrase
+8BL-Shopping-Games,"documentary",Phrase
+8BL-Shopping-Games,"podcast about",Phrase
+8BL-Shopping-Games,"retroarch",Phrase
+8BL-Shopping-Games,"homebrew",Phrase
+8BL-Shopping-Games,"bios",Phrase
+8BL-Shopping-Games,"cia file",Phrase
+8BL-Shopping-Games,"nsp",Phrase
+8BL-Shopping-Games,"xci",Phrase
+8BL-Shopping-Games,"wikipedia",Phrase
+8BL-Shopping-Games,"fandom",Phrase
+8BL-Shopping-Games,"ebook",Phrase
+8BL-Shopping-Games,"pdf",Phrase
+8BL-Shopping-Games,"how to play",Phrase
+8BL-Shopping-Games,"retrospective",Phrase

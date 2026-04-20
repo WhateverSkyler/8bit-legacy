@@ -8,8 +8,11 @@ import { eq, gte, sql } from "drizzle-orm";
 export const HARD_LIMITS = {
   /** Maximum single price change as a fraction (0.30 = 30%) */
   MAX_PRICE_CHANGE_PERCENT: 0.30,
-  /** Maximum daily ad spend in dollars */
-  MAX_DAILY_AD_SPEND: 25,
+  /** Maximum daily ad spend in dollars.
+   * Raised from $25 → $40 on 2026-04-20: new campaign base is $17/day and Google can
+   * 2x a daily budget on any given day ($34). Old $25 would false-trip on normal
+   * behavior. $40 keeps a ~2.3x guardrail above base while still catching runaways. */
+  MAX_DAILY_AD_SPEND: 40,
   /** Maximum bid multiplier change per optimization run */
   MAX_BID_CHANGE_PERCENT: 0.20,
   /** Maximum products paused per optimization run */
@@ -18,6 +21,11 @@ export const HARD_LIMITS = {
   MAX_NEGATIVE_KEYWORDS_PER_WEEK: 50,
   /** Never auto-price an item below its cost */
   NEVER_PRICE_BELOW_COST: true,
+  /** Hard pause when cumulative spend hits this with 0 conversions.
+   * Per user direction 2026-04-20: Shopping CPCs are cheap and intent-driven —
+   * if $50 doesn't convert, the funnel is broken, not the ads. Don't buy more
+   * runway past this point. */
+  LIFETIME_NO_CONVERSION_CEILING: 50,
 } as const;
 
 // ── Soft Limits (configurable via Settings page) ───────────────────
@@ -334,7 +342,36 @@ export function runAdsSafetyChecks(): AdsSafetyCheckResult {
     tripReason = `Daily spend $${dailySpend.toFixed(2)} exceeded $${HARD_LIMITS.MAX_DAILY_AD_SPEND} hard limit`;
   }
 
-  // ── Check 2: 3 consecutive days with $10+ spend and 0 conversions ──
+  // ── Check 2A: Lifetime cumulative trip (PRIMARY — user direction 2026-04-20) ──
+  // Fires at $50 cumulative spent with 0 conversions — tighter and faster than the
+  // 3-day check below, because Shopping CPCs are cheap/intent-driven and slow
+  // accumulation shouldn't buy more runway past $50 with nothing to show.
+  const lifetime = db
+    .select({
+      totalCost: sql<number>`coalesce(sum(cost), 0)`,
+      totalConv: sql<number>`coalesce(sum(conversions), 0)`,
+    })
+    .from(googleAdsPerformance)
+    .get();
+
+  const lifetimeCost = lifetime?.totalCost ?? 0;
+  const lifetimeConv = lifetime?.totalConv ?? 0;
+  const lifetimeCeiling = HARD_LIMITS.LIFETIME_NO_CONVERSION_CEILING;
+  const fiftyPassed = lifetimeCost < lifetimeCeiling || lifetimeConv > 0;
+  checks.push({
+    name: "lifetime_no_conversion_ceiling",
+    passed: fiftyPassed,
+    detail: `Lifetime: $${lifetimeCost.toFixed(2)} spent, ${lifetimeConv} conversions (hard pause at $${lifetimeCeiling} no-conv)`,
+  });
+  if (!fiftyPassed && !shouldTrip) {
+    shouldTrip = true;
+    tripReason = `Hard pause: $${lifetimeCost.toFixed(2)} cumulative spend with 0 conversions (floor $${lifetimeCeiling})`;
+  }
+
+  // ── Check 2B: 3 consecutive days with $10+ spend and 0 conversions (backup) ──
+  // Kept as defense-in-depth. In practice 2A fires first, but this catches the
+  // edge case where spend is paced so slowly that $50 hasn't accumulated yet but
+  // three days in a row have still wasted $10+ each.
   const threeDaysAgo = new Date(Date.now() - 3 * 86400000).toISOString().split("T")[0];
   const recentDays = db
     .select({
@@ -348,7 +385,6 @@ export function runAdsSafetyChecks(): AdsSafetyCheckResult {
     .orderBy(googleAdsPerformance.date)
     .all();
 
-  // Need exactly 3 days of data with each day having $10+ spend and 0 conversions
   const qualifyingDays = recentDays.filter(d => d.dayCost >= 10 && d.dayConversions === 0);
   const noConvPassed = qualifyingDays.length < 3;
   checks.push({
