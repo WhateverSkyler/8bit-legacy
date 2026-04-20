@@ -55,6 +55,7 @@ from navi_alerts import emit_navi_task  # noqa: E402
 
 MEDIA_ROOT = Path(os.getenv("MEDIA_ROOT", "/media"))
 POLL_INTERVAL_SEC = int(os.getenv("POLL_INTERVAL_SEC", "300"))
+BUFFER_EVERY_N_POLLS = int(os.getenv("BUFFER_EVERY_N_POLLS", "12"))  # default: every 60 min
 ET = ZoneInfo("America/New_York")
 
 # Sub-paths
@@ -67,6 +68,18 @@ STATE_FILE = STATE_DIR / "drop_watcher.json"
 # Pipeline entrypoints
 PODCAST_PIPELINE = _SCRIPTS_ROOT / "podcast" / "pipeline.py"
 PHOTO_PIPELINE = _SCRIPTS_ROOT / "social" / "schedule_photos.py"
+BUFFER_SCHEDULER = _SCRIPTS_ROOT / "watcher" / "buffer_scheduler.py"
+
+# pipeline.py writes rendered clips to <repo>/data/podcast/clips/<safe-episode>/ inside the container.
+# Compute the path from SCRIPTS_ROOT so the watcher can copy them to clips-archive after a run.
+_REPO_ROOT = _SCRIPTS_ROOT.parent
+PODCAST_RENDERED_CLIPS_ROOT = _REPO_ROOT / "data" / "podcast" / "clips"
+
+
+def _safe_episode_name(name: str) -> str:
+    """Mirror pipeline.py's _safe() so we can find the rendered-clips folder."""
+    cleaned = "".join(c if c.isalnum() or c in " -_" else "_" for c in name).strip()
+    return cleaned.replace(" ", "_")
 
 
 # --- Logging ---------------------------------------------------------------
@@ -231,14 +244,23 @@ def _process_podcast_drop(drop_dir: Path, state: dict) -> None:
         _safe_move(work_dir, PODCAST / "incoming" / "_failed", "PODCAST")
         return
 
-    # Success: copy rendered clips to archive for buffer re-use, then move drop to archive
-    clips_src = work_dir / "clips"
-    if clips_src.exists():
+    # Success: copy rendered clips to the buffer archive, also copy the clips_plan metadata,
+    # then move the raw drop to archive/.
+    rendered_clips_dir = PODCAST_RENDERED_CLIPS_ROOT / _safe_episode_name(name)
+    if rendered_clips_dir.exists():
         archive_target = PODCAST / "clips-archive" / name
         archive_target.mkdir(parents=True, exist_ok=True)
-        for mp4 in clips_src.glob("*.mp4"):
+        n_copied = 0
+        for mp4 in rendered_clips_dir.glob("*.mp4"):
             shutil.copy2(mp4, archive_target / mp4.name)
-        log.info(f"[PODCAST] copied {len(list(clips_src.glob('*.mp4')))} clips → {archive_target}")
+            n_copied += 1
+        # Preserve the clips_plan metadata so the buffer scheduler can still recover titles/hooks
+        clips_plan_all = _REPO_ROOT / "data" / "podcast" / "clips_plan" / "_all.json"
+        if clips_plan_all.exists():
+            shutil.copy2(clips_plan_all, archive_target / "_all.json")
+        log.info(f"[PODCAST] archived {n_copied} rendered clips → {archive_target}")
+    else:
+        log.warning(f"[PODCAST] expected rendered clips at {rendered_clips_dir} but didn't find any")
 
     _safe_move(work_dir, PODCAST / "archive", "PODCAST")
     state["podcast_seen"].append(name)
@@ -331,10 +353,25 @@ def _scan(state: dict) -> None:
     _save_state(state)
 
 
+def _run_buffer_scheduler() -> None:
+    if not BUFFER_SCHEDULER.exists():
+        log.warning(f"buffer_scheduler not at {BUFFER_SCHEDULER}, skipping")
+        return
+    log.info("[BUFFER] invoking buffer scheduler")
+    ok, out = _run_subprocess([sys.executable, str(BUFFER_SCHEDULER)], timeout_sec=600)
+    if not ok:
+        emit_navi_task(
+            title="Buffer scheduler failed",
+            description=f"buffer_scheduler.py exited non-zero. Last output:\n\n{out.strip()[-800:]}",
+            priority="medium",
+        )
+
+
 def _run_forever() -> int:
     log.info(
         f"drop_watcher starting — MEDIA_ROOT={MEDIA_ROOT}, "
-        f"poll={POLL_INTERVAL_SEC}s, scripts={_SCRIPTS_ROOT}"
+        f"poll={POLL_INTERVAL_SEC}s, scripts={_SCRIPTS_ROOT}, "
+        f"buffer every {BUFFER_EVERY_N_POLLS} polls"
     )
 
     stop = False
@@ -347,10 +384,13 @@ def _run_forever() -> int:
     signal.signal(signal.SIGTERM, _shutdown)
     signal.signal(signal.SIGINT, _shutdown)
 
+    poll_count = 0
     while not stop:
         try:
             state = _load_state()
             _scan(state)
+            if poll_count > 0 and poll_count % BUFFER_EVERY_N_POLLS == 0:
+                _run_buffer_scheduler()
         except Exception as exc:
             log.exception(f"scan cycle crashed: {exc}")
             emit_navi_task(
@@ -358,6 +398,7 @@ def _run_forever() -> int:
                 description=f"{exc!r} — watcher will retry in {POLL_INTERVAL_SEC}s",
                 priority="high",
             )
+        poll_count += 1
         # Sleep in short chunks so SIGTERM is responsive
         for _ in range(POLL_INTERVAL_SEC):
             if stop:
