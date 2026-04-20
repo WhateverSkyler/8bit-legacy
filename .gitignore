@@ -1,8 +1,21 @@
 config/.env
 config/*.secret
+config/oauth2client.json
+config/.yt_token.json
 __pycache__/
 *.pyc
 .DS_Store
 venv/
 .venv/
 .claude/
+
+# Podcast automation artifacts — large binaries, caches, logs
+data/podcast/source/
+data/podcast/transcripts/
+data/podcast/clips/
+data/podcast/pipeline_state.json
+data/podcast/*.log
+data/music-beds/
+data/social-media/final/
+data/social-media/*.csv
+data/social-media/*.log
