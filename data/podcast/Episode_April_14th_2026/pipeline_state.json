@@ -1,0 +1,44 @@
+{
+  "stages": {
+    "sources": {
+      "completed": false,
+      "last_rc": 0,
+      "completed_at": "2026-04-19T21:21:25.622422-04:00"
+    },
+    "transcribe": {
+      "completed": false,
+      "last_rc": 0,
+      "completed_at": "2026-04-19T21:21:25.622569-04:00"
+    },
+    "thumbnails": {
+      "completed": false,
+      "last_rc": 0,
+      "completed_at": "2026-04-19T21:21:25.622631-04:00"
+    },
+    "metadata": {
+      "completed": false,
+      "last_rc": 0,
+      "completed_at": "2026-04-19T21:21:25.622676-04:00"
+    },
+    "yt_upload": {
+      "completed": false,
+      "last_rc": 0,
+      "completed_at": "2026-04-19T21:21:25.623048-04:00"
+    },
+    "pick_clips": {
+      "completed": false,
+      "last_rc": 0,
+      "completed_at": "2026-04-19T21:21:25.623102-04:00"
+    },
+    "render_clips": {
+      "completed": false,
+      "last_rc": 0,
+      "completed_at": "2026-04-19T21:21:25.623143-04:00"
+    },
+    "schedule": {
+      "completed": false,
+      "last_rc": 0,
+      "completed_at": "2026-04-19T21:21:25.623181-04:00"
+    }
+  }
+}

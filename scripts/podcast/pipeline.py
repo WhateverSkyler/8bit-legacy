@@ -1,0 +1,237 @@
+#!/usr/bin/env python3
+"""Resumable podcast release orchestrator.
+
+Stages (all idempotent):
+  1. sources     — downscale topic cuts from USB → data/podcast/source/1080p/
+  2. transcribe  — faster-whisper word-level JSONs
+  3. thumbnails  — 1280×720 YouTube thumbnails
+  4. metadata    — titles/descriptions/tags for YT
+  5. yt_upload   — schedule YT uploads with publishAt
+  6. pick_clips  — Claude picks viral moments per topic
+  7. render_clips— ffmpeg renders 1080×1920 shorts with captions + music
+  8. schedule    — schedule shorts to TikTok/Shorts/Reels via Zernio
+
+Checkpoint at data/podcast/<episode>/pipeline_state.json.
+
+Usage:
+  python3 scripts/podcast/pipeline.py --episode "Episode April 14th 2026" \
+      --source "/run/media/tristan/TRISTAN/8-bit podcast/Episode April 14th 2026/Topic Cuts" \
+      --full-video "/run/media/.../Episode April 14th 2026/8-Bit Podcast April 14 2026 FULL FINAL.mp4" \
+      --yt-start-date 2026-04-20 --shorts-start-date 2026-04-20
+  python3 scripts/podcast/pipeline.py --episode "..." --resume
+  python3 scripts/podcast/pipeline.py --episode "..." --stage transcribe
+  python3 scripts/podcast/pipeline.py --episode "..." --dry-run
+"""
+
+import argparse
+import json
+import subprocess
+import sys
+import time
+from datetime import datetime, timedelta
+from pathlib import Path
+from zoneinfo import ZoneInfo
+
+ROOT = Path(__file__).resolve().parent.parent.parent
+SOURCE_1080P = ROOT / "data" / "podcast" / "source" / "1080p"
+TRANSCRIPTS = ROOT / "data" / "podcast" / "transcripts"
+THUMBS = ROOT / "data" / "podcast" / "thumbnails"
+METADATA = ROOT / "data" / "podcast" / "metadata"
+CLIPS_PLAN_DIR = ROOT / "data" / "podcast" / "clips_plan"
+CLIPS_DIR = ROOT / "data" / "podcast" / "clips"
+STATE_DIR = ROOT / "data" / "podcast"
+
+STAGES = ["sources", "transcribe", "thumbnails", "metadata", "yt_upload",
+          "pick_clips", "render_clips", "schedule"]
+
+ET = ZoneInfo("America/New_York")
+
+
+def _safe(s: str) -> str:
+    return "".join(c if c.isalnum() or c in " -_" else "_" for c in s).strip().replace(" ", "_")
+
+
+def _state_path(episode: str) -> Path:
+    d = STATE_DIR / _safe(episode)
+    d.mkdir(parents=True, exist_ok=True)
+    return d / "pipeline_state.json"
+
+
+def _load_state(episode: str) -> dict:
+    p = _state_path(episode)
+    if p.exists():
+        try:
+            return json.loads(p.read_text())
+        except json.JSONDecodeError:
+            pass
+    return {"stages": {}}
+
+
+def _save_state(episode: str, state: dict) -> None:
+    _state_path(episode).write_text(json.dumps(state, indent=2))
+
+
+def _run(cmd: list[str], dry_run: bool) -> int:
+    print(f"    $ {' '.join(cmd)}")
+    if dry_run:
+        return 0
+    t0 = time.time()
+    proc = subprocess.run(cmd)
+    print(f"    ({time.time() - t0:.1f}s, exit={proc.returncode})")
+    return proc.returncode
+
+
+def _yt_schedule_map(start_date: str, stems: list[str], full_stem: str | None) -> dict[str, str]:
+    """Full episode: day 1 18:00 ET. Topics: day 2..N at 12:00 ET."""
+    start = datetime.fromisoformat(start_date).replace(tzinfo=ET)
+    schedule: dict[str, str] = {}
+    if full_stem:
+        schedule[full_stem] = start.replace(hour=18, minute=0, second=0).astimezone(
+            ZoneInfo("UTC")).isoformat().replace("+00:00", "Z")
+    for i, stem in enumerate(stems):
+        when = (start + timedelta(days=i + 1)).replace(hour=12, minute=0, second=0)
+        schedule[stem] = when.astimezone(ZoneInfo("UTC")).isoformat().replace("+00:00", "Z")
+    return schedule
+
+
+def stage_sources(args, state) -> int:
+    if not args.source:
+        print("  [skip] no --source provided")
+        return 0
+    return _run(["python3", str(ROOT / "scripts" / "podcast" / "prepare_sources.py"),
+                 "--source", args.source], args.dry_run)
+
+
+def stage_transcribe(args, state) -> int:
+    return _run(["python3", str(ROOT / "scripts" / "podcast" / "transcribe.py"),
+                 "--batch", str(SOURCE_1080P)], args.dry_run)
+
+
+def stage_thumbnails(args, state) -> int:
+    rc = _run(["python3", str(ROOT / "scripts" / "podcast" / "generate_thumbnail.py"),
+               "--batch", str(SOURCE_1080P), "--metadata", str(METADATA)], args.dry_run)
+    if args.full_video and not args.dry_run:
+        fv = Path(args.full_video)
+        if fv.exists():
+            _run(["python3", str(ROOT / "scripts" / "podcast" / "generate_thumbnail.py"),
+                  str(fv), "--metadata", str(METADATA)], args.dry_run)
+    return rc
+
+
+def stage_metadata(args, state) -> int:
+    rc = _run(["python3", str(ROOT / "scripts" / "podcast" / "generate_metadata.py"),
+               "--batch", str(TRANSCRIPTS), "--type", "topic"], args.dry_run)
+    return rc
+
+
+def stage_yt_upload(args, state) -> int:
+    if not args.yt_start_date:
+        print("  [skip] no --yt-start-date — skipping YT schedule")
+        return 0
+    topic_mp4s = sorted(SOURCE_1080P.glob("*.mp4"))
+    stems = [v.stem for v in topic_mp4s]
+    full_stem = Path(args.full_video).stem if args.full_video else None
+    sched = _yt_schedule_map(args.yt_start_date, stems, full_stem)
+    sched_path = STATE_DIR / _safe(args.episode) / "yt_schedule.json"
+    sched_path.write_text(json.dumps(sched, indent=2))
+    print(f"  schedule → {sched_path.relative_to(ROOT)}")
+
+    rc = _run(["python3", str(ROOT / "scripts" / "podcast" / "youtube_upload.py"),
+               "--batch", str(SOURCE_1080P), "--schedule", str(sched_path)], args.dry_run)
+    if args.full_video and rc == 0:
+        fv = Path(args.full_video)
+        if fv.exists() and full_stem in sched:
+            _run(["python3", str(ROOT / "scripts" / "podcast" / "youtube_upload.py"),
+                  str(fv), "--publish-at", sched[full_stem]], args.dry_run)
+    return rc
+
+
+def stage_pick_clips(args, state) -> int:
+    return _run(["python3", str(ROOT / "scripts" / "podcast" / "pick_clips.py"),
+                 "--batch", str(TRANSCRIPTS)], args.dry_run)
+
+
+def stage_render_clips(args, state) -> int:
+    all_path = CLIPS_PLAN_DIR / "_all.json"
+    if not all_path.exists():
+        if args.dry_run:
+            print(f"  [dry-run] would read {all_path} (not yet generated)")
+            return 0
+        print(f"  [fatal] {all_path} missing — pick_clips stage must run first")
+        return 2
+    return _run(["python3", str(ROOT / "scripts" / "podcast" / "render_clip.py"),
+                 "--batch", str(all_path), "--episode", args.episode], args.dry_run)
+
+
+def stage_schedule(args, state) -> int:
+    if not args.shorts_start_date:
+        print("  [skip] no --shorts-start-date")
+        return 0
+    episode_clips_dir = CLIPS_DIR / _safe(args.episode)
+    if not episode_clips_dir.exists() or not any(episode_clips_dir.glob("*.mp4")):
+        if args.dry_run:
+            print(f"  [dry-run] would schedule clips in {episode_clips_dir} (not yet rendered)")
+            return 0
+        print(f"  [fatal] no clips in {episode_clips_dir}", file=sys.stderr)
+        return 2
+    mode = "--dry-run" if args.dry_run else "--execute"
+    return _run(["python3", str(ROOT / "scripts" / "podcast" / "schedule_shorts.py"),
+                 "--episode", args.episode, "--start-date", args.shorts_start_date, mode], False)
+
+
+STAGE_FNS = {
+    "sources": stage_sources,
+    "transcribe": stage_transcribe,
+    "thumbnails": stage_thumbnails,
+    "metadata": stage_metadata,
+    "yt_upload": stage_yt_upload,
+    "pick_clips": stage_pick_clips,
+    "render_clips": stage_render_clips,
+    "schedule": stage_schedule,
+}
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--episode", required=True)
+    parser.add_argument("--source", help="Dir of raw topic-cut MP4s on USB")
+    parser.add_argument("--full-video", help="Path to the full episode MP4 on USB")
+    parser.add_argument("--yt-start-date", help="YYYY-MM-DD, first YT publish day (ET)")
+    parser.add_argument("--shorts-start-date", help="YYYY-MM-DD, first shorts publish day (ET)")
+    parser.add_argument("--resume", action="store_true", help="Skip stages marked completed")
+    parser.add_argument("--stage", choices=STAGES, help="Run a single stage")
+    parser.add_argument("--dry-run", action="store_true")
+    args = parser.parse_args()
+
+    state = _load_state(args.episode)
+    stages = [args.stage] if args.stage else STAGES
+
+    print(f"[PIPELINE] episode={args.episode}  stages={stages}  dry_run={args.dry_run}")
+
+    for name in stages:
+        info = state["stages"].get(name, {})
+        if args.resume and info.get("completed"):
+            print(f"\n[{name}] already completed at {info.get('completed_at')} — skipping")
+            continue
+        print(f"\n[{name}] running")
+        try:
+            rc = STAGE_FNS[name](args, state)
+        except Exception as exc:
+            print(f"[{name}] EXCEPTION: {exc}", file=sys.stderr)
+            rc = 1
+        state["stages"][name] = {
+            "completed": rc == 0 and not args.dry_run,
+            "last_rc": rc,
+            "completed_at": datetime.now(ET).isoformat() if rc == 0 else None,
+        }
+        _save_state(args.episode, state)
+        if rc != 0:
+            print(f"[{name}] FAILED rc={rc}", file=sys.stderr)
+            return rc
+
+    print("\n[PIPELINE] done")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
