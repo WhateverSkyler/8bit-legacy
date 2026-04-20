@@ -1,0 +1,22 @@
+# Keep the image tiny — only copy what the pipeline needs
+dashboard/
+docs/
+assets/
+data/
+config/
+.venv/
+venv/
+.git/
+.github/
+node_modules/
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+.DS_Store
+.pytest_cache/
+.mypy_cache/
+*.log
+*.tar.gz
+
+# Local dev artifacts
+mac-projects-inventory-*.txt

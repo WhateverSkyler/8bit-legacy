@@ -1,0 +1,38 @@
+# docker-compose.yml for the 8bit-pipeline container on TrueNAS.
+#
+# Lives at /mnt/pool/apps/8bit-pipeline/docker-compose.yml alongside:
+#   .env                     — API keys (ANTHROPIC, ZERNIO, etc.) — gitignored, never in the image
+#   config/oauth2client.json — Google OAuth 2.0 Desktop client (for YouTube uploads)
+#   config/.yt_token.json    — cached refresh token (auto-written after first YT upload)
+#
+# Usage:
+#   cd /mnt/pool/apps/8bit-pipeline
+#   docker compose up -d     # start the watcher
+#   docker compose logs -f   # follow logs
+#   docker compose down      # stop (NEVER -v — would delete the /app/data intermediate volume)
+
+services:
+  8bit-pipeline:
+    image: 8bit-pipeline:latest
+    container_name: 8bit-pipeline
+    restart: unless-stopped
+    volumes:
+      # NAS drop/archive folders — created via SSH, see DEPLOY.md
+      - "/mnt/pool/NAS/Media/8-Bit Legacy:/media"
+      # Secrets bind-mount — contains oauth2client.json + .yt_token.json.
+      # RW because the YouTube client refreshes the cached token periodically.
+      - /mnt/pool/apps/8bit-pipeline/config:/app/config
+      # Persistent intermediate state (not the NAS — container-local, survives restarts)
+      - /mnt/pool/apps/8bit-pipeline/data:/app/data
+    env_file:
+      - .env
+    environment:
+      - MEDIA_ROOT=/media
+      - SCRIPTS_ROOT=/app/scripts
+      # Navi lives on the same host — use the LAN IP, not container DNS, so this works
+      # regardless of which Docker network the navi container is on.
+      - NAVI_URL=http://192.168.4.2:5055
+      - POLL_INTERVAL_SEC=300
+      - BUFFER_EVERY_N_POLLS=12
+      - PYTHONUNBUFFERED=1
+      - TZ=America/New_York

@@ -1,0 +1,17 @@
+# Runtime deps for the 8bit-pipeline container (TrueNAS deployment).
+# Kept minimal — matches what scripts/podcast/*, scripts/social/*, scripts/watcher/* import.
+
+requests>=2.32,<3
+python-dotenv>=1.0,<2
+
+# Video pipeline
+faster-whisper>=1.0,<2
+Pillow>=11.0,<12
+
+# LLM for clip picking + metadata generation
+anthropic>=0.42,<1
+
+# YouTube uploads
+google-api-python-client>=2.150,<3
+google-auth-oauthlib>=1.2,<2
+google-auth-httplib2>=0.2,<1
