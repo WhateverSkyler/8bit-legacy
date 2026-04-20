@@ -34,8 +34,21 @@ CLIPS_PLAN_ALL = ROOT / "data" / "podcast" / "clips_plan" / "_all.json"
 
 ET = ZoneInfo("America/New_York")
 SLOT_HOURS = [9, 13, 19]
-DEFAULT_HASHTAGS = ["#retrogaming", "#podcast", "#8bitlegacy", "#shorts", "#nintendo"]
 TARGET_PLATFORMS = ["tiktok", "youtube", "instagram"]
+
+# Hashtags-only caption strategy per user direction. No hook line, no URL —
+# profile bio carries those. Rationale: nobody reads short-form descriptions,
+# so every character goes to discovery hashtags instead.
+#
+# Baseline 12 tags leaves headroom for ≤3 topic-specific tags → 15 max.
+# YouTube Shorts IGNORES all hashtags on any post with >15 of them, so the
+# cap in _caption_for() is a real ceiling, not a vibe.
+DEFAULT_HASHTAGS = [
+    "#fyp", "#foryoupage", "#explorepage",
+    "#retrogaming", "#retrogames", "#videogames", "#gaming",
+    "#nintendo", "#playstation",
+    "#8bitlegacy", "#podcast", "#shorts",
+]
 
 
 def _safe(s: str) -> str:
@@ -43,9 +56,19 @@ def _safe(s: str) -> str:
 
 
 def _caption_for(spec: dict) -> str:
-    hook = spec.get("hook") or spec.get("title") or "The 8-Bit Legacy Podcast"
-    tag_list = DEFAULT_HASHTAGS + [f"#{t.replace(' ', '')}" for t in spec.get("topics", [])[:3]]
-    return f"{hook}\n\n8bitlegacy.com\n\n{' '.join(tag_list)}"
+    topic_tags = [
+        f"#{t.replace(' ', '').replace('-', '').lower()}"
+        for t in spec.get("topics", [])[:3]
+    ]
+    all_tags = DEFAULT_HASHTAGS + topic_tags
+    seen: set[str] = set()
+    deduped: list[str] = []
+    for tag in all_tags:
+        key = tag.lower()
+        if key not in seen:
+            seen.add(key)
+            deduped.append(tag)
+    return " ".join(deduped[:15])
 
 
 def _upload_file(client: ZernioClient, path: Path) -> str:

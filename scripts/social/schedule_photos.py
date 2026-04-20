@@ -5,12 +5,19 @@ Inputs:
   data/social-media/final/*.png — product photos (one post per file)
 
 For each photo:
-  - Generates a hype caption + 3-5 hashtags via Claude (8-Bit Legacy voice)
+  - Picks a caption from a short rotation of generic "store is alive" templates
   - Uploads to Zernio presigned URL → S3
   - Schedules one multi-platform post to IG + FB
 
 Cadence:
   2 posts/day at 10:00 ET and 18:00 ET, starting --start-date.
+
+Why generic captions:
+  Per user direction, these posts exist to make the socials look alive when
+  someone clicks through from the web — nothing more. Not product advertising,
+  not upselling. Per-photo Claude-generated captions were removed: overkill for
+  the actual purpose, cost money on every run, and identical-text spam
+  throttling from Meta is mitigated by the 5-entry rotation below.
 
 Usage:
   python3 scripts/social/schedule_photos.py --start-date 2026-04-20 --preview
@@ -20,7 +27,6 @@ Usage:
 import argparse
 import json
 import mimetypes
-import os
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -33,68 +39,29 @@ from zernio_client import ZernioClient, ZernioError  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 PHOTOS_DIR = ROOT / "data" / "social-media" / "final"
-
-try:
-    from dotenv import load_dotenv
-    load_dotenv(ROOT / "config" / ".env")
-except ImportError:
-    pass
 LOG_PATH = ROOT / "data" / "social-media" / "schedule_log.json"
-CAPTIONS_CACHE = ROOT / "data" / "social-media" / "captions_cache.json"
 
 ET = ZoneInfo("America/New_York")
 SLOT_HOURS = [10, 18]
 TARGET_PLATFORMS = ["instagram", "facebook"]
 
-CAPTION_SYSTEM = """You write Instagram + Facebook captions for 8-Bit Legacy, a retro gaming &
-Pokemon card store (8bitlegacy.com). Voice: casual, collector-nostalgic, slightly snarky, never
-corporate. Hype without hyperbole.
+# Rotated to avoid Meta's duplicate-text spam heuristics, which throttle reach
+# when every post carries identical copy.
+CAPTION_ROTATION = [
+    "New inventory and trade-ins at 8-Bit Legacy! Stop by or shop online at 8bitlegacy.com for the best deals on retro games and trading cards.",
+    "Fresh drops at 8-Bit Legacy — retro games, Pokemon cards, and more. In-store and at 8bitlegacy.com.",
+    "Stop by 8-Bit Legacy or check us out at 8bitlegacy.com. New inventory and trade-ins every week.",
+    "Something new just hit the shelves at 8-Bit Legacy. Full selection at 8bitlegacy.com — retro games, trading cards, and the rare stuff you're after.",
+    "What's new at 8-Bit Legacy this week? Come see us in person or shop at 8bitlegacy.com — best prices on retro games and trading cards in town.",
+]
 
-Return ONLY strict JSON: {caption, hashtags}.
-- caption: 1-3 sentences, ≤220 chars. Reference the actual item from the filename. End with a
-  light CTA ("shop now", "link in bio", "DM to grab", etc.) or a question.
-- hashtags: array of 4-6 lowercase hashtags, mix of broad (#retrogaming, #nintendo) +
-  specific to the item."""
-
-
-def _caption_for(filename: str) -> dict:
-    import anthropic
-
-    cache: dict = {}
-    if CAPTIONS_CACHE.exists():
-        try:
-            cache = json.loads(CAPTIONS_CACHE.read_text())
-        except json.JSONDecodeError:
-            cache = {}
-    if filename in cache:
-        return cache[filename]
-
-    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-    stem = Path(filename).stem
-    prompt = f"Product photo filename: {stem}\nWrite the caption + hashtags."
-    resp = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=500,
-        system=CAPTION_SYSTEM,
-        messages=[{"role": "user", "content": prompt}],
-    )
-    text = "".join(b.text for b in resp.content if b.type == "text").strip()
-    if text.startswith("```"):
-        text = text.split("```", 2)[1]
-        if text.startswith("json"):
-            text = text[4:]
-        text = text.rsplit("```", 1)[0]
-    data = json.loads(text)
-    cache[filename] = data
-    CAPTIONS_CACHE.parent.mkdir(parents=True, exist_ok=True)
-    CAPTIONS_CACHE.write_text(json.dumps(cache, indent=2))
-    return data
+# Small brand/discovery tag set. Photo posts aren't chasing virality.
+CAPTION_HASHTAGS = "#8bitlegacy #retrogaming #pokemoncards #videogames #valdostaga"
 
 
-def _compose_caption(data: dict) -> str:
-    caption = data["caption"].strip()
-    tags = " ".join(data.get("hashtags", []))
-    return f"{caption}\n\n8bitlegacy.com\n{tags}"
+def _caption_for(index: int) -> str:
+    base = CAPTION_ROTATION[index % len(CAPTION_ROTATION)]
+    return f"{base}\n\n{CAPTION_HASHTAGS}"
 
 
 def _upload_file(client: ZernioClient, path: Path) -> str:
@@ -149,16 +116,10 @@ def run(start_date: str, execute: bool) -> int:
     print(f"[PLAN] {len(photos)} photos · IG+FB · 2/day at {SLOT_HOURS} ET from {start_date}\n")
 
     rows = []
-    for photo, when in zip(photos, times):
-        try:
-            data = _caption_for(photo.name)
-            caption_preview = data["caption"][:60]
-        except Exception as exc:
-            print(f"[WARN] caption gen failed for {photo.name}: {exc}")
-            data = {"caption": f"Check out {photo.stem}!", "hashtags": ["#retrogaming", "#8bitlegacy"]}
-            caption_preview = data["caption"][:60]
-        rows.append((photo, when, data))
-        print(f"  {when.strftime('%Y-%m-%d %H:%M %Z')}  {photo.name:<42} — {caption_preview}")
+    for i, (photo, when) in enumerate(zip(photos, times)):
+        caption = _caption_for(i)
+        rows.append((photo, when, caption))
+        print(f"  {when.strftime('%Y-%m-%d %H:%M %Z')}  {photo.name:<42} — {caption[:60]}…")
 
     if not execute:
         print("\n[PREVIEW] not uploading. Re-run with --execute to push.")
@@ -173,14 +134,14 @@ def run(start_date: str, execute: bool) -> int:
         return 2
 
     log = []
-    for photo, when, data in rows:
+    for photo, when, caption in rows:
         try:
             media_url = _upload_file(client, photo)
             payload = {
                 "publishAt": when.astimezone(ZoneInfo("UTC")).isoformat().replace("+00:00", "Z"),
                 "platforms": [{"platform": p, "accountId": accounts[p]} for p in TARGET_PLATFORMS],
                 "media": [{"url": media_url, "type": "image"}],
-                "caption": _compose_caption(data),
+                "caption": caption,
             }
             resp = client.create_post(payload)
             post_id = (resp or {}).get("id") or (resp or {}).get("data", {}).get("id")
