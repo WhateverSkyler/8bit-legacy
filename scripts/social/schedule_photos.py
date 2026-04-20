@@ -27,6 +27,7 @@ Usage:
 import argparse
 import json
 import mimetypes
+import os
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -38,8 +39,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from zernio_client import ZernioClient, ZernioError  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-PHOTOS_DIR = ROOT / "data" / "social-media" / "final"
-LOG_PATH = ROOT / "data" / "social-media" / "schedule_log.json"
+# PHOTOS_DIR honors the env var so the pipeline container can point it at
+# /media/photos/processing/<drop-id>/ without code changes.
+PHOTOS_DIR = Path(os.getenv("PHOTOS_DIR", str(ROOT / "data" / "social-media" / "final")))
+LOG_PATH = Path(os.getenv("PHOTO_LOG_PATH", str(ROOT / "data" / "social-media" / "schedule_log.json")))
 
 ET = ZoneInfo("America/New_York")
 SLOT_HOURS = [10, 18]
