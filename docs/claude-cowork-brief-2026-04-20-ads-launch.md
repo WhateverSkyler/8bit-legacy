@@ -29,7 +29,7 @@ If pull fails, STOP and tell Tristan.
 ## Pre-flight confirmations with Tristan
 
 1. **Campaign rename OK?** Current name is `8BL-Shopping-All` (Campaign ID `23766662629`, Paused). Plan is to rename → `8BL-Shopping-Games`. If Tristan prefers a different name, use that and update the negatives CSV's campaign column to match.
-2. **Budget $20/day OK?** Math is $700 promo ÷ 41 days ≈ $20.07. If he wants more conservative ($14) or aggressive ($20), adjust.
+2. **Budget $20/day — confirmed by Tristan 2026-04-20 3:21 PM.** Rationale: $700 ÷ 42 days = $16.67 theoretical, but Google under-spends base budget 15-30% during learning, so $20/day gives headroom to reliably burn the full credit before 2026-05-31 expiry. Do not re-ask.
 3. **No test purchase needed** (confirmed with Tristan 2026-04-20). Instead, during Task 3 — when you click into `Google Shopping App Purchase` conversion action — just verify it shows status **`Created`** (pixel wired up, awaiting real-customer data). If it shows `Misconfigured` / `Inactive due to error` / `Needs attention`, THEN escalate. `Created` + awaiting data is fine — first real customer order will flip it to Recording naturally.
 
 ---
