@@ -173,11 +173,11 @@ def _find_gaps(now: datetime, per_day: dict[date, int]) -> list[datetime]:
 
 def _accounts_by_platform(client: ZernioClient) -> dict[str, str]:
     raw = client.list_accounts()
-    items = raw if isinstance(raw, list) else (raw.get("data") or raw.get("accounts") or [])
+    items = raw if isinstance(raw, list) else (raw.get("accounts") or raw.get("data") or [])
     out: dict[str, str] = {}
     for a in items:
         p = (a.get("platform") or "").lower()
-        aid = a.get("id") or a.get("accountId")
+        aid = a.get("_id") or a.get("id") or a.get("accountId")
         if p and aid and p not in out:
             out[p] = aid
     return out

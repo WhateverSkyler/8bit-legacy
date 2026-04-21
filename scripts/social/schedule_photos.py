@@ -104,12 +104,15 @@ def _build_schedule(n: int, start_date: str) -> list[datetime]:
 
 
 def _accounts_by_platform(client: ZernioClient) -> dict[str, str]:
-    accounts = client.list_accounts()
-    items = accounts.get("data") if isinstance(accounts, dict) else accounts
+    raw = client.list_accounts()
+    if isinstance(raw, dict):
+        items = raw.get("accounts") or raw.get("data") or []
+    else:
+        items = raw or []
     out: dict[str, str] = {}
-    for acct in items or []:
+    for acct in items:
         platform = (acct.get("platform") or "").lower()
-        acct_id = acct.get("id") or acct.get("accountId")
+        acct_id = acct.get("_id") or acct.get("id") or acct.get("accountId")
         if platform and acct_id and platform not in out:
             out[platform] = acct_id
     return out
