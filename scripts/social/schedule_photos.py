@@ -164,6 +164,7 @@ def run(start_date: str, execute: bool) -> int:
             print(f"[ERROR] {photo.name}: {exc}", file=sys.stderr)
             log.append({"photo": photo.name, "error": str(exc)})
 
+    LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
     LOG_PATH.write_text(json.dumps(log, indent=2))
     print(f"\n[LOG] {LOG_PATH.relative_to(ROOT)}")
     return 0

@@ -98,9 +98,9 @@ class ZernioClient:
 
     def get_presigned_media_url(self, filename: str, content_type: str) -> Any:
         return self._request(
-            "GET",
-            "/media/presigned-url",
-            params={"filename": filename, "contentType": content_type},
+            "POST",
+            "/media",
+            json={"filename": filename, "contentType": content_type},
         )
 
     # ---- Webhooks ----
