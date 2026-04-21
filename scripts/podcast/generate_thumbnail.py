@@ -26,7 +26,41 @@ from PIL import Image, ImageDraw, ImageEnhance, ImageFont
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 THUMB_DIR = ROOT / "data" / "podcast" / "thumbnails"
-BEBAS_FONT = Path.home() / ".local/share/fonts/bebas-neue/BebasNeue-Regular.ttf"
+
+
+def _find_bebas_font() -> Path:
+    """Locate Bebas Neue TTF. Checks system font dirs and known install paths
+    so the script works inside the Docker container (where Path.home() is /app)
+    and on dev workstations (where fonts live under ~/.local/share/fonts)."""
+    candidates = [
+        Path("/usr/local/share/fonts/bebas-neue/BebasNeue-Regular.ttf"),
+        Path("/usr/share/fonts/truetype/bebas-neue/BebasNeue-Regular.ttf"),
+        Path("/usr/share/fonts/bebas-neue/BebasNeue-Regular.ttf"),
+        Path.home() / ".local/share/fonts/bebas-neue/BebasNeue-Regular.ttf",
+        Path("/app/.local/share/fonts/bebas-neue/BebasNeue-Regular.ttf"),
+    ]
+    for c in candidates:
+        if c.exists():
+            return c
+    raise FileNotFoundError(
+        "BebasNeue-Regular.ttf not found in any of: " + ", ".join(str(c) for c in candidates)
+    )
+
+
+def _canonical_stem(video: Path) -> str:
+    """Strip the _1080p working-copy suffix so the thumbnail filename matches the
+    original video stem. That way a single thumbnail file works for both the 1080p
+    clip-rendering pipeline and the 4K YouTube upload."""
+    s = video.stem
+    return s[:-6] if s.endswith("_1080p") else s
+BEBAS_FONT: Path | None = None
+
+
+def _bebas() -> Path:
+    global BEBAS_FONT
+    if BEBAS_FONT is None:
+        BEBAS_FONT = _find_bebas_font()
+    return BEBAS_FONT
 LOGO = ROOT / "assets" / "brand" / "logo-white.png"
 W, H = 1280, 720
 ORANGE = (0xff, 0x95, 0x26)
@@ -93,7 +127,7 @@ def make_thumbnail(video: Path, title: str, out_path: Path) -> Path:
     frame = Image.alpha_composite(frame.convert("RGBA"), overlay).convert("RGB")
 
     draw = ImageDraw.Draw(frame)
-    font_big = ImageFont.truetype(str(BEBAS_FONT), 120)
+    font_big = ImageFont.truetype(str(_bebas()), 120)
     lines = _wrap(title.upper(), font_big, max_width=W - 120)
     y = 60
     for line in lines:
@@ -107,7 +141,7 @@ def make_thumbnail(video: Path, title: str, out_path: Path) -> Path:
     draw.rectangle([(0, H - bar_h), (int(W * 0.55), H)], fill=ORANGE)
 
     # "THE 8-BIT LEGACY PODCAST" caption bottom-left
-    font_sub = ImageFont.truetype(str(BEBAS_FONT), 42)
+    font_sub = ImageFont.truetype(str(_bebas()), 42)
     _draw_stroked_text(draw, (32, H - 90), "THE 8-BIT LEGACY PODCAST",
                        font=font_sub, fill=WHITE, stroke_fill=BLACK, stroke_width=3, shadow=False)
 
@@ -153,14 +187,14 @@ def main() -> int:
     if args.video:
         video = Path(args.video).resolve()
         title = args.title or _title_for(video, Path(args.metadata) if args.metadata else None)
-        make_thumbnail(video, title, THUMB_DIR / f"{video.stem}.jpg")
+        make_thumbnail(video, title, THUMB_DIR / f"{_canonical_stem(video)}.jpg")
         return 0
 
     if args.batch:
         metadata_dir = Path(args.metadata) if args.metadata else None
         for v in sorted(Path(args.batch).resolve().glob("*.mp4")):
             title = args.title or _title_for(v, metadata_dir)
-            make_thumbnail(v, title, THUMB_DIR / f"{v.stem}.jpg")
+            make_thumbnail(v, title, THUMB_DIR / f"{_canonical_stem(v)}.jpg")
         return 0
 
     parser.error("pass a video path or --batch <dir>")

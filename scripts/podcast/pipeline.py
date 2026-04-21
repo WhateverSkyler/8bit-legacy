@@ -127,24 +127,47 @@ def stage_metadata(args, state) -> int:
 
 
 def stage_yt_upload(args, state) -> int:
+    """Upload to YouTube using the ORIGINAL-quality source files (e.g. 4K),
+    not the 1080p working copies. 1080p copies remain for clip rendering only.
+
+    Picks up topic originals from --source dir and the full-episode original
+    from --full-video. Only files that still exist are uploaded (the user may
+    have deleted topics from the processing/ folder to skip them).
+    """
     if not args.yt_start_date:
         print("  [skip] no --yt-start-date — skipping YT schedule")
         return 0
-    topic_mp4s = sorted(SOURCE_1080P.glob("*.mp4"))
+
+    source_dir = Path(args.source).resolve()
+    full_file = Path(args.full_video).resolve() if args.full_video else None
+
+    # Topic originals = all .mp4 in the source dir, minus the full-episode file.
+    all_mp4s = sorted(source_dir.glob("*.mp4"))
+    topic_mp4s = [v for v in all_mp4s if (not full_file) or v.resolve() != full_file]
+
     stems = [v.stem for v in topic_mp4s]
-    full_stem = Path(args.full_video).stem if args.full_video else None
+    full_stem = full_file.stem if full_file and full_file.exists() else None
     sched = _yt_schedule_map(args.yt_start_date, stems, full_stem)
     sched_path = STATE_DIR / _safe(args.episode) / "yt_schedule.json"
     sched_path.write_text(json.dumps(sched, indent=2))
     print(f"  schedule → {sched_path.relative_to(ROOT)}")
+    print(f"  uploading: full={full_file.name if full_stem else '(none)'}, "
+          f"{len(topic_mp4s)} topic(s)")
 
-    rc = _run(["python3", str(ROOT / "scripts" / "podcast" / "youtube_upload.py"),
-               "--batch", str(SOURCE_1080P), "--schedule", str(sched_path)], args.dry_run)
-    if args.full_video and rc == 0:
-        fv = Path(args.full_video)
-        if fv.exists() and full_stem in sched:
-            _run(["python3", str(ROOT / "scripts" / "podcast" / "youtube_upload.py"),
-                  str(fv), "--publish-at", sched[full_stem]], args.dry_run)
+    # Upload each topic individually (passing explicit paths avoids re-globbing the full
+    # episode from the source dir, which --batch would do).
+    rc = 0
+    for topic in topic_mp4s:
+        if topic.stem not in sched:
+            continue
+        rc = _run(["python3", str(ROOT / "scripts" / "podcast" / "youtube_upload.py"),
+                   str(topic), "--publish-at", sched[topic.stem]], args.dry_run)
+        if rc != 0:
+            return rc
+    # Upload full episode
+    if full_stem and full_file.exists() and full_stem in sched:
+        rc = _run(["python3", str(ROOT / "scripts" / "podcast" / "youtube_upload.py"),
+                   str(full_file), "--publish-at", sched[full_stem]], args.dry_run)
     return rc
 
 

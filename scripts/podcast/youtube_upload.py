@@ -25,6 +25,9 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 SOURCE_1080P = ROOT / "data" / "podcast" / "source" / "1080p"
 METADATA_DIR = ROOT / "data" / "podcast" / "metadata"
 THUMB_DIR = ROOT / "data" / "podcast" / "thumbnails"
+# SMB-visible drop folder: user puts custom YT thumbnails here and we prefer them.
+# Maps to /mnt/pool/NAS/Media/8-Bit Legacy/podcast/custom-thumbnails/ on the host.
+CUSTOM_THUMB_DIR = Path("/media/podcast/custom-thumbnails")
 CONFIG = ROOT / "config"
 CLIENT_SECRETS = CONFIG / "oauth2client.json"
 TOKEN_CACHE = CONFIG / ".yt_token.json"
@@ -60,11 +63,88 @@ def _get_service():
     return build("youtube", "v3", credentials=creds)
 
 
+def _candidate_stems(video: Path) -> list[str]:
+    """Return candidate filename-stems to try when looking up metadata/thumbnails.
+    The pipeline may have generated assets keyed by the 1080p stem or the original
+    stem — check both so 4K-original uploads can still find their assets."""
+    stem = video.stem
+    stripped = stem[:-6] if stem.endswith("_1080p") else stem
+    suffixed = stem if stem.endswith("_1080p") else f"{stem}_1080p"
+    # Deduped preserve-order
+    seen: set[str] = set()
+    out: list[str] = []
+    for s in (stem, stripped, suffixed):
+        if s not in seen:
+            seen.add(s)
+            out.append(s)
+    return out
+
+
 def _load_metadata(video: Path) -> dict:
-    meta_path = METADATA_DIR / f"{video.stem}.json"
-    if not meta_path.exists():
-        raise FileNotFoundError(f"metadata missing: {meta_path} — run generate_metadata.py first")
-    return json.loads(meta_path.read_text())
+    for s in _candidate_stems(video):
+        meta_path = METADATA_DIR / f"{s}.json"
+        if meta_path.exists():
+            return json.loads(meta_path.read_text())
+    raise FileNotFoundError(
+        f"metadata missing: tried {METADATA_DIR}/{{{','.join(_candidate_stems(video))}}}.json "
+        "— run generate_metadata.py first"
+    )
+
+
+def _tokenize(name: str) -> set[str]:
+    """Break a filename stem into lowercase alpha-only word-tokens for similarity
+    matching. Splits on ANY non-letter (punct AND digits) so fused names like
+    `prime4` or `ps5pro` cleanly break into `prime`, `pro`, etc. Drops tokens
+    shorter than 3 chars (articles, index prefixes, noise)."""
+    import re
+    s = name.lower()
+    if s.endswith("_1080p"):
+        s = s[:-6]
+    parts = re.split(r"[^a-z]+", s)
+    return {p for p in parts if len(p) >= 3}
+
+
+def _similarity(video_name: str, thumb_name: str) -> float:
+    """Jaccard similarity between token sets. Range: 0.0 (nothing shared) to 1.0 (identical)."""
+    va, vb = _tokenize(video_name), _tokenize(thumb_name)
+    if not va or not vb:
+        return 0.0
+    inter = va & vb
+    union = va | vb
+    return len(inter) / len(union)
+
+
+MATCH_THRESHOLD = 0.2  # need at least ~20% token overlap to count as a match
+
+
+def _find_thumbnail(video: Path) -> Path | None:
+    """Locate a thumbnail for this video.
+
+    Priority:
+      1. User-dropped in CUSTOM_THUMB_DIR, matched by filename similarity (Jaccard
+         on word tokens). The user can name the file anything reasonably similar
+         to the video — e.g. `metroid-prime-4.jpg` for `05-metroid-prime4-ps5pro-xbox.mp4`.
+      2. Auto-generated in THUMB_DIR, matched by exact stem (since generate_thumbnail.py
+         writes stems we control).
+    """
+    # 1. Custom thumbnails — similarity match
+    if CUSTOM_THUMB_DIR.exists():
+        custom_files = [p for p in CUSTOM_THUMB_DIR.iterdir()
+                        if p.is_file() and p.suffix.lower() in (".jpg", ".jpeg", ".png")]
+        best: tuple[float, Path] | None = None
+        for f in custom_files:
+            score = _similarity(video.stem, f.stem)
+            if score >= MATCH_THRESHOLD and (best is None or score > best[0]):
+                best = (score, f)
+        if best is not None:
+            print(f"  [thumb] matched custom '{best[1].name}' to '{video.name}' (score={best[0]:.2f})")
+            return best[1]
+    # 2. Auto-generated — exact/candidate stems
+    for s in _candidate_stems(video):
+        auto = THUMB_DIR / f"{s}.jpg"
+        if auto.exists():
+            return auto
+    return None
 
 
 def upload_one(video: Path, publish_at: str | None, privacy: str = "private") -> dict:
@@ -109,13 +189,15 @@ def upload_one(video: Path, publish_at: str | None, privacy: str = "private") ->
     video_id = response["id"]
     print(f"[OK] {video.name} → https://youtu.be/{video_id}  (publishAt={publish_at or 'now'})")
 
-    thumb = THUMB_DIR / f"{video.stem}.jpg"
-    if thumb.exists():
+    thumb = _find_thumbnail(video)
+    if thumb is not None:
         try:
             yt.thumbnails().set(videoId=video_id, media_body=str(thumb)).execute()
-            print(f"  thumbnail set")
+            print(f"  thumbnail applied → {thumb.name}")
         except Exception as exc:
             print(f"  [WARN] thumbnail set failed: {exc}")
+    else:
+        print(f"  [WARN] no thumbnail found for {video.stem}")
 
     return {"video_id": video_id, "title": meta["title"], "publish_at": publish_at,
             "source": str(video.relative_to(ROOT))}
@@ -155,7 +237,12 @@ def main() -> int:
 
     for v in targets:
         try:
-            pub = args.publish_at or schedule.get(v.stem)
+            pub = args.publish_at
+            if not pub:
+                for cand in _candidate_stems(v):
+                    if cand in schedule:
+                        pub = schedule[cand]
+                        break
             result = upload_one(v, pub, args.privacy)
             _append_log(result)
         except Exception as exc:
