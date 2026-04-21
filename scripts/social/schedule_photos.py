@@ -61,7 +61,9 @@ CAPTION_ROTATION = [
 ]
 
 # Small brand/discovery tag set. Photo posts aren't chasing virality.
-CAPTION_HASHTAGS = "#8bitlegacy #retrogaming #pokemoncards #videogames #valdostaga"
+# NO location/geo tags (#valdostaga etc.) — per user direction, store does not
+# advertise a physical location on socials; we're a nationwide online shop.
+CAPTION_HASHTAGS = "#8bitlegacy #retrogaming #pokemoncards #videogames #gamingcommunity"
 
 
 def _caption_for(index: int) -> str:

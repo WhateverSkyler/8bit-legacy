@@ -83,7 +83,8 @@ class ZernioClient:
         return self._request("POST", "/posts", json=payload)
 
     def update_post(self, post_id: str, payload: dict) -> Any:
-        return self._request("PATCH", f"/posts/{post_id}", json=payload)
+        # Zernio uses PUT (not PATCH) for updates, and accepts partial bodies.
+        return self._request("PUT", f"/posts/{post_id}", json=payload)
 
     def delete_post(self, post_id: str) -> Any:
         return self._request("DELETE", f"/posts/{post_id}")

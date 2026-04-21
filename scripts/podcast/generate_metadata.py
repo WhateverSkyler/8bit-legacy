@@ -107,7 +107,7 @@ Return these FIELDS separately (Python assembles the final description):
 - `hook`: 1-2 sentences, ≤200 chars, that directly tells someone clicking what they're about to watch. This is what YT shows above the "show more" fold. MUST accurately summarize the content. Write in the casual/confrontational voice.
 - `chapters` (ONLY for full episodes): list of `{time_sec, title}`. Use real segment boundaries from the transcript — take the start time of each topic section. 5-8 chapters total, even spacing.
 - `summary_bullets` (ONLY for topic videos): list of 2-3 short bullets (each ≤80 chars) describing what's discussed. Bullet form, no lead-in.
-- `episode_hashtags`: 3-5 hashtags specific to this video's topics (e.g. `#Nintendo`, `#SwitchReveal`). Title case, NO spaces. These get appended to the base `#GamingPodcast #RetroGaming #The8BitPodcast`.
+- `episode_hashtags`: 3-5 hashtags specific to this video's topics (e.g. `#Nintendo`, `#SwitchReveal`). Title case, NO spaces. These get appended to the base `#GamingPodcast #RetroGaming #The8BitPodcast`. NEVER include location/geography hashtags (no `#Valdosta`, `#ValdostaGA`, `#Georgia`, `#SouthGA`, city/state/region names of any kind) — this show is nationwide, not local.
 
 ## Tags (YouTube's hidden keyword field)
 
