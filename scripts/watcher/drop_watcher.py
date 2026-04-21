@@ -12,7 +12,7 @@ Layout (inside the pipeline container with the NAS dataset mounted at /media):
     │   ├── processing/        <- watcher moves drops here during a run
     │   ├── archive/           <- succeeded drops end up here
     │   ├── clips-archive/     <- rendered shorts copied here for buffer re-use
-    │   └── music-beds/        <- one-time: normalized retro OSTs
+    │   └── music-beds/        <- drop raw OSTs (wav/mp3/flac/ogg/m4a/aac); watcher auto-normalizes to -18 LUFS
     ├── photos/
     │   ├── incoming/          <- loose PNGs
     │   ├── processing/        <- grouped by drop date during a run
@@ -69,11 +69,18 @@ STATE_FILE = STATE_DIR / "drop_watcher.json"
 PODCAST_PIPELINE = _SCRIPTS_ROOT / "podcast" / "pipeline.py"
 PHOTO_PIPELINE = _SCRIPTS_ROOT / "social" / "schedule_photos.py"
 BUFFER_SCHEDULER = _SCRIPTS_ROOT / "watcher" / "buffer_scheduler.py"
+PREPARE_MUSIC = _SCRIPTS_ROOT / "podcast" / "prepare_music.py"
 
 # pipeline.py writes rendered clips to <repo>/data/podcast/clips/<safe-episode>/ inside the container.
 # Compute the path from SCRIPTS_ROOT so the watcher can copy them to clips-archive after a run.
 _REPO_ROOT = _SCRIPTS_ROOT.parent
 PODCAST_RENDERED_CLIPS_ROOT = _REPO_ROOT / "data" / "podcast" / "clips"
+
+# Music-bed auto-detect: user drops raw OSTs into the NAS folder (visible over SMB),
+# watcher normalizes them to the container-local data dir where render_clip.py reads from.
+MUSIC_SOURCE = PODCAST / "music-beds"
+MUSIC_NORMALIZED = _REPO_ROOT / "data" / "music-beds"
+MUSIC_EXTENSIONS = {".wav", ".mp3", ".flac", ".ogg", ".m4a", ".aac"}
 
 
 def _safe_episode_name(name: str) -> str:
@@ -135,12 +142,18 @@ def _safe_move(src: Path, dst_parent: Path, label: str) -> Path:
     return target
 
 
-def _run_subprocess(cmd: list[str], cwd: Path | None = None, timeout_sec: int = 7200) -> tuple[bool, str]:
+def _run_subprocess(
+    cmd: list[str],
+    cwd: Path | None = None,
+    timeout_sec: int = 7200,
+    env: dict[str, str] | None = None,
+) -> tuple[bool, str]:
     log.info(f"[RUN] {' '.join(str(c) for c in cmd)}")
     try:
         proc = subprocess.run(
             cmd,
             cwd=str(cwd) if cwd else None,
+            env=env,
             capture_output=True,
             text=True,
             timeout=timeout_sec,
@@ -290,8 +303,8 @@ def _process_photo_drop(state: dict) -> None:
         "--execute",
     ]
     env = os.environ.copy()
-    env["PHOTOS_DIR"] = str(processing_dir)  # schedule_photos.py reads this (patched separately)
-    ok, out = _run_subprocess(cmd, timeout_sec=1800)
+    env["PHOTOS_DIR"] = str(processing_dir)  # schedule_photos.py reads this env var
+    ok, out = _run_subprocess(cmd, timeout_sec=1800, env=env)
 
     if not ok:
         emit_navi_task(
@@ -309,6 +322,48 @@ def _process_photo_drop(state: dict) -> None:
     _safe_move(processing_dir, PHOTOS / "archive", "PHOTOS")
     state["photos_seen"].append(drop_id)
     log.info(f"[PHOTOS] archived drop {drop_id}")
+
+
+# --- Music bed auto-normalize ----------------------------------------------
+
+def _process_music_beds() -> None:
+    """Normalize any new music-bed source files dropped into the NAS folder.
+
+    User drops raw OSTs into /media/podcast/music-beds/ (visible over SMB);
+    prepare_music.py normalizes to -18 LUFS and writes to /app/data/music-beds/,
+    which is what render_clip.py reads from.
+
+    Idempotent — fast-paths when every source already has a normalized twin, so
+    it's cheap to call on every poll cycle.
+    """
+    if not MUSIC_SOURCE.exists():
+        return
+    sources = [
+        p for p in MUSIC_SOURCE.rglob("*")
+        if p.is_file()
+        and p.suffix.lower() in MUSIC_EXTENSIONS
+        and _file_is_stable(p)
+    ]
+    if not sources:
+        return
+    needs_work = [s for s in sources if not (MUSIC_NORMALIZED / f"{s.stem}.wav").exists()]
+    if not needs_work:
+        return
+    log.info(f"[MUSIC] {len(needs_work)} new OST file(s) detected — normalizing")
+    MUSIC_NORMALIZED.mkdir(parents=True, exist_ok=True)
+    cmd = [sys.executable, str(PREPARE_MUSIC), "--source", str(MUSIC_SOURCE)]
+    ok, out = _run_subprocess(cmd, timeout_sec=1800)
+    if not ok:
+        emit_navi_task(
+            title="Music bed normalization failed",
+            description=(
+                f"scripts/podcast/prepare_music.py failed while processing new OSTs in "
+                f"{MUSIC_SOURCE}. Last 500 chars:\n\n{out.strip()[-500:]}"
+            ),
+            priority="medium",
+        )
+        return
+    log.info("[MUSIC] normalization complete")
 
 
 # --- Scan loop -------------------------------------------------------------
@@ -348,6 +403,17 @@ def _scan(state: dict) -> None:
                 description=f"Unhandled exception in drop_watcher photo scan: {exc}",
                 priority="high",
             )
+
+    # Music beds: auto-normalize any new OST files in the NAS folder
+    try:
+        _process_music_beds()
+    except Exception as exc:
+        log.exception("[MUSIC] unexpected failure")
+        emit_navi_task(
+            title="Watcher crashed processing music beds",
+            description=f"Unhandled exception in drop_watcher music scan: {exc}",
+            priority="medium",
+        )
 
     state["last_scan"] = datetime.now(ET).isoformat()
     _save_state(state)

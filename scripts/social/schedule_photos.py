@@ -10,7 +10,7 @@ For each photo:
   - Schedules one multi-platform post to IG + FB
 
 Cadence:
-  2 posts/day at 10:00 ET and 18:00 ET, starting --start-date.
+  3 posts/week — Tue/Thu/Sat at 12:00 ET, starting on or after --start-date.
 
 Why generic captions:
   Per user direction, these posts exist to make the socials look alive when
@@ -45,7 +45,9 @@ PHOTOS_DIR = Path(os.getenv("PHOTOS_DIR", str(ROOT / "data" / "social-media" / "
 LOG_PATH = Path(os.getenv("PHOTO_LOG_PATH", str(ROOT / "data" / "social-media" / "schedule_log.json")))
 
 ET = ZoneInfo("America/New_York")
-SLOT_HOURS = [10, 18]
+# Tue=1, Thu=3, Sat=5 (Monday=0 per datetime.weekday()).
+POST_WEEKDAYS = (1, 3, 5)
+POST_HOUR_ET = 12
 TARGET_PLATFORMS = ["instagram", "facebook"]
 
 # Rotated to avoid Meta's duplicate-text spam heuristics, which throttle reach
@@ -82,17 +84,22 @@ def _upload_file(client: ZernioClient, path: Path) -> str:
 
 
 def _build_schedule(n: int, start_date: str) -> list[datetime]:
+    """Return n datetimes — one per post — each on a Tue/Thu/Sat at POST_HOUR_ET.
+
+    Starts at --start-date midnight ET, rolls forward to the first Tue/Thu/Sat at
+    POST_HOUR_ET, then advances one qualifying day per item.
+    """
     start = datetime.fromisoformat(start_date).replace(tzinfo=ET)
+    cursor = start.replace(hour=POST_HOUR_ET, minute=0, second=0, microsecond=0)
+    # If start_date is past POST_HOUR_ET on the day itself, skip to tomorrow.
+    if cursor < start:
+        cursor = cursor + timedelta(days=1)
     times: list[datetime] = []
-    day = 0
-    slot = 0
     for _ in range(n):
-        dt = start.replace(hour=SLOT_HOURS[slot], minute=0, second=0, microsecond=0) + timedelta(days=day)
-        times.append(dt)
-        slot += 1
-        if slot >= len(SLOT_HOURS):
-            slot = 0
-            day += 1
+        while cursor.weekday() not in POST_WEEKDAYS:
+            cursor = cursor + timedelta(days=1)
+        times.append(cursor)
+        cursor = cursor + timedelta(days=1)
     return times
 
 
@@ -116,7 +123,7 @@ def run(start_date: str, execute: bool) -> int:
         return 2
 
     times = _build_schedule(len(photos), start_date)
-    print(f"[PLAN] {len(photos)} photos · IG+FB · 2/day at {SLOT_HOURS} ET from {start_date}\n")
+    print(f"[PLAN] {len(photos)} photos · IG+FB · Tue/Thu/Sat {POST_HOUR_ET}:00 ET from {start_date}\n")
 
     rows = []
     for i, (photo, when) in enumerate(zip(photos, times)):
