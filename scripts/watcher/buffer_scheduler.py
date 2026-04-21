@@ -73,11 +73,30 @@ def _log(msg: str) -> None:
 
 def _load_state() -> dict:
     if not STATE_FILE.exists():
-        return {"last_posted": {}, "last_run": None, "total_reposts": 0}
+        return {"last_posted": {}, "last_run": None, "total_reposts": 0, "alert_throttle": {}}
     try:
-        return json.loads(STATE_FILE.read_text())
+        state = json.loads(STATE_FILE.read_text())
+        state.setdefault("alert_throttle", {})
+        return state
     except (OSError, json.JSONDecodeError):
-        return {"last_posted": {}, "last_run": None, "total_reposts": 0}
+        return {"last_posted": {}, "last_run": None, "total_reposts": 0, "alert_throttle": {}}
+
+
+ALERT_MIN_INTERVAL_HOURS = 24
+
+
+def _should_emit_alert(state: dict, key: str, now: datetime) -> bool:
+    last_str = state.get("alert_throttle", {}).get(key)
+    if not last_str:
+        return True
+    last_dt = _parse_dt(last_str)
+    if not last_dt:
+        return True
+    return (now - last_dt).total_seconds() >= ALERT_MIN_INTERVAL_HOURS * 3600
+
+
+def _mark_alert(state: dict, key: str, now: datetime) -> None:
+    state.setdefault("alert_throttle", {})[key] = now.isoformat()
 
 
 def _save_state(state: dict) -> None:
@@ -140,10 +159,15 @@ def _count_scheduled_per_day(client: ZernioClient, now: datetime, horizon: datet
 
     per_day: dict[date, int] = {}
     for p in posts:
-        dt = _parse_dt(p.get("publishAt") or p.get("publish_at") or p.get("scheduledAt"))
+        dt = _parse_dt(
+            p.get("scheduledFor")
+            or p.get("publishAt")
+            or p.get("publish_at")
+            or p.get("scheduledAt")
+        )
         if not dt or dt < now or dt > horizon:
             continue
-        media = p.get("media") or []
+        media = p.get("mediaItems") or p.get("media") or []
         if not any(((m.get("type") or "").lower() == "video") for m in media):
             continue
         platforms = [(pl.get("platform") or "").lower() for pl in (p.get("platforms") or [])]
@@ -256,15 +280,19 @@ def run() -> int:
 
     eligible = _eligible_archive_clips(state, now)
     if not eligible:
-        emit_navi_task(
-            title="Buffer scheduler: no eligible archive clips",
-            description=(
-                f"All archive clips are within the {BUFFER_COOLDOWN_DAYS}-day cooldown "
-                f"or the archive is empty. Drop a new podcast episode or reduce "
-                f"BUFFER_COOLDOWN_DAYS env var."
-            ),
-            priority="medium",
-        )
+        if _should_emit_alert(state, "no_eligible_clips", now):
+            emit_navi_task(
+                title="Buffer scheduler: no eligible archive clips",
+                description=(
+                    f"All archive clips are within the {BUFFER_COOLDOWN_DAYS}-day cooldown "
+                    f"or the archive is empty. Drop a new podcast episode or reduce "
+                    f"BUFFER_COOLDOWN_DAYS env var."
+                ),
+                priority="medium",
+            )
+            _mark_alert(state, "no_eligible_clips", now)
+        else:
+            _log("no eligible clips (alert suppressed — within 24h of last)")
         state["last_run"] = now.isoformat()
         _save_state(state)
         return 0
@@ -294,10 +322,11 @@ def run() -> int:
         try:
             media_url = _upload_file(client, clip_path)
             payload = {
-                "publishAt": gap.astimezone(ZoneInfo("UTC")).isoformat().replace("+00:00", "Z"),
+                "scheduledFor": gap.astimezone(ZoneInfo("UTC")).isoformat().replace("+00:00", "Z"),
+                "timezone": "America/New_York",
                 "platforms": [{"platform": p, "accountId": accounts[p]} for p in TARGET_PLATFORMS],
-                "media": [{"url": media_url, "type": "video"}],
-                "caption": caption,
+                "mediaItems": [{"url": media_url, "type": "video"}],
+                "content": caption,
             }
             resp = client.create_post(payload)
             post_id = (resp or {}).get("id") or (resp or {}).get("data", {}).get("id")

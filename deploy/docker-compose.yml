@@ -16,6 +16,11 @@ services:
     image: 8bit-pipeline:latest
     container_name: 8bit-pipeline
     restart: unless-stopped
+    # Run as truenas_admin (uid=950, gid=950). Required so files the pipeline writes to
+    # /media/* (SMB-shared NAS folders) stay accessible over SMB — root-owned files
+    # created under an ACL-inherited folder break the inheritance and become
+    # inaccessible to the SMB user. See docs/TRUENAS-ACCESS.md.
+    user: "950:950"
     volumes:
       # NAS drop/archive folders — created via SSH, see DEPLOY.md
       - "/mnt/pool/NAS/Media/8-Bit Legacy:/media"

@@ -147,26 +147,46 @@ def run(start_date: str, execute: bool) -> int:
         return 2
 
     log = []
+    ok_count = 0
+    err_count = 0
     for photo, when, caption in rows:
         try:
             media_url = _upload_file(client, photo)
             payload = {
-                "publishAt": when.astimezone(ZoneInfo("UTC")).isoformat().replace("+00:00", "Z"),
+                "scheduledFor": when.astimezone(ZoneInfo("UTC")).isoformat().replace("+00:00", "Z"),
+                "timezone": "America/New_York",
                 "platforms": [{"platform": p, "accountId": accounts[p]} for p in TARGET_PLATFORMS],
-                "media": [{"url": media_url, "type": "image"}],
-                "caption": caption,
+                "mediaItems": [{"url": media_url, "type": "image"}],
+                "content": caption,
             }
             resp = client.create_post(payload)
-            post_id = (resp or {}).get("id") or (resp or {}).get("data", {}).get("id")
+            post_id = (
+                (resp or {}).get("_id")
+                or (resp or {}).get("id")
+                or (resp or {}).get("data", {}).get("_id")
+                or (resp or {}).get("data", {}).get("id")
+            )
             print(f"[OK] {photo.name} → {post_id} @ {when.isoformat()}")
             log.append({"photo": photo.name, "post_id": post_id, "publish_at": when.isoformat()})
+            ok_count += 1
         except Exception as exc:
             print(f"[ERROR] {photo.name}: {exc}", file=sys.stderr)
             log.append({"photo": photo.name, "error": str(exc)})
+            err_count += 1
 
     LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
     LOG_PATH.write_text(json.dumps(log, indent=2))
-    print(f"\n[LOG] {LOG_PATH.relative_to(ROOT)}")
+    try:
+        log_display = str(LOG_PATH.relative_to(ROOT))
+    except ValueError:
+        log_display = str(LOG_PATH)
+    print(f"\n[LOG] {log_display} — {ok_count} scheduled, {err_count} failed")
+    if ok_count == 0 and err_count > 0:
+        print("[FATAL] all posts failed — drop will NOT be marked processed", file=sys.stderr)
+        return 3
+    if err_count > 0:
+        print(f"[WARN] {err_count} posts failed (partial success)", file=sys.stderr)
+        return 1
     return 0
 
 

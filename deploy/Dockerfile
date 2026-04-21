@@ -35,9 +35,18 @@ COPY scripts/ /app/scripts/
 # at /app/data. The NAS drop/archive volumes are mounted separately at /media.
 RUN mkdir -p /app/data/podcast /app/data/social-media /app/data/logs
 
+# Create the runtime user with the same UID/GID as the NAS's truenas_admin (950:950).
+# Running as this user keeps files created under /media/* compatible with the SMB share's
+# ACL inheritance — root-owned subdirs break it. See docs/TRUENAS-ACCESS.md.
+RUN groupadd --gid 950 pipeline \
+    && useradd --uid 950 --gid 950 --home /app --shell /usr/sbin/nologin pipeline \
+    && chown -R 950:950 /app/data
+
 ENV SCRIPTS_ROOT=/app/scripts \
     MEDIA_ROOT=/media \
     PYTHONPATH=/app/scripts
+
+USER 950:950
 
 # drop_watcher runs the polling loop and invokes buffer_scheduler every ~60 min.
 # SIGTERM is propagated so docker compose down cleanly stops the loop.
