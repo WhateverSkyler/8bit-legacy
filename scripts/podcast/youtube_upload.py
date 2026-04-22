@@ -199,8 +199,15 @@ def upload_one(video: Path, publish_at: str | None, privacy: str = "private") ->
     else:
         print(f"  [WARN] no thumbnail found for {video.stem}")
 
+    # Videos may live outside /app (e.g. /media/podcast/processing/...). Use a
+    # path relative to ROOT when possible; fall back to the absolute path so the
+    # log entry is still appended.
+    try:
+        source = str(video.relative_to(ROOT))
+    except ValueError:
+        source = str(video)
     return {"video_id": video_id, "title": meta["title"], "publish_at": publish_at,
-            "source": str(video.relative_to(ROOT))}
+            "source": source}
 
 
 def _append_log(entry: dict) -> None:

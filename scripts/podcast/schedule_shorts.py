@@ -155,13 +155,19 @@ def schedule(episode: str, start_date: str, dry_run: bool = True,
         try:
             media_url = _upload_file(client, mp4)
             payload = {
-                "publishAt": when.astimezone(ZoneInfo("UTC")).isoformat().replace("+00:00", "Z"),
+                "scheduledFor": when.astimezone(ZoneInfo("UTC")).isoformat().replace("+00:00", "Z"),
+                "timezone": "America/New_York",
                 "platforms": [{"platform": p, "accountId": accounts[p]} for p in TARGET_PLATFORMS],
-                "media": [{"url": media_url, "type": "video"}],
-                "caption": caption,
+                "mediaItems": [{"url": media_url, "type": "video"}],
+                "content": caption,
             }
             resp = client.create_post(payload)
-            post_id = (resp or {}).get("id") or (resp or {}).get("data", {}).get("id")
+            post_id = (
+                (resp or {}).get("_id")
+                or (resp or {}).get("id")
+                or (resp or {}).get("data", {}).get("_id")
+                or (resp or {}).get("data", {}).get("id")
+            )
             print(f"[OK] {mp4.name} → {post_id} @ {when.isoformat()}")
             log.append({"clip": mp4.name, "post_id": post_id, "publish_at": when.isoformat(),
                         "platforms": TARGET_PLATFORMS})
