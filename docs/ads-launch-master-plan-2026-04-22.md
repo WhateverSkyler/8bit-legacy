@@ -251,7 +251,84 @@ Recompute actual ROAS from real data:
 
 ---
 
-## 10. Ownership + monitoring
+## 10. Devil's advocate — every risk scenario I could think of, and how it's handled
+
+Run `python3 scripts/ads_preflight_check.py` anytime for the automated-check version. Below covers everything I could think of, automated or not.
+
+### 10.1 Scenarios with automated verification (all passing 2026-04-22)
+
+| # | Scenario | Status |
+|---|---|---|
+| 1 | Multiple campaigns accidentally active | ✅ only one campaign exists |
+| 2 | Campaign accidentally enabled | ✅ PAUSED |
+| 3 | Listing tree wrong shape or bids wrong | ✅ 6-node tree, bids match plan |
+| 4 | Negatives not imported | ✅ 334 imported |
+| 5 | Display/Partners network leak | ✅ both OFF |
+| 6 | Enhanced CPC active (deprecated, hurts Shopping) | ✅ OFF |
+| 7 | Wrong Merchant Center linked | ✅ 5296797260 |
+| 8 | Budget wrong or shared across campaigns | ✅ $20/day, dedicated |
+| 9 | Wrong geo target (e.g., whole world, drives loss) | ✅ US only |
+| 10 | Conversion actions not primary for goals | ✅ all 7 enabled + primary |
+| 11 | `price_tier:over_50` tag drift (some products actually <$50) | ✅ sampled 10, all $50+ |
+| 12 | Store offline | ✅ homepage 200 |
+| 13 | Winners landing pages broken | ✅ 3 spot-checked, 200 + cart |
+
+### 10.2 Scenarios with partial verification — needs your manual check
+
+| # | Scenario | Mitigation |
+|---|---|---|
+| 14 | Conversion pixel wired but not firing | Fire events in incognito + wait 2-4h, verify Recording in UI (§2.3) |
+| 15 | Merchant Center feed has recent disapprovals | Check MC → Products → Diagnostics (§2.4) |
+| 16 | CIB variants win auctions, hurt CTR | Upload `data/merchant-center-cib-exclusion.csv` as supplemental feed (§2.1) |
+| 17 | Sale wave active, compare_at_price bug disapproves products | Spot-check MC Diagnostics for `compare_at_price` warnings |
+| 18 | 8BITNEW promo code not active | Shopify API lacks `read_discounts` scope, you verify in Shopify admin |
+
+### 10.3 Scenarios covered by kill switches (automatic pause)
+
+| # | Scenario | Switch |
+|---|---|---|
+| 19 | $40+ spent in a single day | `MAX_DAILY_AD_SPEND` = $40 |
+| 20 | $50 cumulative spent, 0 conversions | `LIFETIME_NO_CONVERSION_CEILING` = $50 |
+| 21 | 3 consecutive days × $10+ spend + 0 conv | backup check |
+| 22 | Store downtime during ads | store-uptime check |
+| 23 | ROAS drops below 200% after 7+ days | `rolling_roas_floor` |
+
+### 10.4 Scenarios with known residual risk (accepted or flagged)
+
+| # | Scenario | Risk | Handling |
+|---|---|---|---|
+| 24 | VPS dashboard still enforces old $25 cap (not $40) | Day 1 false-trip if Google 2x's daily budget | Low risk first 3 days (impressions ramp slow). Redeploy VPS within 7 days. If trips, manually reset breaker. |
+| 25 | eBay sourcing cost spikes mid-campaign | Thins margin on individual orders | Order validator runs every 30 min, catches pre-fulfillment |
+| 26 | Competitor raises bids, we lose all auctions | 0 impressions, no data | We're bid-capped; acceptable — we only want profitable auctions |
+| 27 | Google algorithm favors PMax over Standard Shopping | Less inventory served | Acceptable — PMax excluded by strategy, review in 30 days |
+| 28 | Shopping ad shows $50+ price but checkout charges shipping (threshold $50) | Customer disappointment at checkout | User accepted this; $50 threshold stays |
+| 29 | Data-driven attribution undercounts non-click paths | Slight CPA underestimate | Default attribution model is fine for Phase 1 |
+| 30 | Promo credit ($700) runs out before 2026-05-31 | Out-of-pocket spend starts earlier | Budget sized for Google's ~85% delivery rate; should land close to the line |
+| 31 | Promo credit unused on 2026-05-31 | Forfeit $30-80 of credit | Acceptable — can't perfectly predict delivery rate |
+| 32 | Account suspension risk (dropship policy) | Campaign pauses indefinitely | Fresh review, store has value-adds (warranty, returns, testing) documented |
+| 33 | High return rate on dropshipped games | Net profit < gross profit | Dropship model, inherent risk, not ads-specific |
+| 34 | First-week search terms report full of junk | 20-30% wasted budget | Expected. Daily negative additions via `ads_daily_report.py` |
+
+### 10.5 Scenarios I explicitly chose NOT to mitigate pre-launch
+
+| # | Scenario | Why not |
+|---|---|---|
+| 35 | Subdivide over_50 into over_100 + 50_to_100 | Requires feed relabeling, 24h propagation lag; premature without data |
+| 36 | Build real per-product margin classifier | 2-3 hours; no evidence margin-tier actually predicts CVR |
+| 37 | Per-console bid modifiers (N64 vs GBA) | Data-driven decision; wait for 14d perf data |
+| 38 | Bid-up individual Winners products | Guess without data; let conversion data tell us |
+| 39 | Remarketing / Brand / Search / Display campaigns | Strategy says Shopping only for Phase 1 |
+| 40 | Microsoft Ads (Bing) import | Parallel track, not a launch blocker |
+
+### 10.6 Things I can't check from my side
+
+- Circuit-breaker state on the VPS dashboard — would require VPS access (nginx 401 blocks me)
+- Merchant Center UI data (disapproval counts, feed errors, Shopping program status) — Ads API only gives partial visibility
+- Shopify discount codes (need `read_discounts` scope on the token, not granted)
+
+---
+
+## 11. Ownership + monitoring
 
 **Owner (primary):** Tristan — makes all "scale or pause" calls based on data.
 **Assist:** Claude Code — runs daily reports, flags anomalies, proposes bid + negative adjustments weekly.
