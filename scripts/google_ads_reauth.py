@@ -51,12 +51,22 @@ def main() -> int:
         }
     }
     flow = InstalledAppFlow.from_client_config(client_config, SCOPES)
+    # prompt=consent + access_type=offline are BOTH required. Without both Google
+    # returns no refresh token (or re-issues the same stale one that's already
+    # in invalid_grant state).
     creds = flow.run_local_server(
         host="localhost",
         port=0,
-        authorization_prompt_message="\n>>> If your browser didn't open, visit this URL:\n{url}\n",
+        authorization_prompt_message=(
+            "\n>>> Copy this URL and paste it into the correct browser profile "
+            "(the one signed into the Ads account):\n\n{url}\n\n"
+            ">>> After you approve, the browser will redirect to localhost — "
+            "just wait here, the script captures the response automatically.\n"
+        ),
         success_message="Auth complete — you can close this tab.",
-        open_browser=True,
+        open_browser=False,
+        access_type="offline",
+        prompt="consent",
     )
     refresh_token = creds.refresh_token
     if not refresh_token:
