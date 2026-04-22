@@ -44,7 +44,7 @@ REFRESH_TOKEN = os.getenv("GOOGLE_ADS_REFRESH_TOKEN", "")
 CUSTOMER_ID = os.getenv("GOOGLE_ADS_CUSTOMER_ID", "").replace("-", "")
 MERCHANT_CENTER_ID = "5296797260"
 
-API_VERSION = "v17"
+API_VERSION = "v21"
 BASE_URL = f"https://googleads.googleapis.com/{API_VERSION}"
 
 # Campaign config

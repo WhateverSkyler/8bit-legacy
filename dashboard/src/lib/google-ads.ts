@@ -22,7 +22,7 @@ export function isGoogleAdsConfigured(config: GoogleAdsConfig): boolean {
   return !!(config.developerToken && config.customerId && config.refreshToken);
 }
 
-const API_VERSION = "v17";
+const API_VERSION = "v21";
 const BASE_URL = `https://googleads.googleapis.com/${API_VERSION}`;
 
 /**
