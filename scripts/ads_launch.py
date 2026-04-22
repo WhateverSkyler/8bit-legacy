@@ -51,7 +51,7 @@ NEGATIVES_CSV = ROOT / "data" / "negative-keywords-google-ads-import-v2.csv"
 
 # Bid tiers (per ads-launch-research-2026-04-20.md §3.3 math)
 BID_OVER_50_MICROS = 350_000    # $0.35
-BID_20_TO_50_MICROS = 120_000   # $0.12
+BID_20_TO_50_MICROS = 80_000    # $0.08 — tightened 2026-04-22 per user direction (spend less, higher ROI)
 
 
 def die(msg: str) -> None:
@@ -191,19 +191,51 @@ def update_budget(budget_resource: str, amount_micros: int, token: str, dry: boo
 
 def rebuild_listing_tree(ad_group_id: str, ad_group_resource: str, existing_groups: list[dict],
                          token: str, dry: bool) -> None:
-    """Single atomic mutate: removes old tree, creates new 7-node tree.
+    """Rebuild listing tree. If the tree matches the expected shape, just update bids
+    in place. If it doesn't match, full rebuild (remove all + create fresh).
 
-    Nodes:
-      -1 root (SUBDIVISION)
-      -2 custom_label_2 = "game" (SUBDIVISION)
-      -3 custom_label_2 = else (UNIT negative)
-      -4 custom_label_0 = "over_50" (UNIT, $0.35)
-      -5 custom_label_0 = "20_to_50" (UNIT, $0.12)
-      -6 custom_label_0 = else (UNIT negative)
+    Expected shape:
+      root (SUBDIVISION)
+      ├── custom_label_2 = "game" (SUBDIVISION)
+      │   ├── custom_label_0 = "over_50" (UNIT, BID_OVER_50)
+      │   ├── custom_label_0 = "20_to_50" (UNIT, BID_20_TO_50)
+      │   └── custom_label_0 = else (UNIT negative)
+      └── custom_label_2 = else (UNIT negative)
     """
+    # Fast path: if the tree already has the right shape (6 nodes, right types),
+    # just update the two bid UNITs directly. No need to rebuild.
+    if len(existing_groups) == 6:
+        updates = []
+        for g in existing_groups:
+            lg = g.get("listingGroup", {})
+            pca = lg.get("caseValue", {}).get("productCustomAttribute", {})
+            if pca.get("index") == "INDEX0" and pca.get("value") == "over_50":
+                if g.get("cpcBidMicros") != str(BID_OVER_50_MICROS):
+                    updates.append({
+                        "update": {"resourceName": g["resourceName"], "cpcBidMicros": str(BID_OVER_50_MICROS)},
+                        "updateMask": "cpc_bid_micros",
+                    })
+            elif pca.get("index") == "INDEX0" and pca.get("value") == "20_to_50":
+                if g.get("cpcBidMicros") != str(BID_20_TO_50_MICROS):
+                    updates.append({
+                        "update": {"resourceName": g["resourceName"], "cpcBidMicros": str(BID_20_TO_50_MICROS)},
+                        "updateMask": "cpc_bid_micros",
+                    })
+        if updates:
+            if dry:
+                print(f"  [dry] would update {len(updates)} bid(s) in existing tree")
+                return
+            api("POST", "/adGroupCriteria:mutate", token, {"operations": updates})
+            print(f"  bid-updated {len(updates)} UNIT(s) in existing tree")
+        else:
+            print(f"  existing tree already matches target bids — skip")
+        return
+
+    # Slow path: tree is wrong shape (e.g., fresh ad group with just the default root).
+    # Full rebuild — remove all existing + create new tree atomically.
     operations: list[dict] = []
-    # Remove whatever is there (usually just the auto-created root UNIT)
-    for g in existing_groups:
+    # Sort removes child-first by criterion_id descending (rough heuristic)
+    for g in sorted(existing_groups, key=lambda x: int(x.get("criterionId", 0)), reverse=True):
         operations.append({"remove": g["resourceName"]})
 
     def tmp(n: int) -> str:
