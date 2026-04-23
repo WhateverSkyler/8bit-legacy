@@ -66,11 +66,57 @@
 
 ---
 
+## 🔄 Cowork ran the pre-launch gates (2026-04-22 ~7:53-9:35 PM EDT)
+
+Handoff: `docs/cowork-session-2026-04-22-ads-prelaunch.md`
+
+| Gate | Result |
+|---|---|
+| 1. MC diagnostics audit | ✅ **GREEN** — 12,272 products, 20 not showing on Google, no account issues, Shopping Ads Active |
+| 2. CIB exclusion feed upload | 🔴 **BLOCKED** — MC Next UI won't attach a file-based supplemental feed to a Merchant-API primary (Shopify Google & YouTube app registers itself as MA primary). CSV format is verified correct. |
+| 3. Fire test pixel events | 🟡 **4/5** — page_view, search, view_item, add_to_cart, begin_checkout fired at 19:53 EDT. add_payment_info skipped (Chrome extension popup — optional per brief) |
+| 4. Verify conversion tracking | ⏳ **PENDING** — needs 2-4h wait. Re-check after 22:00 EDT |
+| 5. 8BITNEW code | ✅ **GREEN** — Active, 10%, no expiry, 4 prior uses |
+| 6. MC Promotion submission | ⏭️ Skipped (Task 2 blocked) |
+
+### CIB blocker — honest assessment
+This is a **medium-soft blocker**, not hard. Without it:
+- Our feed still pushes both Game Only + CIB variants
+- Both variants live in the same `price_tier:over_50` bucket → same $0.35 bid
+- Google's Shopping auction optimizer naturally favors the lower-priced Game Only variant for CTR reasons
+- We'd still get occasional CIB impressions at the higher $132+ price, suboptimal but not catastrophic
+
+**Ways to fix (in order of effort, none trivial):**
+1. **Merchant API Content push** — set `excluded_destinations=[Shopping_ads]` on each CIB item via MC Content API. Requires a separate OAuth flow + Content API scope — not currently configured. ~2-3h of work.
+2. **Shopify Google & YouTube app config** — the app may expose per-variant "Hide from Google" options. Worth user exploring in the app UI.
+3. **Accept residual and re-optimize post-launch** — if first-week data shows CIB variants winning meaningful impression share, escalate to option 1.
+
+**My recommendation:** launch without CIB exclusion. Google's auction should handle it. If 14-day data shows CIB impression share >20%, we pivot.
+
+---
+
 ## 🎯 What's next when you return — PICK HERE
 
-### Option A — Launch the ads campaign (most valuable)
+### Option A — Finish ads launch (most valuable, closest to done)
 
-**Step 1: Delegate the 5 pre-launch tasks to cowork.**
+**Step 1 (TONIGHT ~22:00 EDT — ~20 min away from handoff write time):** Verify pixel tracking.
+
+Go to https://ads.google.com → account `822-210-2291` → **Tools & Settings → Measurement → Conversions → Summary**. Confirm these 4 actions show "Recording" or "No recent conversions" (NOT "Inactive" / "Misconfigured"):
+- Google Shopping App Page View
+- Google Shopping App Add To Cart
+- Google Shopping App Begin Checkout
+- Google Shopping App Search (or View Item)
+
+(Purchase will stay Inactive until a real order — expected, don't worry about it.)
+
+**Step 2: Decide on CIB exclusion.**
+Two paths:
+- **Launch without it** (my recommendation — Google's auction picks cheaper Game Only naturally). Revisit in 14d if data shows high CIB impression share.
+- **Solve it before launch** — explore Shopify Google & YouTube app UI for per-variant hide options, OR build the MC Content API integration (~2-3h of work).
+
+**Step 3: If pixel tracking is GREEN and you're OK launching without CIB fix:** tell Claude Code "flip it" — I'll enable via API, record baseline, start daily monitoring.
+
+**Step 4 (earlier plan, keep for reference — only use if step 1 fails):**
 
 Paste this into Claude Desktop cowork:
 
