@@ -1,4 +1,17 @@
-# Google Ads — Phase 1 "Winners" Curation List
+# ⚠️ DEPRECATED 2026-04-23 — do not use
+
+> **This document describes a 2-campaign plan (Winners + Discovery) that was superseded on 2026-04-16.**
+> The live campaign is a single Standard Shopping campaign (`8BL-Shopping-Games`) that targets
+> ALL games tagged `category:game` via price-tier bidding ($0.35 for over_50, $0.08 for 20_to_50,
+> under_20 excluded). There is no curated Winners SKU list in the live campaign.
+>
+> Source of truth: `docs/ads-launch-master-plan-2026-04-22.md`.
+>
+> Kept for historical reference only. Do not lean on "Winners list" context in new work.
+
+---
+
+# Google Ads — Phase 1 "Winners" Curation List (historical)
 
 **Drafted:** 2026-04-10 evening
 **Purpose:** Hand-picked product list for the Phase 1 `8BL-Shopping-Winners` Standard Shopping campaign. Prioritizes high-confidence conversion candidates, excludes anything with structural problems.

@@ -1,4 +1,10 @@
-# Winners Landing-Page Audit
+# ⚠️ DEPRECATED 2026-04-23 — historical reference only
+
+> Audit of a 2-campaign plan superseded on 2026-04-16. See `docs/ads-launch-master-plan-2026-04-22.md`.
+
+---
+
+# Winners Landing-Page Audit (historical)
 
 **Generated:** `scripts/audit-winners-landing-pages.py`
 

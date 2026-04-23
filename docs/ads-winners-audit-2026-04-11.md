@@ -1,4 +1,11 @@
-# Winners List Audit — Live Shopify Verification
+# ⚠️ DEPRECATED 2026-04-23 — historical reference only
+
+> Audit of a 2-campaign plan superseded on 2026-04-16. See `docs/ads-launch-master-plan-2026-04-22.md`
+> for current state. Live campaign doesn't curate by SKU.
+
+---
+
+# Winners List Audit — Live Shopify Verification (historical)
 
 Run date: 2026-04-11
 Source list: `docs/ads-winners-curation-list.md`
