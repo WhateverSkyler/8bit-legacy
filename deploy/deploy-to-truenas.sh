@@ -23,7 +23,7 @@ REMOTE_SRC="/tmp/8bit-pipeline-src.tar.gz"
 REMOTE_BUILD="/tmp/8bit-pipeline-build"
 LOCAL_SRC="/tmp/8bit-pipeline-src.tar.gz"
 
-echo "==> Tarballing repo (scripts/ + deploy/ only — dashboard, data, .venv excluded)"
+echo "==> Tarballing repo (scripts/ + deploy/ + assets/fonts/ only — dashboard, data, .venv excluded)"
 cd "$REPO_ROOT"
 tar czf "$LOCAL_SRC" \
   --exclude='.venv' \
@@ -32,13 +32,13 @@ tar czf "$LOCAL_SRC" \
   --exclude='node_modules' \
   --exclude='data' \
   --exclude='docs' \
-  --exclude='assets' \
   --exclude='__pycache__' \
   --exclude='*.pyc' \
   --exclude='.DS_Store' \
   --exclude='*.tar.gz' \
   scripts/ \
   deploy/ \
+  assets/fonts/ \
   CLAUDE.md
 
 echo "==> SCP to TrueNAS ($TRUENAS_IP)"

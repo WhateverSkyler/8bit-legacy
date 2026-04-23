@@ -3,7 +3,10 @@
 
 QUALITY BAR (per user direction 2026-04-20): every clip must make sense to a viewer who
 has NEVER heard the podcast before. No mid-thought starts. No unresolved pronouns in the
-opening. Complete setup → payoff arc. 60-90 sec sweet spot (45s floor, 120s ceiling).
+opening. Complete setup → payoff arc.
+
+DURATION POLICY (2026-04-23): 45-65 sec sweet spot, 30s floor, 85s ceiling —
+biased toward completion rate over absolute length.
 
 Input:  data/podcast/transcripts/<stem>.json  (from transcribe.py — word-level timestamps)
 Output: data/podcast/clips_plan/<stem>.json   with 4-5 validated picks per topic:
@@ -49,11 +52,14 @@ except ImportError:
     pass
 
 
-# --- Duration policy ---
-DURATION_FLOOR_SEC = 45.0      # anything shorter underperforms on Reels/TikTok algo
-DURATION_TARGET_LO = 60.0      # sweet-spot range
-DURATION_TARGET_HI = 90.0
-DURATION_CEILING_SEC = 120.0   # attention-span cliff
+# --- Duration policy (2026-04-23: biased toward completion rate) ---
+# TikTok/Reels reward near-full watches. A 75s clip watched 70% through beats a
+# 50s clip watched 40%, BUT shorter clips have a meaningful completion-rate
+# advantage, so we bias toward the lower end of a still-standalone arc.
+DURATION_FLOOR_SEC = 30.0      # below this the clip feels like a fragment
+DURATION_TARGET_LO = 45.0      # sweet-spot lower bound
+DURATION_TARGET_HI = 65.0      # sweet-spot upper bound
+DURATION_CEILING_SEC = 85.0    # hard cap — longer clips tank watch-through rate
 
 # --- Stand-alone validators ---
 BAD_OPENING_WORDS = {
@@ -85,10 +91,11 @@ STAND-ALONE REQUIREMENTS (non-negotiable):
 2. **Complete arc.** Setup → payoff. A punchline without setup, or a setup without payoff, is a reject.
 3. **Clean end.** Ends on a conclusion, punchline, strong claim, or a "tell me what you think" callout. Does NOT fade out mid-thought, trail off into filler, or cut on a "yeah, I don't know, whatever."
 
-DURATION TARGET:
-- Sweet spot: 60–90 seconds
-- Floor: 45 seconds (shorter underperforms on algorithm)
-- Ceiling: 120 seconds
+DURATION TARGET (optimized for TikTok/Reels completion rate):
+- Sweet spot: 45–65 seconds
+- Floor: 30 seconds (below this feels like a fragment, no payoff)
+- Ceiling: 85 seconds (above this watch-through tanks on algorithm)
+Err shorter if the arc lands cleanly; longer videos lose more viewers proportionally than they gain.
 
 WHAT MAKES A STRONG PICK:
 - Confident opinion with stakes ("Nintendo is making a mistake with X because...")

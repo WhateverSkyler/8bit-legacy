@@ -85,18 +85,28 @@ def _upload_file(client: ZernioClient, path: Path) -> str:
     return media_url
 
 
-def _build_schedule(n_clips: int, start_date: str) -> list[datetime]:
+def _build_schedule(n_clips: int, start_date: str, skip_past: bool = True) -> list[datetime]:
+    """Build n_clips scheduling times at 9/13/19 ET starting from start_date.
+    If skip_past (default), drop any slot already in the past so the first
+    returned slot is always future. Useful when rescheduling mid-day.
+    """
     start = datetime.fromisoformat(start_date).replace(tzinfo=ET)
+    now = datetime.now(tz=ET)
     times: list[datetime] = []
     day = 0
     slot = 0
-    for _ in range(n_clips):
+    # Produce enough candidates to satisfy n_clips even after skipping past ones.
+    # Safety cap prevents infinite loops if inputs are nonsense.
+    while len(times) < n_clips:
         dt = start.replace(hour=SLOT_HOURS[slot], minute=0, second=0, microsecond=0) + timedelta(days=day)
-        times.append(dt)
+        if not (skip_past and dt <= now):
+            times.append(dt)
         slot += 1
         if slot >= len(SLOT_HOURS):
             slot = 0
             day += 1
+        if day > 30:  # safety: don't scan beyond a month
+            break
     return times
 
 

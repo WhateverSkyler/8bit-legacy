@@ -7,6 +7,8 @@ python-dotenv>=1.0,<2
 # Video pipeline
 faster-whisper>=1.0,<2
 Pillow>=11.0,<12
+# OpenCV (headless, no GUI deps) — face detection for the vertical 9:16 crop
+opencv-python-headless>=4.10,<5
 
 # LLM for clip picking + metadata generation
 anthropic>=0.42,<1

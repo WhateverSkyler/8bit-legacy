@@ -3,8 +3,10 @@
 
 Pipeline:
   1. Cut segment [start_sec, end_sec] from 1080p source MP4
-  2. Center-crop 16:9 → 9:16 (1080x1920) preserving speaker grid center
-  3. Burn word-karaoke captions (Bebas Neue 70pt, white + #ff9526 active word, thick black stroke)
+  2. Sample ~5 frames across the clip and detect faces (OpenCV Haar cascade).
+     Use the median face-X to pick a fixed 9:16 crop offset so subjects stay
+     in frame. Fallback to center crop if no face is found.
+  3. Burn word-karaoke captions (Bebas Neue 96pt, white + #ff9526 active word, thick black stroke)
   4. Mix original dialogue with a random music bed at -18dB
   5. Overlay brand end-card last 4 seconds (if assets/brand/end-card-9x16.png exists)
   6. Export H.264 1080x1920 @30fps AAC 192kbps
@@ -39,10 +41,22 @@ CLIPS_DIR = ROOT / "data" / "podcast" / "clips"
 END_CARD = ROOT / "assets" / "brand" / "end-card-9x16.png"
 
 FONT_NAME = "Bebas Neue"
-FONT_SIZE = 70
+FONT_SIZE = 96              # bumped 70 → 96; users reported captions were too small on phones
+FONT_OUTLINE = 7            # thicker stroke to keep proportion with the larger font
 WHITE = "&H00FFFFFF"   # ASS AABBGGRR
 ORANGE = "&H002695FF"  # #ff9526 → R=FF, G=95, B=26 → BBGGRR = 2695FF
 BLACK = "&H00000000"
+
+# 9:16 strip from 1920×1080: 607 px wide. Full valid X range is [0, 1313].
+CROP_W = 607
+SOURCE_W = 1920
+CENTER_CROP_X = (SOURCE_W - CROP_W) // 2  # 656
+
+# How many frames to sample across the clip for face detection
+FACE_SAMPLE_COUNT = 6
+# Minimum face size (px) — filters out noise / far-background detections.
+# At 1080p, typical face on-camera is ~140-220 px wide.
+FACE_MIN_SIZE = 90
 
 
 def _ass_time(sec: float) -> str:
@@ -80,7 +94,7 @@ WrapStyle: 2
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,{FONT_NAME},{FONT_SIZE},{WHITE},{WHITE},{BLACK},&H00000000,-1,0,0,0,100,100,0,0,1,5,2,2,60,60,240,1
+Style: Default,{FONT_NAME},{FONT_SIZE},{WHITE},{WHITE},{BLACK},&H00000000,-1,0,0,0,100,100,0,0,1,{FONT_OUTLINE},2,2,60,60,260,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -141,8 +155,82 @@ def _pick_music_bed(seed: str | None = None) -> Path | None:
     return rng.choice(candidates)
 
 
+def detect_face_crop_x(
+    source_video: Path,
+    start_sec: float,
+    end_sec: float,
+    sample_count: int = FACE_SAMPLE_COUNT,
+    crop_w: int = CROP_W,
+    source_w: int = SOURCE_W,
+    min_face: int = FACE_MIN_SIZE,
+) -> int:
+    """Return a horizontal crop offset (X) in pixels so the detected face sits
+    near the center of the 9:16 output. Falls back to a plain center crop if
+    OpenCV is unavailable or no face is detected.
+
+    Does NOT pan — returns a single fixed offset for the whole clip. This
+    matches the user direction ("just as long as the people are within the
+    shot — doesn't need to move").
+    """
+    try:
+        import cv2  # type: ignore
+    except ImportError:
+        print("  [FACE] opencv not installed → using center crop")
+        return CENTER_CROP_X
+
+    cap = None
+    try:
+        cap = cv2.VideoCapture(str(source_video))
+        if not cap.isOpened():
+            print("  [FACE] cv2 could not open source → center crop")
+            return CENTER_CROP_X
+
+        cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+        cascade = cv2.CascadeClassifier(cascade_path)
+        if cascade.empty():
+            print("  [FACE] haar cascade failed to load → center crop")
+            return CENTER_CROP_X
+
+        dur = max(0.1, end_sec - start_sec)
+        xs: list[int] = []
+        for i in range(sample_count):
+            # Spread samples evenly; skip the very first/last frame (transition noise).
+            t = start_sec + dur * ((i + 0.5) / sample_count)
+            cap.set(cv2.CAP_PROP_POS_MSEC, t * 1000.0)
+            ok, frame = cap.read()
+            if not ok or frame is None:
+                continue
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            faces = cascade.detectMultiScale(
+                gray,
+                scaleFactor=1.2,
+                minNeighbors=5,
+                minSize=(min_face, min_face),
+            )
+            for (x, y, w, _h) in faces:
+                xs.append(int(x + w / 2))
+
+        if not xs:
+            print("  [FACE] no faces detected → center crop")
+            return CENTER_CROP_X
+
+        xs.sort()
+        median_x = xs[len(xs) // 2]
+        # Center the 607-wide crop on the median face X, then clamp.
+        crop_x = median_x - crop_w // 2
+        crop_x = max(0, min(source_w - crop_w, crop_x))
+        print(f"  [FACE] {len(xs)} face samples, median_x={median_x} → crop_x={crop_x} (center={CENTER_CROP_X})")
+        return crop_x
+    except Exception as exc:  # any cv2 failure → safe fallback
+        print(f"  [FACE] detection failed: {exc} → center crop")
+        return CENTER_CROP_X
+    finally:
+        if cap is not None:
+            cap.release()
+
+
 def render_clip(spec: dict, episode: str, transcripts_by_stem: dict[str, dict],
-                crop_x: int = 656, crop_w: int = 607, dry_run: bool = False) -> Path | None:
+                crop_x: int | None = None, crop_w: int = CROP_W, dry_run: bool = False) -> Path | None:
     clip_id = spec["clip_id"]
     source_stem = spec["source_stem"]
     start = float(spec["start_sec"])
@@ -175,6 +263,10 @@ def render_clip(spec: dict, episode: str, transcripts_by_stem: dict[str, dict],
 
     music = _pick_music_bed(seed=clip_id)
     has_music = music is not None
+
+    # Pick crop X: explicit caller value wins; otherwise face-detect, fallback to center.
+    if crop_x is None:
+        crop_x = detect_face_crop_x(source_video, start, end, crop_w=crop_w)
 
     filter_parts = [
         f"[0:v]crop={crop_w}:1080:{crop_x}:0,scale=1080:1920,setsar=1,subtitles='{ass_path}'[v0]"
@@ -268,8 +360,9 @@ def main() -> int:
     parser.add_argument("--clip-id", help="Render a specific clip from clips_plan/_all.json")
     parser.add_argument("--batch", help="Path to clips_plan/_all.json to render everything")
     parser.add_argument("--episode", default="Episode April 14th 2026")
-    parser.add_argument("--crop-x", type=int, default=656)
-    parser.add_argument("--crop-w", type=int, default=607)
+    parser.add_argument("--crop-x", type=int, default=None,
+                        help="Horizontal crop offset in px. Omit to auto-detect via face detection.")
+    parser.add_argument("--crop-w", type=int, default=CROP_W)
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
