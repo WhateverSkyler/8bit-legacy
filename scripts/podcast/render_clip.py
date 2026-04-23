@@ -216,10 +216,31 @@ def detect_face_crop_x(
 
         xs.sort()
         median_x = xs[len(xs) // 2]
-        # Center the 607-wide crop on the median face X, then clamp.
+        spread = xs[-1] - xs[0] if len(xs) >= 2 else 0
+        frame_center = source_w // 2
+        offset = abs(median_x - frame_center)
+
+        # Only override the default center crop when BOTH:
+        #   (a) faces cluster tightly across samples (single stable camera,
+        #       not a multi-cam cut — cutting between cameras produces a wide
+        #       X-spread that means no single offset will satisfy all shots)
+        #   (b) the face is meaningfully off-center (default center crop
+        #       already keeps a near-center face in frame — don't fight it)
+        # Otherwise fall back to the fixed center crop, which is what was
+        # working before face detection was introduced.
+        SPREAD_THRESHOLD = 200   # px; wider = multi-camera cuts
+        OFFSET_THRESHOLD = 220   # px; closer = center crop already works
+        if spread > SPREAD_THRESHOLD:
+            print(f"  [FACE] {len(xs)} samples, spread={spread}px > {SPREAD_THRESHOLD} → multi-camera scene, center crop")
+            return CENTER_CROP_X
+        if offset < OFFSET_THRESHOLD:
+            print(f"  [FACE] median_x={median_x} (Δ{offset}px from center) < {OFFSET_THRESHOLD} → default center adequate")
+            return CENTER_CROP_X
+
+        # Single-camera, clearly off-center → apply face-centered crop.
         crop_x = median_x - crop_w // 2
         crop_x = max(0, min(source_w - crop_w, crop_x))
-        print(f"  [FACE] {len(xs)} face samples, median_x={median_x} → crop_x={crop_x} (center={CENTER_CROP_X})")
+        print(f"  [FACE] {len(xs)} samples, spread={spread}, median_x={median_x} (Δ{offset}) → crop_x={crop_x} (center={CENTER_CROP_X})")
         return crop_x
     except Exception as exc:  # any cv2 failure → safe fallback
         print(f"  [FACE] detection failed: {exc} → center crop")
@@ -282,8 +303,10 @@ def render_clip(spec: dict, episode: str, transcripts_by_stem: dict[str, dict],
         vout_label = "[vout]"
 
     if has_music:
+        # Music bed mixed quieter (2026-04-23: bumped from 0.15 → 0.12 per user ask
+        # for "5% quieter"; interpreted as a perceptible ~2dB cut).
         filter_parts.append("[0:a]volume=1.0[dialog]")
-        filter_parts.append("[1:a]volume=0.15,aloop=loop=-1:size=2e9[music]")
+        filter_parts.append("[1:a]volume=0.12,aloop=loop=-1:size=2e9[music]")
         filter_parts.append("[dialog][music]amix=duration=shortest:dropout_transition=3[aout]")
         aout_label = "[aout]"
     else:
