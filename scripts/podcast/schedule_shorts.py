@@ -34,7 +34,7 @@ CLIPS_PLAN_ALL = ROOT / "data" / "podcast" / "clips_plan" / "_all.json"
 
 ET = ZoneInfo("America/New_York")
 SLOT_HOURS = [9, 13, 19]
-TARGET_PLATFORMS = ["tiktok", "youtube", "instagram"]
+TARGET_PLATFORMS = ["tiktok", "youtube", "instagram", "facebook"]
 
 # Hashtags-only caption strategy per user direction. No hook line, no URL —
 # profile bio carries those. Rationale: nobody reads short-form descriptions,
