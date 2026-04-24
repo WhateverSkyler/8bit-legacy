@@ -3,9 +3,11 @@
 
 Pipeline:
   1. Cut segment [start_sec, end_sec] from 1080p source MP4
-  2. Sample ~5 frames across the clip and detect faces (OpenCV Haar cascade).
-     Use the median face-X to pick a fixed 9:16 crop offset so subjects stay
-     in frame. Fallback to center crop if no face is found.
+  2. Detect camera cuts *inside* the clip (HSV-histogram Bhattacharyya jumps).
+     For each scene, detect faces and compute a crop-X that keeps the subject
+     centered in the 9:16 output. Stitch scenes back together via ffmpeg
+     trim+concat so multi-camera clips no longer sacrifice off-center shots
+     (e.g., the guy-in-front-of-arcade camera) to a single fixed center crop.
   3. Burn word-karaoke captions (Bebas Neue 96pt, white + #ff9526 active word, thick black stroke)
   4. Mix original dialogue with a random music bed at -18dB
   5. Overlay brand end-card last 4 seconds (if assets/brand/end-card-9x16.png exists)
@@ -52,11 +54,33 @@ CROP_W = 607
 SOURCE_W = 1920
 CENTER_CROP_X = (SOURCE_W - CROP_W) // 2  # 656
 
-# How many frames to sample across the clip for face detection
-FACE_SAMPLE_COUNT = 6
+# --- Face detection ----------------------------------------------------------
 # Minimum face size (px) — filters out noise / far-background detections.
 # At 1080p, typical face on-camera is ~140-220 px wide.
 FACE_MIN_SIZE = 90
+# Frames sampled per detected scene when computing that scene's face center.
+FACE_SAMPLES_PER_SCENE = 3
+
+# --- Scene detection ---------------------------------------------------------
+# Sampling stride when walking the clip to find hard camera cuts (seconds).
+# 0.4s is the sweet spot: dense enough to place a cut within a single frame of
+# the true boundary, sparse enough to keep detection under ~1s wall-time.
+SCENE_SAMPLE_STRIDE_SEC = 0.4
+# Bhattacharyya distance above which consecutive frames are flagged as a cut.
+# Range [0,1]; 0 = identical, 1 = disjoint histograms. For hard cuts between
+# different cameras in a podcast, observed values are typically > 0.40;
+# within-scene frame-to-frame values are typically < 0.20. 0.35 splits the
+# difference with margin.
+BHATTA_CUT_THRESHOLD = 0.35
+# Scenes shorter than this are merged into the previous scene (drops
+# transition frames + avoids 1-sample "scenes" that would spawn tiny trim
+# segments in the filter graph).
+MIN_SCENE_DURATION_SEC = 0.6
+# Safety rail: if scene detection returns more scenes than this for a short,
+# something is wrong with the content (compressed artifacts, rapid-fire cuts,
+# etc.). Fall back to fixed center crop rather than produce a filter graph
+# with 50+ trim branches.
+MAX_SCENES = 15
 
 
 def _ass_time(sec: float) -> str:
@@ -155,99 +179,205 @@ def _pick_music_bed(seed: str | None = None) -> Path | None:
     return rng.choice(candidates)
 
 
-def detect_face_crop_x(
+def _face_center_for_range(cap, cascade, t_start: float, t_end: float,
+                           samples: int = FACE_SAMPLES_PER_SCENE,
+                           min_face: int = FACE_MIN_SIZE) -> int | None:
+    """Sample `samples` frames evenly inside [t_start, t_end] (source-video
+    timestamps, seconds) and return the median face X-center, or None if no
+    face was detected in any sample.
+    """
+    import cv2  # type: ignore
+
+    dur = max(0.1, t_end - t_start)
+    xs: list[int] = []
+    for i in range(samples):
+        t = t_start + dur * ((i + 0.5) / samples)
+        cap.set(cv2.CAP_PROP_POS_MSEC, t * 1000.0)
+        ok, frame = cap.read()
+        if not ok or frame is None:
+            continue
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        faces = cascade.detectMultiScale(
+            gray, scaleFactor=1.2, minNeighbors=5, minSize=(min_face, min_face),
+        )
+        for (x, _y, w, _h) in faces:
+            xs.append(int(x + w / 2))
+
+    if not xs:
+        return None
+    xs.sort()
+    return xs[len(xs) // 2]
+
+
+def _hsv_hist(frame) -> "any":
+    """Normalized 8x8x8 HSV histogram. Used for frame-to-frame similarity."""
+    import cv2  # type: ignore
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    hist = cv2.calcHist([hsv], [0, 1, 2], None, [8, 8, 8],
+                        [0, 180, 0, 256, 0, 256])
+    cv2.normalize(hist, hist, 0, 1, cv2.NORM_MINMAX)
+    return hist
+
+
+def detect_scenes_and_crops(
     source_video: Path,
     start_sec: float,
     end_sec: float,
-    sample_count: int = FACE_SAMPLE_COUNT,
     crop_w: int = CROP_W,
     source_w: int = SOURCE_W,
-    min_face: int = FACE_MIN_SIZE,
-) -> int:
-    """Return a horizontal crop offset (X) in pixels so the detected face sits
-    near the center of the 9:16 output. Falls back to a plain center crop if
-    OpenCV is unavailable or no face is detected.
+) -> list[tuple[float, float, int]]:
+    """Detect camera cuts inside [start_sec, end_sec] and return per-scene
+    crop offsets.
 
-    Does NOT pan — returns a single fixed offset for the whole clip. This
-    matches the user direction ("just as long as the people are within the
-    shot — doesn't need to move").
+    Returns a list of (scene_start_rel, scene_end_rel, crop_x) tuples, where
+    times are CLIP-RELATIVE (0-based). Always returns at least one tuple
+    covering the full duration — callers never have to handle an empty list.
+
+    Safe fallbacks (all return a single-scene center crop):
+      - OpenCV not installed / cv2 can't open the source
+      - Haar cascade fails to load
+      - Detection throws
+      - > MAX_SCENES scenes returned (detector gone wild on noisy content)
     """
+    duration = max(0.1, end_sec - start_sec)
+    fallback = [(0.0, duration, CENTER_CROP_X)]
+
     try:
         import cv2  # type: ignore
     except ImportError:
-        print("  [FACE] opencv not installed → using center crop")
-        return CENTER_CROP_X
+        print("  [SCENES] opencv not installed → 1 scene, center crop")
+        return fallback
 
     cap = None
     try:
         cap = cv2.VideoCapture(str(source_video))
         if not cap.isOpened():
-            print("  [FACE] cv2 could not open source → center crop")
-            return CENTER_CROP_X
+            print("  [SCENES] cv2 could not open source → 1 scene, center crop")
+            return fallback
 
         cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
         cascade = cv2.CascadeClassifier(cascade_path)
         if cascade.empty():
-            print("  [FACE] haar cascade failed to load → center crop")
-            return CENTER_CROP_X
+            print("  [SCENES] haar cascade failed to load → 1 scene, center crop")
+            return fallback
 
-        dur = max(0.1, end_sec - start_sec)
-        xs: list[int] = []
-        for i in range(sample_count):
-            # Spread samples evenly; skip the very first/last frame (transition noise).
-            t = start_sec + dur * ((i + 0.5) / sample_count)
-            cap.set(cv2.CAP_PROP_POS_MSEC, t * 1000.0)
+        # --- Pass 1: walk the clip at fixed stride, diff HSV histograms -----
+        stride = SCENE_SAMPLE_STRIDE_SEC
+        n_samples = max(2, int(duration / stride) + 1)
+        prev_hist = None
+        # cut_points holds clip-relative timestamps where a cut is detected
+        cut_points: list[float] = [0.0]
+        for i in range(n_samples):
+            t_rel = min(duration, i * stride)
+            t_abs = start_sec + t_rel
+            cap.set(cv2.CAP_PROP_POS_MSEC, t_abs * 1000.0)
             ok, frame = cap.read()
             if not ok or frame is None:
                 continue
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            faces = cascade.detectMultiScale(
-                gray,
-                scaleFactor=1.2,
-                minNeighbors=5,
-                minSize=(min_face, min_face),
+            hist = _hsv_hist(frame)
+            if prev_hist is not None:
+                d = cv2.compareHist(prev_hist, hist, cv2.HISTCMP_BHATTACHARYYA)
+                if d > BHATTA_CUT_THRESHOLD:
+                    cut_points.append(t_rel)
+            prev_hist = hist
+        cut_points.append(duration)
+
+        # Build initial scene list from consecutive cut points
+        scenes_rel: list[tuple[float, float]] = []
+        for a, b in zip(cut_points, cut_points[1:]):
+            if b > a:
+                scenes_rel.append((a, b))
+
+        # --- Merge scenes shorter than MIN_SCENE_DURATION_SEC ----------------
+        merged: list[tuple[float, float]] = []
+        for s, e in scenes_rel:
+            if merged and (e - s) < MIN_SCENE_DURATION_SEC:
+                ps, _pe = merged[-1]
+                merged[-1] = (ps, e)
+            else:
+                merged.append((s, e))
+        if not merged:
+            merged = [(0.0, duration)]
+
+        if len(merged) > MAX_SCENES:
+            print(f"  [SCENES] {len(merged)} scenes > cap {MAX_SCENES} → 1 scene, center crop")
+            return fallback
+
+        # --- Pass 2: for each scene, detect face → crop_x --------------------
+        result: list[tuple[float, float, int]] = []
+        any_face = False
+        for s, e in merged:
+            face_x = _face_center_for_range(
+                cap, cascade, start_sec + s, start_sec + e,
             )
-            for (x, y, w, _h) in faces:
-                xs.append(int(x + w / 2))
+            if face_x is None:
+                crop_x = CENTER_CROP_X
+            else:
+                any_face = True
+                crop_x = face_x - crop_w // 2
+                crop_x = max(0, min(source_w - crop_w, crop_x))
+            result.append((s, e, crop_x))
 
-        if not xs:
-            print("  [FACE] no faces detected → center crop")
-            return CENTER_CROP_X
+        if not any_face:
+            print(f"  [SCENES] {len(result)} scenes, 0 faces → 1 scene, center crop")
+            return fallback
 
-        xs.sort()
-        median_x = xs[len(xs) // 2]
-        spread = xs[-1] - xs[0] if len(xs) >= 2 else 0
-        frame_center = source_w // 2
-        offset = abs(median_x - frame_center)
+        # Optimization: if every scene lands on the same crop_x, collapse to
+        # the fast single-scene path (identical output, simpler filter graph).
+        uniq_x = {x for _s, _e, x in result}
+        if len(uniq_x) == 1:
+            only_x = result[0][2]
+            delta = abs(only_x - CENTER_CROP_X)
+            print(f"  [SCENES] {len(result)} scenes, all crop_x={only_x} (Δ{delta} from center) → collapsed to 1")
+            return [(0.0, duration, only_x)]
 
-        # Only override the default center crop when BOTH:
-        #   (a) faces cluster tightly across samples (single stable camera,
-        #       not a multi-cam cut — cutting between cameras produces a wide
-        #       X-spread that means no single offset will satisfy all shots)
-        #   (b) the face is meaningfully off-center (default center crop
-        #       already keeps a near-center face in frame — don't fight it)
-        # Otherwise fall back to the fixed center crop, which is what was
-        # working before face detection was introduced.
-        SPREAD_THRESHOLD = 200   # px; wider = multi-camera cuts
-        OFFSET_THRESHOLD = 220   # px; closer = center crop already works
-        if spread > SPREAD_THRESHOLD:
-            print(f"  [FACE] {len(xs)} samples, spread={spread}px > {SPREAD_THRESHOLD} → multi-camera scene, center crop")
-            return CENTER_CROP_X
-        if offset < OFFSET_THRESHOLD:
-            print(f"  [FACE] median_x={median_x} (Δ{offset}px from center) < {OFFSET_THRESHOLD} → default center adequate")
-            return CENTER_CROP_X
+        summary = ", ".join(f"({s:.2f}-{e:.2f}, cx={x})" for s, e, x in result)
+        print(f"  [SCENES] {len(result)} scenes → {summary}")
+        return result
 
-        # Single-camera, clearly off-center → apply face-centered crop.
-        crop_x = median_x - crop_w // 2
-        crop_x = max(0, min(source_w - crop_w, crop_x))
-        print(f"  [FACE] {len(xs)} samples, spread={spread}, median_x={median_x} (Δ{offset}) → crop_x={crop_x} (center={CENTER_CROP_X})")
-        return crop_x
-    except Exception as exc:  # any cv2 failure → safe fallback
-        print(f"  [FACE] detection failed: {exc} → center crop")
-        return CENTER_CROP_X
+    except Exception as exc:
+        print(f"  [SCENES] detection failed: {exc} → 1 scene, center crop")
+        return fallback
     finally:
         if cap is not None:
             cap.release()
+
+
+def _build_video_filter(scenes: list[tuple[float, float, int]], ass_path: Path,
+                        crop_w: int = CROP_W) -> list[str]:
+    """Build the video-branch filter segments that produce the `[v0]` label
+    (a 1080x1920 stream with captions burned in). Callers then append the
+    end-card overlay and audio branches the same way regardless of scene
+    count.
+
+    Single-scene fast path (identical to pre-fix behavior):
+        [0:v]crop=...,scale=1080:1920,setsar=1,subtitles='...'[v0]
+
+    Multi-scene path: split the video N ways, trim+crop each branch with its
+    own offset, concat, then apply subtitles to the rebuilt 0-based timeline.
+    """
+    n = len(scenes)
+    if n <= 1:
+        _s, _e, cx = scenes[0]
+        return [
+            f"[0:v]crop={crop_w}:1080:{cx}:0,scale=1080:1920,setsar=1,"
+            f"subtitles='{ass_path}'[v0]"
+        ]
+
+    parts: list[str] = []
+    split_labels = "".join(f"[v{i}s]" for i in range(n))
+    parts.append(f"[0:v]split={n}{split_labels}")
+    for i, (s, e, cx) in enumerate(scenes):
+        parts.append(
+            f"[v{i}s]trim=start={s:.3f}:end={e:.3f},setpts=PTS-STARTPTS,"
+            f"crop={crop_w}:1080:{cx}:0,scale=1080:1920[s{i}]"
+        )
+    concat_inputs = "".join(f"[s{i}]" for i in range(n))
+    parts.append(
+        f"{concat_inputs}concat=n={n}:v=1:a=0,setsar=1,"
+        f"subtitles='{ass_path}'[v0]"
+    )
+    return parts
 
 
 def render_clip(spec: dict, episode: str, transcripts_by_stem: dict[str, dict],
@@ -285,13 +415,14 @@ def render_clip(spec: dict, episode: str, transcripts_by_stem: dict[str, dict],
     music = _pick_music_bed(seed=clip_id)
     has_music = music is not None
 
-    # Pick crop X: explicit caller value wins; otherwise face-detect, fallback to center.
-    if crop_x is None:
-        crop_x = detect_face_crop_x(source_video, start, end, crop_w=crop_w)
+    # Build the scene list that drives the crop graph. Explicit --crop-x from
+    # the CLI still wins as a manual escape hatch; otherwise auto-detect.
+    if crop_x is not None:
+        scenes: list[tuple[float, float, int]] = [(0.0, duration, crop_x)]
+    else:
+        scenes = detect_scenes_and_crops(source_video, start, end, crop_w=crop_w)
 
-    filter_parts = [
-        f"[0:v]crop={crop_w}:1080:{crop_x}:0,scale=1080:1920,setsar=1,subtitles='{ass_path}'[v0]"
-    ]
+    filter_parts = _build_video_filter(scenes, ass_path, crop_w=crop_w)
     vout_label = "[v0]"
     if END_CARD.exists():
         filter_parts.append(
