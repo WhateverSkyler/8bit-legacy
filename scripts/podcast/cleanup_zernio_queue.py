@@ -104,12 +104,20 @@ def cleanup(episode: str, execute: bool) -> int:
         scheduled = []
     print(f"[ZERNIO] {len(scheduled)} currently-scheduled posts returned by API")
 
+    # Zernio's presigned-upload URL uses the raw filename, which has spaces
+    # collapsed to underscores (presumably via S3/CDN URL-safing). Match both
+    # the raw stem and its space->underscore variant.
+    stem_variants = {s: {s, s.replace(" ", "_")} for s in clip_stems}
     for p in scheduled:
         pid = _post_id(p)
         if not pid or pid in logged_ids:
             continue
         urls = _media_urls(p)
-        hit = next((s for s in clip_stems if any(s in u for u in urls)), None)
+        hit = None
+        for s, variants in stem_variants.items():
+            if any(any(v in u for v in variants) for u in urls):
+                hit = s
+                break
         if hit:
             targets.append((pid, f"url-match:{hit}"))
 
