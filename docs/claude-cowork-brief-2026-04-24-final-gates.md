@@ -37,39 +37,60 @@ Four small browser tasks that clear the last pre-launch gates between the paused
 
 ---
 
-## Task 2 — Place $5-10 test order end-to-end (~5 min)
+## Task 2 — Free test order via 100%-off code (~8 min)
 
 **Why:** fire the Purchase conversion action end-to-end so Google Ads marks it "Recording" (currently "No recent conversions" despite Active status — means attribution hasn't actually processed a real purchase yet). Launching blind on attribution risks burning spend we can't measure.
 
-### Steps
+**Goal state:** an order reaches Shopify's `checkout_completed` event at $0.00 total with no card used. That fires the Google Ads Purchase tag → "Recording" in Ads UI within 2-4h.
+
+### Step 2a — Create a 100%-off one-time discount code
+
+1. Shopify admin → **Discounts** → **Create discount** → **Amount off products**
+2. **Method:** Discount code
+3. **Code:** `TESTZERO-[YYYYMMDD]` (replace with today's date, e.g. `TESTZERO-20260424`) — randomize if you want
+4. **Types:** Percentage → **100%**
+5. **Applies to:** Specific products → pick ONE cheap in-stock product (search `gbc`, `genesis`, `atari` — aim for $5–15 list price so the discount amount stays small in reports). Confirm the product shows "Active" and "In stock."
+6. **Minimum purchase requirements:** None
+7. **Customer eligibility:** All customers
+8. **Maximum discount uses:**
+   - ☑ Limit number of times this discount can be used in total → **1**
+   - ☑ Limit to one use per customer
+9. **Combinations:** check **Free shipping discounts** so it combines cleanly
+10. **Active dates:** Start now. End 24h later (safety — no dangling 100%-off code in the wild).
+11. **Save**.
+
+### Step 2b — Create an automatic free-shipping discount (if not already)
+
+1. Discounts → **Create discount** → **Free shipping**
+2. **Method:** Automatic
+3. **Title:** `Test order free shipping` (Tristan will delete after)
+4. **Countries:** United States
+5. **Minimum purchase requirements:** None
+6. **Combinations:** check **Amount off products discounts**
+7. **Active dates:** Start now, end 24h later
+8. **Save**.
+
+If a free-shipping discount already exists as "Automatic" and is active, skip this — the order will just stack the $50 threshold rule from Task 1 with the manual code.
+
+### Step 2c — Place the order
 
 1. Open a **fresh incognito window** (no ad blockers) → https://8bitlegacy.com
-2. Pick the cheapest product you can find. Good targets:
-   - Search "gbc" or "gameboy color" — usually has some $5-10 used game cartridges
-   - Or "genesis" — Genesis titles routinely under $10
-   - Confirm the product shows as "In Stock" / "Add to cart" (NOT out of stock)
-3. Add to Cart → View Cart → **Checkout**
-4. Fill in a real email (use Tristan's `tristanaddi1@gmail.com` or a throwaway like `testorder+[timestamp]@gmail.com`)
-5. Shipping address: Tristan's real address. He'll provide in chat.
-6. Continue to Payment → enter a REAL card (Tristan's — ask him to type it; don't paste from memory or a password manager)
-7. Click **Pay now** → confirm the order page loads ("Thank you, order #10XX")
-8. **Screenshot the confirmation page** for the record.
+2. Add the SAME product you picked in Step 2a to the cart.
+3. **Checkout.** Use Tristan's real email (`tristanaddi1@gmail.com`).
+4. Shipping address: Tristan's real address (he'll paste in chat).
+5. Apply the discount code `TESTZERO-[YYYYMMDD]`.
+6. **Confirm cart shows $0.00 product + $0.00 shipping = $0.00 total.** If it shows any non-zero total, **STOP and report** — don't pay; Shopify shouldn't ask for a card on $0 orders, so a non-zero total means one of the discounts didn't apply.
+7. Place order. Order confirmation should load.
+8. Screenshot the confirmation page.
 
-### Immediately after
+### Step 2d — Don't fulfill; just tag
 
-9. Go to Shopify admin → **Orders** → find the new order
-10. **Refund it**:
-    - Click the order → scroll to the top right action bar → Refund
-    - Refund the full amount
-    - Reason: "Test order — internal" (don't pick "customer changed mind")
-    - Click **Refund**
-11. The customer email will go out. That's fine — it's Tristan's own email.
+1. Shopify admin → Orders → find the new order.
+2. Tag it `test-order`.
+3. **Do NOT ship.** The order has $0 paid; there's nothing to refund. Cancel the order from the admin (reason: "other", note: "internal test for Google Ads Purchase conversion").
+4. Delete the two discount codes you created (Step 2a + optional 2b) so they don't sit around live.
 
-### Post-refund
-
-12. Tag the order `test-order` in Shopify admin so future profit reports can exclude it.
-
-**Gate:** If the checkout flow breaks (card declined, Shopify errors, pixel conflicts), STOP and report the exact error.
+**Gate:** If checkout demands a card after discounts apply, or the order doesn't show in Shopify Orders within 60 seconds, STOP and report. The pixel can't fire if checkout didn't complete.
 
 ---
 
@@ -135,7 +156,7 @@ Propagation takes 24–48h to fully apply. That's fine — we'll launch in paral
 ## Success criteria
 
 - [ ] Task 1: Free shipping threshold = **$50.00**; flat $6 applies to orders ≤ **$49.99**; incognito verified
-- [ ] Task 2: Real test order placed (# recorded) + refunded from Shopify admin
+- [ ] Task 2: $0.00 test order placed using 100%-off code + free shipping, cancelled and tagged `test-order`, both discount codes deleted
 - [ ] Task 3: MC Diagnostics numbers captured; no account-level issues
 - [ ] Task 4: CIB supplemental feed uploaded (or residual accepted if UI blocks it)
 - [ ] Handoff doc written + pushed
