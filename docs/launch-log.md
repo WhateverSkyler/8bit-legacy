@@ -65,3 +65,36 @@ converts.
 - 2 products with bad feed titles / no sourceability: $94 + $51 list price
   combined, <0.3% of the 802 over_50 universe. Will surface in daily report
   if they spend without converting.
+
+---
+
+## 2026-04-25 — Pixel verification FAILED, campaign stays PAUSED
+
+**Status:** PAUSED. 2C pixel fix from 2026-04-24 did not resolve the issue.
+
+**Real-order test:** Order #1070 placed 2026-04-25 10:49 ET, $146.92, 3 items
+(Tekken 3 PS1, Monster Lab PS2, Lucario ex Stellar Crown). Both Google Ads
+GAQL (read at 12:13, 13:20, 14:21 ET) and the Ads UI Webpages tab (cowork
+session, ~14:30 ET, "All time" range) show 0 Purchase conversions.
+
+**Diagnostic finding (per `docs/cowork-session-2026-04-25-cleanup-and-pixel.md`):**
+ALL 7 Google Shopping App conversion actions show 0 count — Purchase,
+Page View, View Item, Add To Cart, Begin Checkout, Add Payment Info, Search.
+The G&Y tag isn't loading on the storefront at all, not just failing on the
+thank-you page. 4 actions show "Needs attention" tracking status.
+
+**Discounts cleanup (collateral, also done in this session):** 3 lingering
+test discounts deleted from Shopify admin. Customer checkout no longer shows
+the `Test order free shipping v2 (pixel-fix 2026-04-24)` line. Commit `5e00017`.
+
+**Next-pass diagnosis (not done this session, queued for next cowork):**
+1. Confirm MonsterInsights fully removed (theme.liquid + apps page)
+2. Complete G&Y app's pending Online Store contact-info confirmation gate
+3. Tag Assistant Companion + DevTools manual order with storefront tab open
+   to capture exactly which gtag events do/don't fire
+4. Verify URL-match rule for `Google Shopping App Purchase` still matches
+   the current Shopify checkout-extensibility thank-you path
+   (`/checkouts/c/.../thank_you`)
+
+**No campaign mutation today.** Spend stays at $0. TrueNAS safety crons
+still active and not needed (nothing to safeguard while paused).

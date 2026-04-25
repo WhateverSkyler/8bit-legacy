@@ -577,8 +577,9 @@ def main():
                        help="Import sealed products from CSV (booster packs, ETBs, etc.)")
 
     parser.add_argument("--dry-run", action="store_true", help="Preview without creating Shopify products")
-    parser.add_argument("--min-price", type=float, default=0,
-                        help="Skip cards below this market price (default: 0 = import all)")
+    parser.add_argument("--min-price", type=float, default=5.0,
+                        help="Skip cards below this market price (default: 5.0). Below $5, "
+                             "Shopify fees + eBay LP gap eat all margin.")
     parser.add_argument("--max-price", type=float, default=500,
                         help="Skip cards above this market price (default: 500 = exclude high-value cards)")
     parser.add_argument("--save-csv", action="store_true", help="Save pricing data to CSV")
