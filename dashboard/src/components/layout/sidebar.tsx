@@ -20,6 +20,7 @@ import {
   PanelLeft,
   Clock,
   Sparkles,
+  ShieldCheck,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -31,6 +32,7 @@ const NAV_ITEMS = [
   { href: "/ebay", label: "eBay Finder", icon: Search },
   { href: "/social", label: "Social Media", icon: Share2 },
   { href: "/ads", label: "Google Ads", icon: Target },
+  { href: "/safety", label: "Ad Safety", icon: ShieldCheck },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/scheduler", label: "Scheduler", icon: Clock },
   { href: "/settings", label: "Settings", icon: Settings },

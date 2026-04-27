@@ -459,3 +459,177 @@ export function runAdsSafetyChecks(): AdsSafetyCheckResult {
     tripReason: shouldTrip ? tripReason : undefined,
   };
 }
+
+// ── Read-only ads safety status (for UI; never trips) ─────────────
+
+export interface AdsSafetyStatus {
+  hardLimits: {
+    maxDailySpend: number;
+    lifetimeNoConvCeiling: number;
+    rollingRoasFloor: number;
+  };
+  current: {
+    todayDate: string;
+    dailySpend: number;
+    lifetimeCost: number;
+    lifetimeConversions: number;
+    threeDayDays: Array<{ date: string; cost: number; conversions: number }>;
+    daysOfData: number;
+    rollingRoas: number | null;
+  };
+  checks: Array<{
+    name: string;
+    passed: boolean;
+    detail: string;
+    threshold?: string;
+    current?: string;
+  }>;
+  circuitBreaker: { tripped: boolean; reason?: string; trippedAt?: string };
+  computedAt: string;
+}
+
+/**
+ * Compute ads safety status WITHOUT side effects. Safe to call from UI.
+ * Mirrors runAdsSafetyChecks logic but does not trip the breaker.
+ */
+export function getAdsSafetyStatus(): AdsSafetyStatus {
+  const todayStr = new Date().toISOString().split("T")[0];
+  const threeDaysAgo = new Date(Date.now() - 3 * 86400000).toISOString().split("T")[0];
+  const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
+
+  const todayRow = db
+    .select({ total: sql<number>`coalesce(sum(cost), 0)` })
+    .from(googleAdsPerformance)
+    .where(eq(googleAdsPerformance.date, todayStr))
+    .get();
+  const dailySpend = todayRow?.total ?? 0;
+
+  const lifetimeRow = db
+    .select({
+      cost: sql<number>`coalesce(sum(cost), 0)`,
+      conv: sql<number>`coalesce(sum(conversions), 0)`,
+    })
+    .from(googleAdsPerformance)
+    .get();
+  const lifetimeCost = lifetimeRow?.cost ?? 0;
+  const lifetimeConv = lifetimeRow?.conv ?? 0;
+
+  const threeDayRows = db
+    .select({
+      date: googleAdsPerformance.date,
+      cost: sql<number>`sum(cost)`,
+      conv: sql<number>`sum(conversions)`,
+    })
+    .from(googleAdsPerformance)
+    .where(gte(googleAdsPerformance.date, threeDaysAgo))
+    .groupBy(googleAdsPerformance.date)
+    .orderBy(googleAdsPerformance.date)
+    .all();
+
+  const daysOfData = db
+    .select({ count: sql<number>`count(distinct date)` })
+    .from(googleAdsPerformance)
+    .where(gte(googleAdsPerformance.date, sevenDaysAgo))
+    .get()?.count ?? 0;
+
+  let rollingRoas: number | null = null;
+  if (daysOfData >= 7) {
+    const r = db
+      .select({
+        cost: sql<number>`coalesce(sum(cost), 0)`,
+        value: sql<number>`coalesce(sum(conversion_value), 0)`,
+      })
+      .from(googleAdsPerformance)
+      .where(gte(googleAdsPerformance.date, threeDaysAgo))
+      .get();
+    rollingRoas = (r?.cost ?? 0) > 0 ? ((r?.value ?? 0) / (r?.cost ?? 1)) * 100 : 0;
+  }
+
+  const checks: AdsSafetyStatus["checks"] = [];
+
+  // Daily spend
+  const spendPassed = dailySpend <= HARD_LIMITS.MAX_DAILY_AD_SPEND;
+  checks.push({
+    name: "Daily spend cap",
+    passed: spendPassed,
+    detail: `Today's spend vs $${HARD_LIMITS.MAX_DAILY_AD_SPEND} hard cap`,
+    threshold: `$${HARD_LIMITS.MAX_DAILY_AD_SPEND.toFixed(2)}`,
+    current: `$${dailySpend.toFixed(2)}`,
+  });
+
+  // Lifetime no-conv
+  const ceilingPassed = lifetimeCost < HARD_LIMITS.LIFETIME_NO_CONVERSION_CEILING || lifetimeConv > 0;
+  checks.push({
+    name: "Lifetime no-conversion ceiling",
+    passed: ceilingPassed,
+    detail: lifetimeConv > 0
+      ? `Conversions exist (${lifetimeConv}) — ceiling does not apply`
+      : `${lifetimeCost === 0 ? "No spend yet." : ""} Hard pause if cumulative spend hits $${HARD_LIMITS.LIFETIME_NO_CONVERSION_CEILING} with 0 conversions`,
+    threshold: `$${HARD_LIMITS.LIFETIME_NO_CONVERSION_CEILING.toFixed(2)} (with 0 conv)`,
+    current: `$${lifetimeCost.toFixed(2)} / ${lifetimeConv} conv`,
+  });
+
+  // 3-day backup
+  const qualifyingDays = threeDayRows.filter(d => (d.cost ?? 0) >= 10 && (d.conv ?? 0) === 0);
+  const noConvPassed = qualifyingDays.length < 3;
+  checks.push({
+    name: "3-day backup no-conversion",
+    passed: noConvPassed,
+    detail: "Trips if 3 consecutive days with $10+ spend and 0 conversions",
+    threshold: "3 consecutive days",
+    current: `${qualifyingDays.length}/3 qualifying days`,
+  });
+
+  // Store uptime — last known
+  checks.push({
+    name: "Store uptime",
+    passed: true,
+    detail: "Checked async by job handler; trips on 8bitlegacy.com unreachable",
+    threshold: "Reachable",
+    current: "Checked at job runtime",
+  });
+
+  // Rolling ROAS
+  if (daysOfData >= 7 && rollingRoas !== null) {
+    const roasPassed = rollingRoas >= 200 || lifetimeCost === 0;
+    checks.push({
+      name: "Rolling 3-day ROAS floor",
+      passed: roasPassed,
+      detail: "Trips if 3-day ROAS < 200% with 7+ days of data",
+      threshold: "200%",
+      current: `${Math.round(rollingRoas)}%`,
+    });
+  } else {
+    checks.push({
+      name: "Rolling 3-day ROAS floor",
+      passed: true,
+      detail: `Deferred — need 7+ days of data (have ${daysOfData})`,
+      threshold: "200% (after 7d)",
+      current: `${daysOfData}/7 days`,
+    });
+  }
+
+  return {
+    hardLimits: {
+      maxDailySpend: HARD_LIMITS.MAX_DAILY_AD_SPEND,
+      lifetimeNoConvCeiling: HARD_LIMITS.LIFETIME_NO_CONVERSION_CEILING,
+      rollingRoasFloor: 200,
+    },
+    current: {
+      todayDate: todayStr,
+      dailySpend,
+      lifetimeCost,
+      lifetimeConversions: lifetimeConv,
+      threeDayDays: threeDayRows.map(d => ({
+        date: d.date,
+        cost: Number(d.cost ?? 0),
+        conversions: Number(d.conv ?? 0),
+      })),
+      daysOfData: Number(daysOfData),
+      rollingRoas,
+    },
+    checks,
+    circuitBreaker: isCircuitBreakerTripped("google_ads"),
+    computedAt: new Date().toISOString(),
+  };
+}
