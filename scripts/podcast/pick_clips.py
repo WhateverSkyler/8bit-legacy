@@ -205,7 +205,12 @@ def _snap_and_validate(
         return pick, False, "start after end"
 
     # --- Validation loop with rescue: try current boundaries, then extend back/forward ---
-    max_extensions = 2  # at most 2 extensions before we give up
+    # 2026-04-26: bumped max_extensions 2→4 and added forward-skip fallback for
+    # bad openings (previously only pulled in prior segment, which often failed
+    # if the prior segment also opened with filler). Higher acceptance rate
+    # without sacrificing the "never cut mid-sentence" rule.
+    max_extensions = 4
+    tried_forward_skip = False
     for attempt in range(max_extensions + 1):
         start_seg = segments[start_idx]
         end_seg = segments[end_idx]
@@ -234,10 +239,17 @@ def _snap_and_validate(
         opens_bad = first_word in BAD_OPENING_WORDS or first_word in UNRESOLVED_PRONOUNS
         ends_clean = _segment_ends_cleanly(end_seg)
 
-        if opens_bad and start_idx > 0 and attempt < max_extensions:
-            # Pull in the previous segment for context
-            start_idx -= 1
-            continue
+        if opens_bad and attempt < max_extensions:
+            # Try pulling in the previous segment first (gives more context).
+            # If that's not possible OR we've already tried it once unsuccessfully,
+            # fall back to skipping forward past the filler-opening segment.
+            if start_idx > 0 and not tried_forward_skip:
+                start_idx -= 1
+                continue
+            if start_idx + 1 <= end_idx:
+                start_idx += 1
+                tried_forward_skip = True
+                continue
         if not ends_clean and end_idx + 1 < len(segments) and attempt < max_extensions:
             end_idx += 1
             continue

@@ -214,16 +214,12 @@ def _process_podcast_drop(drop_dir: Path, state: dict) -> None:
         return
 
     if not topic_candidates:
-        emit_navi_task(
-            title=f"Podcast drop {name} has no topic cuts",
-            description=(
-                f"Drop folder {drop_dir} only contains the full episode — no topic-*.mp4 files. "
-                f"Shorts won't be generated. Add topic cuts and re-drop."
-            ),
-            priority="high",
+        # Full-only drop is fine — pipeline will pick clips from the full episode
+        # and render them with FULL-FINAL-relative timestamps. The user's stated
+        # workflow is "drop the full file, get content" — don't require topic cuts.
+        log.info(
+            f"[PODCAST] {name} has no topic cuts; running pipeline against full episode only"
         )
-        _safe_move(drop_dir, PODCAST / "incoming" / "_failed", "PODCAST")
-        return
 
     # Move incoming → processing
     work_dir = _safe_move(drop_dir, PODCAST / "processing", "PODCAST")
