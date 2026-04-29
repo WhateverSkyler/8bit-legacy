@@ -57,9 +57,13 @@ CENTER_CROP_X = (SOURCE_W - CROP_W) // 2  # 656
 # --- Face detection ----------------------------------------------------------
 # Minimum face size (px) — filters out noise / far-background detections.
 # At 1080p, typical face on-camera is ~140-220 px wide.
-FACE_MIN_SIZE = 90
+# 2026-04-29: lowered 90 → 60. The "Tristan in front of arcade" angle had him
+# at ~70-110 px wide due to camera distance + angled pose; old 90 floor missed
+# him completely → fell back to dead-center crop with subject off-frame.
+FACE_MIN_SIZE = 60
 # Frames sampled per detected scene when computing that scene's face center.
-FACE_SAMPLES_PER_SCENE = 3
+# Bumped 3 → 5 for better recall on scenes with brief angled poses.
+FACE_SAMPLES_PER_SCENE = 5
 
 # --- Scene detection ---------------------------------------------------------
 # Sampling stride when walking the clip to find hard camera cuts (seconds).
@@ -179,12 +183,17 @@ def _pick_music_bed(seed: str | None = None) -> Path | None:
     return rng.choice(candidates)
 
 
-def _face_center_for_range(cap, cascade, t_start: float, t_end: float,
+def _face_center_for_range(cap, cascades: list, t_start: float, t_end: float,
                            samples: int = FACE_SAMPLES_PER_SCENE,
                            min_face: int = FACE_MIN_SIZE) -> int | None:
     """Sample `samples` frames evenly inside [t_start, t_end] (source-video
     timestamps, seconds) and return the median face X-center, or None if no
-    face was detected in any sample.
+    face was detected in any sample across any cascade.
+
+    `cascades` is a list of OpenCV CascadeClassifier objects, tried in order
+    per frame. Typically [frontal, profile-flipped, profile]. This catches
+    angled faces that the frontal cascade misses (the "Tristan in front of
+    arcade" pose was a recurring miss with frontal-only).
     """
     import cv2  # type: ignore
 
@@ -197,11 +206,29 @@ def _face_center_for_range(cap, cascade, t_start: float, t_end: float,
         if not ok or frame is None:
             continue
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces = cascade.detectMultiScale(
-            gray, scaleFactor=1.2, minNeighbors=5, minSize=(min_face, min_face),
-        )
-        for (x, _y, w, _h) in faces:
-            xs.append(int(x + w / 2))
+        # Try each cascade until one finds a face. Frontal first (most accurate
+        # for forward poses), then profile cascades for angled poses.
+        for idx, cascade in enumerate(cascades):
+            # For the flipped-profile cascade (idx=1 by convention), flip the gray
+            # frame so the same right-facing-profile detector catches left-facing
+            # profiles. Mirror the resulting X back to source coords.
+            search_img = gray
+            mirror = (idx == 1)
+            if mirror:
+                search_img = cv2.flip(gray, 1)
+            faces = cascade.detectMultiScale(
+                search_img, scaleFactor=1.1, minNeighbors=4,
+                minSize=(min_face, min_face),
+            )
+            if len(faces) > 0:
+                w_img = search_img.shape[1]
+                for (x, _y, w, _h) in faces:
+                    cx = int(x + w / 2)
+                    if mirror:
+                        cx = w_img - cx
+                    xs.append(cx)
+                # First cascade that finds a face wins for this sample frame
+                break
 
     if not xs:
         return None
@@ -255,11 +282,28 @@ def detect_scenes_and_crops(
             print("  [SCENES] cv2 could not open source → 1 scene, center crop")
             return fallback
 
-        cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
-        cascade = cv2.CascadeClassifier(cascade_path)
-        if cascade.empty():
-            print("  [SCENES] haar cascade failed to load → 1 scene, center crop")
+        # Multi-cascade chain: frontal first, then profile (twice — once on
+        # the original gray, once on horizontally-flipped gray to catch the
+        # opposite profile direction since OpenCV's profileface XML only
+        # detects right-facing profiles).
+        # 2026-04-29: added profile cascades to fix recurring miss on the
+        # "Tristan in front of arcade" angle. Frontal-only previously fell
+        # back to center-crop on this pose.
+        frontal_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+        profile_path = cv2.data.haarcascades + "haarcascade_profileface.xml"
+        frontal = cv2.CascadeClassifier(frontal_path)
+        if frontal.empty():
+            print("  [SCENES] frontal haar cascade failed to load → 1 scene, center crop")
             return fallback
+        profile = cv2.CascadeClassifier(profile_path)
+        # Profile cascade is best-effort; if it fails to load, keep going with
+        # frontal-only rather than abandoning detection entirely.
+        cascades = [frontal]
+        if not profile.empty():
+            # Order: frontal, flipped-profile (left-facing), profile (right-facing).
+            # The flipped variant is index 1 — _face_center_for_range mirrors
+            # the search image at that index to detect left-facing profiles.
+            cascades = [frontal, profile, profile]
 
         # --- Pass 1: walk the clip at fixed stride, diff HSV histograms -----
         stride = SCENE_SAMPLE_STRIDE_SEC
@@ -304,19 +348,46 @@ def detect_scenes_and_crops(
             return fallback
 
         # --- Pass 2: for each scene, detect face → crop_x --------------------
+        # Scene continuity: when a scene's face detection fails, prefer the
+        # most recent successful crop_x from a prior scene rather than
+        # snapping back to dead-center. This fixes the visible "subject jumps
+        # to middle" failure mode on cuts where one camera angle has the
+        # subject visibly off-center but face detection is shaky.
         result: list[tuple[float, float, int]] = []
         any_face = False
+        last_good_crop_x: int | None = None
         for s, e in merged:
             face_x = _face_center_for_range(
-                cap, cascade, start_sec + s, start_sec + e,
+                cap, cascades, start_sec + s, start_sec + e,
             )
             if face_x is None:
-                crop_x = CENTER_CROP_X
+                # Carry forward the previous scene's crop_x if we have one.
+                # Only use the dead-center fallback if NO scene in this clip
+                # has succeeded yet.
+                crop_x = last_good_crop_x if last_good_crop_x is not None else CENTER_CROP_X
             else:
                 any_face = True
                 crop_x = face_x - crop_w // 2
                 crop_x = max(0, min(source_w - crop_w, crop_x))
+                last_good_crop_x = crop_x
             result.append((s, e, crop_x))
+
+        # Backfill leading scenes that failed before any face was found:
+        # if scene 0 missed but scene 2 hit, retroactively give scenes 0 and 1
+        # scene 2's crop_x. Avoids "first 3 seconds dead-center, then snap".
+        if any_face:
+            first_good = next((cx for _s, _e, cx in result if cx != CENTER_CROP_X), None)
+            if first_good is not None:
+                fixed: list[tuple[float, float, int]] = []
+                seen_good = False
+                for s, e, cx in result:
+                    if cx == CENTER_CROP_X and not seen_good:
+                        fixed.append((s, e, first_good))
+                    else:
+                        if cx != CENTER_CROP_X:
+                            seen_good = True
+                        fixed.append((s, e, cx))
+                result = fixed
 
         if not any_face:
             print(f"  [SCENES] {len(result)} scenes, 0 faces → 1 scene, center crop")
@@ -490,7 +561,69 @@ def render_clip(spec: dict, episode: str, transcripts_by_stem: dict[str, dict],
         print(proc.stderr[-2000:])
         return None
     print(f"[DONE] {out_path.relative_to(ROOT)}")
+
+    # QA preview: 2x2 contact sheet at 25/50/75/95% of clip duration.
+    # Saved to <episode>/preview/<clip_id>.jpg so a human can quickly browse
+    # framing across all queued clips before they go live. Non-fatal if it
+    # fails — primary render already succeeded.
+    try:
+        _generate_preview(out_path, clip_id, episode_clips_dir, scenes, duration)
+    except Exception as exc:
+        print(f"  [PREVIEW] generation failed (non-fatal): {exc}")
+
     return out_path
+
+
+def _generate_preview(rendered_mp4: Path, clip_id: str, episode_dir: Path,
+                      scenes: list[tuple[float, float, int]], duration: float) -> None:
+    """Build a 2x2 contact sheet from the rendered vertical MP4 for QA.
+
+    Tiles 4 still frames sampled at 25/50/75/95% of the clip's duration. Each
+    tile shows the 9:16 framing as it will appear to viewers, plus a small
+    annotation strip with the source-video crop_x for that timestamp's scene.
+
+    Output: <episode>/preview/<clip_id>.jpg (1080x1920 contact sheet downscaled
+    to 540x960 per tile, arranged 2x2).
+    """
+    preview_dir = episode_dir / "preview"
+    preview_dir.mkdir(parents=True, exist_ok=True)
+    out = preview_dir / f"{clip_id}.jpg"
+
+    # Find which scene's crop_x covers each preview timestamp
+    pcts = [0.25, 0.50, 0.75, 0.95]
+    annotations = []
+    for pct in pcts:
+        t_rel = pct * duration
+        cx = next((x for s, e, x in scenes if s <= t_rel < e), scenes[-1][2] if scenes else CENTER_CROP_X)
+        annotations.append(f"t={t_rel:.1f}s cx={cx}")
+
+    select = "+".join(f"eq(n\\,{int(p * 1)})" for p in [])  # placeholder; actually use ts
+    # Build ffmpeg call: extract 4 frames at the percentages, scale each to
+    # 540x960, draw the annotation, tile 2x2 to 1080x1920, save JPG.
+    # Use a separate input per frame to keep the filter graph simple.
+    cmd = ["ffmpeg", "-y", "-hide_banner", "-loglevel", "error"]
+    for pct in pcts:
+        cmd += ["-ss", f"{pct * duration:.2f}", "-i", str(rendered_mp4)]
+    fparts = []
+    for i, ann in enumerate(annotations):
+        # scale to 540x960, draw annotation in white with black outline
+        # escape colons in drawtext for ffmpeg filter syntax
+        ann_escaped = ann.replace(":", "\\:")
+        fparts.append(
+            f"[{i}:v]select=eq(n\\,0),scale=540:960,setsar=1,"
+            f"drawtext=text='{ann_escaped}':fontsize=22:fontcolor=white:"
+            f"borderw=2:bordercolor=black:x=10:y=10[t{i}]"
+        )
+    fparts.append("[t0][t1]hstack=inputs=2[top]")
+    fparts.append("[t2][t3]hstack=inputs=2[bot]")
+    fparts.append("[top][bot]vstack=inputs=2[v]")
+    cmd += ["-filter_complex", ";".join(fparts), "-map", "[v]",
+            "-frames:v", "1", "-q:v", "3", str(out)]
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+    if proc.returncode == 0:
+        print(f"  [PREVIEW] {out.relative_to(ROOT)}")
+    else:
+        print(f"  [PREVIEW] ffmpeg returned {proc.returncode}: {proc.stderr[-500:]}")
 
 
 def _safe(s: str) -> str:
