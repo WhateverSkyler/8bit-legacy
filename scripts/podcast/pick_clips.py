@@ -117,10 +117,26 @@ Return strict JSON ONLY — a JSON ARRAY of picks, no prose, no markdown fences.
   "title": "4-7 word title case, no clickbait punctuation",
   "hook": "one sentence, first-person or direct address, no hashtags",
   "topics": ["2-4 lowercase tags"],
+  "evergreen": <bool, see below>,
   "stand_alone_score": <float 0-1, 1 = passes the primary test perfectly>,
   "quality_score": <float 0-1, 1 = strong scroll-stopper>,
   "reasoning": "one sentence explaining why this clip stands alone"
 }
+
+EVERGREEN CLASSIFICATION (critical for repost-safety):
+- evergreen = TRUE  when the clip will still feel fresh 6+ months later. Examples:
+  * "Ranking the Zelda games" / retrospectives
+  * Opinions on long-running franchises ("Why Final Fantasy peaked at 7")
+  * Gameplay observations on classic games
+  * Hot takes that aren't tied to a current event
+  * Genre / industry musings ("Why indies save gaming")
+- evergreen = FALSE when the clip's relevance decays with time. Examples:
+  * "Nintendo just announced..." / news reactions
+  * "Today's Direct showed..." / leak commentary
+  * "Coming out next month" / launch hype
+  * Anything containing "this week", "yesterday", "just released"
+  * Specific predictions tied to a date ("by Christmas", "before the next Switch")
+- When in doubt, mark FALSE. Time-sensitive content reposted months later looks weirdly stale; evergreen content held back is just unused budget.
 
 Start/end seconds should match word-level timestamps and land on sentence boundaries.
 Err on the side of giving MORE context at the start if it helps stand-alone comprehension."""

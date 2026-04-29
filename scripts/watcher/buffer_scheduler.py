@@ -155,13 +155,32 @@ def _parse_dt(s: str | None) -> datetime | None:
 
 
 def _count_scheduled_per_day(client: ZernioClient, now: datetime, horizon: datetime) -> dict[date, int]:
-    """Query Zernio posts and bucket qualifying shorts by ET calendar day."""
-    try:
-        raw = client.list_posts(status="scheduled") if hasattr(client, "list_posts") else client._request("GET", "/posts", params={"status": "scheduled"})
-    except ZernioError:
-        # Fall back: pull everything, we'll filter
-        raw = client.list_posts()
-    posts = raw if isinstance(raw, list) else (raw.get("data") or raw.get("posts") or [])
+    """Query Zernio posts and bucket qualifying shorts by ET calendar day.
+
+    2026-04-29: paginate. Zernio's /posts response is `{posts:[…], pagination:{…}}`
+    with a default page size of 10. Without pagination the buffer was only seeing
+    the first 10 posts (often promotional photos that don't count as shorts) and
+    spuriously concluding the queue had gaps.
+    """
+    posts: list = []
+    page = 1
+    PAGE_LIMIT = 50
+    MAX_PAGES = 50  # safety rail
+    while page <= MAX_PAGES:
+        try:
+            raw = client._request("GET", "/posts", params={"page": page, "limit": PAGE_LIMIT})
+        except ZernioError:
+            break
+        if isinstance(raw, list):
+            posts.extend(raw)
+            break
+        page_posts = raw.get("posts") or raw.get("data") or []
+        if not page_posts:
+            break
+        posts.extend(page_posts)
+        if len(page_posts) < PAGE_LIMIT:
+            break
+        page += 1
 
     per_day: dict[date, int] = {}
     for p in posts:
@@ -229,26 +248,54 @@ def _upload_file(client: ZernioClient, path: Path) -> str:
 
 # --- Main ------------------------------------------------------------------
 
-def _eligible_archive_clips(state: dict, now: datetime) -> list[Path]:
+def _eligible_archive_clips(state: dict, now: datetime,
+                             metadata: dict[str, dict] | None = None) -> tuple[list[Path], list[Path]]:
+    """Return (eligible_clips, never_posted_clips).
+
+    `eligible_clips` are repost-safe: outside cooldown AND marked evergreen
+    (or unmarked, with REQUIRE_EVERGREEN=False env override). Never-posted
+    clips are returned separately so the caller can distinguish "fresh
+    content available" from "only reposts available" — that distinction
+    drives the pre-emptive "running low" alert added 2026-04-29.
+
+    Per Tristan 2026-04-29: time-sensitive clips ("Nintendo just announced")
+    must NOT be reposted, since they look stale months later. Evergreen
+    clips (Zelda rankings, game-discussion takes) ARE safe to repost.
+    `evergreen` field is set by pick_clips.py's Claude prompt; legacy
+    clips without the field default to NOT-evergreen (safe-by-default).
+    """
     clips = list(CLIPS_ARCHIVE.rglob("*.mp4"))
     if not clips:
-        return []
+        return [], []
     last_posted = state.get("last_posted", {})
+    metadata = metadata or {}
+    require_evergreen = os.getenv("BUFFER_REQUIRE_EVERGREEN", "1") not in ("0", "false", "False", "")
+
     eligible: list[tuple[Path, datetime]] = []
+    never_posted: list[Path] = []
     for clip in clips:
         key = str(clip)
         last_str = last_posted.get(key)
+        # Look up clip's evergreen status from metadata (clip_id = filename stem)
+        meta = metadata.get(clip.stem, {})
+        is_evergreen = bool(meta.get("evergreen", False))
+
         if last_str:
             last_dt = _parse_dt(last_str)
             if last_dt and (now - last_dt).days < BUFFER_COOLDOWN_DAYS:
                 continue
             sort_key = last_dt or datetime(1970, 1, 1, tzinfo=ET)
+            # Repost-eligibility requires evergreen (unless override)
+            if require_evergreen and not is_evergreen:
+                continue
         else:
             sort_key = datetime(1970, 1, 1, tzinfo=ET)
+            never_posted.append(clip)
         eligible.append((clip, sort_key))
+
     # Never-reposted first, then oldest-reposted — spreads the love
     eligible.sort(key=lambda t: t[1])
-    return [c for c, _ in eligible]
+    return [c for c, _ in eligible], never_posted
 
 
 def run() -> int:
@@ -284,7 +331,31 @@ def run() -> int:
     gaps = gaps[:BUFFER_MAX_SCHEDULE_PER_RUN]
     _log(f"will fill {len(gaps)} gap slots")
 
-    eligible = _eligible_archive_clips(state, now)
+    metadata = _load_clip_metadata()
+    eligible, never_posted = _eligible_archive_clips(state, now, metadata)
+
+    # Pre-emptive "running low" alert: fires once when never-posted clips run
+    # out (so reposts will start getting used to fill gaps). Gives Tristan
+    # warning to record a new episode BEFORE repeats start. Per his ask
+    # 2026-04-29: alert me that we need new content before reusing old.
+    if gaps and not never_posted:
+        if _should_emit_alert(state, "running_low_on_fresh"):
+            emit_navi_task(
+                title="Buffer scheduler: out of fresh shorts — record next episode",
+                description=(
+                    f"The {len(gaps)} upcoming gap slots in the next "
+                    f"{BUFFER_HORIZON_DAYS}d will be filled by REPOSTS of evergreen "
+                    f"archive clips. No never-posted clips remain. To keep posting "
+                    f"fresh content, drop a new podcast episode in the NAS incoming/ "
+                    f"folder. Reposts proceed automatically until then."
+                ),
+                priority="medium",
+            )
+            _mark_alert(state, "running_low_on_fresh", now)
+    else:
+        # Fresh content available again → clear the warning
+        _clear_alert(state, "running_low_on_fresh")
+
     if not eligible:
         if _should_emit_alert(state, "no_eligible_clips"):
             emit_navi_task(
@@ -323,7 +394,6 @@ def run() -> int:
     # All required Zernio accounts present — clear that alert too.
     _clear_alert(state, "zernio_account_missing")
 
-    metadata = _load_clip_metadata()
     last_posted = state.setdefault("last_posted", {})
 
     # Interleave to reduce same-episode clumping when picking
