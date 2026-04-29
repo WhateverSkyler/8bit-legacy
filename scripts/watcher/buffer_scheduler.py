@@ -335,10 +335,12 @@ def run() -> int:
     eligible, never_posted = _eligible_archive_clips(state, now, metadata)
 
     # Pre-emptive "running low" alert: fires once when never-posted clips run
-    # out (so reposts will start getting used to fill gaps). Gives Tristan
-    # warning to record a new episode BEFORE repeats start. Per his ask
-    # 2026-04-29: alert me that we need new content before reusing old.
-    if gaps and not never_posted:
+    # out BUT we still have evergreen reposts available to fill gaps. This
+    # gives Tristan warning to record a new episode BEFORE repeats start.
+    # Per his ask 2026-04-29: alert me that we need new content before reusing
+    # old. Distinct from "no_eligible_clips" (archive is empty / cooldown-blocked
+    # / no evergreen clips at all) — that's a harder-fail state handled below.
+    if gaps and not never_posted and eligible:
         if _should_emit_alert(state, "running_low_on_fresh"):
             emit_navi_task(
                 title="Buffer scheduler: out of fresh shorts — record next episode",
@@ -352,7 +354,7 @@ def run() -> int:
                 priority="medium",
             )
             _mark_alert(state, "running_low_on_fresh", now)
-    else:
+    elif never_posted:
         # Fresh content available again → clear the warning
         _clear_alert(state, "running_low_on_fresh")
 
