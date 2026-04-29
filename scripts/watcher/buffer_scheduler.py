@@ -82,21 +82,27 @@ def _load_state() -> dict:
         return {"last_posted": {}, "last_run": None, "total_reposts": 0, "alert_throttle": {}}
 
 
-ALERT_MIN_INTERVAL_HOURS = 24
+# 2026-04-29: switched from 24h time-based throttle to state-based "active alert"
+# tracking. Old behavior re-fired the same Navi task daily for chronic conditions
+# like "no eligible archive clips" — Tristan saw it every morning. New behavior:
+# fire once when the condition becomes true, stay quiet, and only re-fire after
+# the condition has resolved AND recurred. The alert_throttle dict now stores
+# `True` (or a timestamp for back-compat) for active alerts; missing/falsy = clear.
 
 
-def _should_emit_alert(state: dict, key: str, now: datetime) -> bool:
-    last_str = state.get("alert_throttle", {}).get(key)
-    if not last_str:
-        return True
-    last_dt = _parse_dt(last_str)
-    if not last_dt:
-        return True
-    return (now - last_dt).total_seconds() >= ALERT_MIN_INTERVAL_HOURS * 3600
+def _should_emit_alert(state: dict, key: str, now: datetime | None = None) -> bool:
+    """Emit only if this alert isn't already in active state."""
+    return not state.get("alert_throttle", {}).get(key)
 
 
-def _mark_alert(state: dict, key: str, now: datetime) -> None:
-    state.setdefault("alert_throttle", {})[key] = now.isoformat()
+def _mark_alert(state: dict, key: str, now: datetime | None = None) -> None:
+    """Record that this alert is currently active (Navi task already posted)."""
+    state.setdefault("alert_throttle", {})[key] = now.isoformat() if now else True
+
+
+def _clear_alert(state: dict, key: str) -> None:
+    """Mark this alert as resolved so the next occurrence re-fires."""
+    state.setdefault("alert_throttle", {}).pop(key, None)
 
 
 def _save_state(state: dict) -> None:
@@ -280,7 +286,7 @@ def run() -> int:
 
     eligible = _eligible_archive_clips(state, now)
     if not eligible:
-        if _should_emit_alert(state, "no_eligible_clips", now):
+        if _should_emit_alert(state, "no_eligible_clips"):
             emit_navi_task(
                 title="Buffer scheduler: no eligible archive clips",
                 description=(
@@ -292,22 +298,30 @@ def run() -> int:
             )
             _mark_alert(state, "no_eligible_clips", now)
         else:
-            _log("no eligible clips (alert suppressed — within 24h of last)")
+            _log("no eligible clips (alert already active — suppressed until condition resolves)")
         state["last_run"] = now.isoformat()
         _save_state(state)
         return 0
 
+    # We have eligible clips again — clear the alert so a future depletion re-fires.
+    _clear_alert(state, "no_eligible_clips")
+
     accounts = _accounts_by_platform(client)
     missing = [p for p in TARGET_PLATFORMS if p not in accounts]
     if missing:
-        emit_navi_task(
-            title="Buffer scheduler: Zernio account not connected",
-            description=f"Missing: {missing}. Reconnect in the Zernio dashboard.",
-            priority="high",
-        )
+        if _should_emit_alert(state, "zernio_account_missing"):
+            emit_navi_task(
+                title="Buffer scheduler: Zernio account not connected",
+                description=f"Missing: {missing}. Reconnect in the Zernio dashboard.",
+                priority="high",
+            )
+            _mark_alert(state, "zernio_account_missing", now)
         state["last_run"] = now.isoformat()
         _save_state(state)
         return 2
+
+    # All required Zernio accounts present — clear that alert too.
+    _clear_alert(state, "zernio_account_missing")
 
     metadata = _load_clip_metadata()
     last_posted = state.setdefault("last_posted", {})
