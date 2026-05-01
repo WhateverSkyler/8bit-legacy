@@ -205,6 +205,25 @@ sqlite.exec(`
     synced_at TEXT NOT NULL
   );
 
+  CREATE TABLE IF NOT EXISTS google_ads_conversion_uploads (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    shopify_order_id TEXT NOT NULL UNIQUE,
+    shopify_order_number TEXT,
+    conversion_type TEXT NOT NULL,
+    gclid TEXT,
+    hashed_email TEXT,
+    hashed_phone TEXT,
+    conversion_value REAL NOT NULL,
+    currency_code TEXT NOT NULL,
+    conversion_date_time TEXT NOT NULL,
+    upload_status TEXT NOT NULL DEFAULT 'pending',
+    google_ads_response TEXT,
+    error_message TEXT,
+    attempt_count INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    uploaded_at TEXT
+  );
+
   CREATE TABLE IF NOT EXISTS google_ads_actions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     run_id INTEGER,

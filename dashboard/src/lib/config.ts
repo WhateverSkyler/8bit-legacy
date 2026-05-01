@@ -56,6 +56,7 @@ export function getGoogleAdsConfig() {
     clientSecret: getEnv("GOOGLE_ADS_CLIENT_SECRET"),
     refreshToken: getEnv("GOOGLE_ADS_REFRESH_TOKEN"),
     customerId: getEnv("GOOGLE_ADS_CUSTOMER_ID"),
+    loginCustomerId: getEnv("GOOGLE_ADS_LOGIN_CUSTOMER_ID"),
   };
 }
 

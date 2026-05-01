@@ -219,6 +219,26 @@ export const googleAdsSearchTerms = sqliteTable("google_ads_search_terms", {
   syncedAt: text("synced_at").notNull(),
 });
 
+// Server-side conversion uploads (backstop for Shopify pixel)
+export const googleAdsConversionUploads = sqliteTable("google_ads_conversion_uploads", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  shopifyOrderId: text("shopify_order_id").notNull().unique(),
+  shopifyOrderNumber: text("shopify_order_number"),
+  conversionType: text("conversion_type").notNull(), // 'click' | 'enhanced'
+  gclid: text("gclid"),
+  hashedEmail: text("hashed_email"),
+  hashedPhone: text("hashed_phone"),
+  conversionValue: real("conversion_value").notNull(),
+  currencyCode: text("currency_code").notNull(),
+  conversionDateTime: text("conversion_date_time").notNull(),
+  uploadStatus: text("upload_status").notNull().default("pending"), // pending|success|partial|failed
+  googleAdsResponse: text("google_ads_response"),
+  errorMessage: text("error_message"),
+  attemptCount: integer("attempt_count").notNull().default(0),
+  createdAt: text("created_at").notNull(),
+  uploadedAt: text("uploaded_at"),
+});
+
 // Audit trail for automated ad actions
 export const googleAdsActions = sqliteTable("google_ads_actions", {
   id: integer("id").primaryKey({ autoIncrement: true }),

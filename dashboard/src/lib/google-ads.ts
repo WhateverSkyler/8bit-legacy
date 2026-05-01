@@ -16,6 +16,7 @@ export interface GoogleAdsConfig {
   clientSecret: string;
   refreshToken: string;
   customerId: string;
+  loginCustomerId?: string;
 }
 
 export function isGoogleAdsConfigured(config: GoogleAdsConfig): boolean {
@@ -28,7 +29,7 @@ const BASE_URL = `https://googleads.googleapis.com/${API_VERSION}`;
 /**
  * Get a fresh OAuth2 access token using the refresh token.
  */
-async function getAccessToken(config: GoogleAdsConfig): Promise<string> {
+export async function getAccessToken(config: GoogleAdsConfig): Promise<string> {
   const resp = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },

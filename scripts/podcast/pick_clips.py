@@ -78,6 +78,50 @@ SENTENCE_END_PUNCT = {".", "!", "?"}
 
 PICKS_REQUESTED = 7  # ask Claude for a few extra so validation can prune aggressively
 
+# --- Title QA (2026-05-01: user feedback that some titles were inaccurate or too long) ---
+# Bias: "a little vague over too specific and inaccurate."
+TITLE_MIN_WORDS = 3            # below this is too vague (just a topic, no angle)
+TITLE_MAX_WORDS = 8            # above this drifts into specifics that can be wrong
+TITLE_HARD_MAX_CHARS = 70      # matches schedule_shorts.py truncation threshold
+TITLE_SOFT_MAX_CHARS = 60      # safe — fits without ellipsis on most platforms
+
+# Reject titles that age poorly, sound like clickbait, or claim specifics
+# that decay/mismatch over time. Pure topic phrases pass; dated phrases fail.
+# Each entry is (pattern, flags) — flags can include re.IGNORECASE selectively.
+TITLE_BLOCKLIST_PATTERNS: list[tuple[str, int]] = [
+    # Time-decay phrases — what was "this week" becomes wrong on repost
+    (r"\b(today|tomorrow|tonight|yesterday|currently|recently)\b", re.IGNORECASE),
+    (r"\bthis (week|month|year|morning|evening)\b", re.IGNORECASE),
+    (r"\bnext (week|month|year)\b", re.IGNORECASE),
+    (r"\blast (week|month|year|night)\b", re.IGNORECASE),
+    # News-flash framings — almost always become stale
+    (r"\b(just )?(announced|released|dropped|launched|leaked)\b", re.IGNORECASE),
+    (r"\b(breaking|exclusive)\b", re.IGNORECASE),
+    # Clickbait / mixed punctuation
+    (r"!{2,}|\?!|\!\?|\.\.\.{2,}", 0),
+    # All-caps shouting (case-SENSITIVE — must NOT have IGNORECASE)
+    (r"\b[A-Z]{5,}\b", 0),
+]
+
+
+def _validate_title(title: str) -> tuple[bool, str]:
+    """Validate a clip title. Returns (is_valid, reason_if_invalid)."""
+    if not title or not title.strip():
+        return False, "empty title"
+    title = title.strip()
+    if len(title) > TITLE_HARD_MAX_CHARS:
+        return False, f"title too long ({len(title)} chars > {TITLE_HARD_MAX_CHARS})"
+    words = re.findall(r"\b[\w'-]+\b", title)
+    if len(words) < TITLE_MIN_WORDS:
+        return False, f"title too short ({len(words)} words < {TITLE_MIN_WORDS})"
+    if len(words) > TITLE_MAX_WORDS:
+        return False, f"title too specific ({len(words)} words > {TITLE_MAX_WORDS})"
+    for pat, flags in TITLE_BLOCKLIST_PATTERNS:
+        m = re.search(pat, title, flags)
+        if m:
+            return False, f"title contains time-decay/clickbait pattern: {m.group(0)!r}"
+    return True, "ok"
+
 
 SYSTEM_PROMPT = """You are an elite short-form content editor (TikTok / Instagram Reels / YouTube Shorts) for The 8-Bit Legacy Podcast, a retro gaming show.
 
@@ -110,11 +154,19 @@ WHAT TO REJECT EVEN IF IT SOUNDS FUNNY:
 - Anything where the first 5 seconds are filler before the real thought starts (push start later)
 - Clips that reference "earlier we were saying" or "as I mentioned"
 
+TITLE RULES (strict — bad titles get rejected post-generation):
+- 3 to 8 words, title case, no clickbait punctuation, no all-caps words.
+- **Prefer vague over specific-and-inaccurate.** "Adult Gaming Reality Check" beats "Why Tristan Hates Modern AAA Games" if the second one isn't precisely what's said. A title that works generally is better than one that misrepresents the clip.
+- NO time-decay words: "today", "this week", "next month", "just announced", "just dropped", "just released", "leaked", "breaking", "yesterday", "now", "recently". These work for one day and look stale forever after.
+- NO numerical specifics that aren't directly quoted in the clip ("3 reasons", "10x bigger", "first ever") — only use a number if the speakers literally state it.
+- NO names of people or companies in the title unless the clip is centrally about them — a tangent mention isn't enough.
+- The title should preview the *take*, not the *topic alone*. "AAA Gaming Is Cooked" > "AAA Gaming". But "AAA Gaming Pricing Debate" > "Why Tristan Thinks $80 Games Are Theft" if Tristan didn't quite say that.
+
 Return strict JSON ONLY — a JSON ARRAY of picks, no prose, no markdown fences. Each pick:
 {
   "start_sec": <float>,
   "end_sec": <float>,
-  "title": "4-7 word title case, no clickbait punctuation",
+  "title": "3-8 word title case, no clickbait punctuation, no time-decay words",
   "hook": "one sentence, first-person or direct address, no hashtags",
   "topics": ["2-4 lowercase tags"],
   "evergreen": <bool, see below>,
@@ -211,6 +263,11 @@ def _snap_and_validate(
     Returns (updated_pick, is_valid, reason).
     If stand-alone fails, tries extending back/forward one segment to rescue before rejecting.
     """
+    # Title QA — fail fast before doing snapping work
+    title_ok, title_reason = _validate_title(pick.get("title", ""))
+    if not title_ok:
+        return pick, False, title_reason
+
     start_idx = _find_segment_containing(pick["start_sec"], segments)
     end_idx = _find_segment_containing(pick["end_sec"], segments)
 

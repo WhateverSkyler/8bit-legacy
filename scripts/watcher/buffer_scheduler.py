@@ -40,6 +40,7 @@ import requests
 _SCRIPTS_ROOT = Path(os.getenv("SCRIPTS_ROOT", Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(_SCRIPTS_ROOT))
 from navi_alerts import emit_navi_task  # noqa: E402
+from podcast._caption import merged_hashtags  # noqa: E402
 from zernio_client import ZernioClient, ZernioError  # noqa: E402
 
 MEDIA_ROOT = Path(os.getenv("MEDIA_ROOT", "/media"))
@@ -56,13 +57,7 @@ BUFFER_MAX_SCHEDULE_PER_RUN = int(os.getenv("BUFFER_MAX_SCHEDULE_PER_RUN", "15")
 SLOT_HOURS = [9, 13, 19]
 TARGET_PLATFORMS = ["tiktok", "youtube", "instagram"]
 
-# Hashtag set mirrors schedule_shorts.py — if that file changes, mirror here.
-DEFAULT_HASHTAGS = [
-    "#fyp", "#foryoupage", "#explorepage",
-    "#retrogaming", "#retrogames", "#videogames", "#gaming",
-    "#nintendo", "#playstation",
-    "#8bitlegacy", "#podcast", "#shorts",
-]
+# Hashtag set imported from scripts/podcast/_caption.py (single source of truth).
 
 
 def _log(msg: str) -> None:
@@ -128,19 +123,7 @@ def _load_clip_metadata() -> dict[str, dict]:
 
 def _caption_for(meta: dict) -> str:
     """Mirror schedule_shorts.py's caption logic: hashtags only, capped at 15."""
-    topic_tags = [
-        f"#{t.replace(' ', '').replace('-', '').lower()}"
-        for t in meta.get("topics", [])[:3]
-    ]
-    all_tags = DEFAULT_HASHTAGS + topic_tags
-    seen: set[str] = set()
-    deduped: list[str] = []
-    for tag in all_tags:
-        key = tag.lower()
-        if key not in seen:
-            seen.add(key)
-            deduped.append(tag)
-    return " ".join(deduped[:15])
+    return merged_hashtags(meta.get("topics", []))
 
 
 # --- Zernio helpers --------------------------------------------------------
