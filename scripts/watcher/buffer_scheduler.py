@@ -29,6 +29,7 @@ import json
 import mimetypes
 import os
 import random
+import re
 import sys
 from datetime import datetime, timedelta, date
 from pathlib import Path
@@ -137,14 +138,9 @@ def _parse_dt(s: str | None) -> datetime | None:
         return None
 
 
-def _count_scheduled_per_day(client: ZernioClient, now: datetime, horizon: datetime) -> dict[date, int]:
-    """Query Zernio posts and bucket qualifying shorts by ET calendar day.
-
-    2026-04-29: paginate. Zernio's /posts response is `{posts:[…], pagination:{…}}`
-    with a default page size of 10. Without pagination the buffer was only seeing
-    the first 10 posts (often promotional photos that don't count as shorts) and
-    spuriously concluding the queue had gaps.
-    """
+def _fetch_all_posts(client: ZernioClient) -> list:
+    """Paginated fetch of all Zernio posts. Single source for both gap-counting
+    and history-enrichment."""
     posts: list = []
     page = 1
     PAGE_LIMIT = 50
@@ -164,7 +160,11 @@ def _count_scheduled_per_day(client: ZernioClient, now: datetime, horizon: datet
         if len(page_posts) < PAGE_LIMIT:
             break
         page += 1
+    return posts
 
+
+def _count_scheduled_per_day(posts: list, now: datetime, horizon: datetime) -> dict[date, int]:
+    """Bucket qualifying shorts by ET calendar day from a pre-fetched posts list."""
     per_day: dict[date, int] = {}
     for p in posts:
         dt = _parse_dt(
@@ -231,21 +231,85 @@ def _upload_file(client: ZernioClient, path: Path) -> str:
 
 # --- Main ------------------------------------------------------------------
 
+# Zernio prefixes uploaded media URLs with `<13-digit-timestamp>_<short-hash>_`
+# in front of the original filename. We strip both the timestamp and hash so
+# `last_posted` keys match the local clip stem.
+ZERNIO_PREFIX_RE = re.compile(r"^\d{10,}_[A-Za-z0-9]+_(.+)$")
+
+
+def _normalize_zernio_filename(filename: str) -> str:
+    """`1777251328381_13e0ki4i_FULL_FINAL_c5.mp4` -> `FULL_FINAL_c5`."""
+    name = Path(filename).stem
+    m = ZERNIO_PREFIX_RE.match(name)
+    return m.group(1) if m else name
+
+
+def _enrich_state_from_zernio(state: dict, posts: list,
+                              lookback_days: int = 60, lookforward_days: int = 30) -> int:
+    """Walk Zernio posts in [now-lookback, now+lookforward], extract clip stems
+    from media URLs, write each to state['last_posted'] keyed by normalized
+    stem with the post's datetime (most recent wins).
+
+    This is what makes the BUFFER_COOLDOWN_DAYS gate work for clips that were
+    posted by schedule_shorts.py (initial fresh-episode push) and never tracked
+    in this state file otherwise. Without enrichment, a clip aired 3 days ago
+    looks "never posted" to the buffer and gets immediately re-scheduled.
+    """
+    now = datetime.now(ET)
+    cutoff_back = now - timedelta(days=lookback_days)
+    cutoff_fwd = now + timedelta(days=lookforward_days)
+    last_posted = state.setdefault("last_posted", {})
+    enriched = 0
+    for p in posts:
+        dt = _parse_dt(
+            p.get("scheduledFor")
+            or p.get("publishAt")
+            or p.get("publish_at")
+            or p.get("scheduledAt")
+        )
+        if not dt or dt < cutoff_back or dt > cutoff_fwd:
+            continue
+        media = p.get("mediaItems") or p.get("media") or []
+        for m in media:
+            url = m.get("url") or ""
+            if not url or not url.lower().endswith(".mp4"):
+                continue
+            filename = url.rsplit("/", 1)[-1]
+            stem = _normalize_zernio_filename(filename)
+            existing = last_posted.get(stem)
+            existing_dt = _parse_dt(existing) if existing else None
+            if existing_dt is None or dt > existing_dt:
+                last_posted[stem] = dt.isoformat()
+                enriched += 1
+    return enriched
+
+
+def _last_posted_dt(clip_stem: str, last_posted: dict) -> datetime | None:
+    """Most recent timestamp matching clip_stem (exact, or key ends with `_<stem>`).
+
+    The suffix form catches legacy keys that may still include a Zernio prefix
+    if normalization missed an unusual URL pattern."""
+    sep_suffix = "_" + clip_stem
+    most_recent: datetime | None = None
+    for key, ts in last_posted.items():
+        if key != clip_stem and not key.endswith(sep_suffix):
+            continue
+        dt = _parse_dt(ts)
+        if dt and (most_recent is None or dt > most_recent):
+            most_recent = dt
+    return most_recent
+
+
 def _eligible_archive_clips(state: dict, now: datetime,
                              metadata: dict[str, dict] | None = None) -> tuple[list[Path], list[Path]]:
     """Return (eligible_clips, never_posted_clips).
 
-    `eligible_clips` are repost-safe: outside cooldown AND marked evergreen
-    (or unmarked, with REQUIRE_EVERGREEN=False env override). Never-posted
-    clips are returned separately so the caller can distinguish "fresh
-    content available" from "only reposts available" — that distinction
-    drives the pre-emptive "running low" alert added 2026-04-29.
-
-    Per Tristan 2026-04-29: time-sensitive clips ("Nintendo just announced")
-    must NOT be reposted, since they look stale months later. Evergreen
-    clips (Zelda rankings, game-discussion takes) ARE safe to repost.
-    `evergreen` field is set by pick_clips.py's Claude prompt; legacy
-    clips without the field default to NOT-evergreen (safe-by-default).
+    Cooldown gate (`BUFFER_COOLDOWN_DAYS`, default 21d) applies to ANY clip
+    that has a `last_posted` entry — whether buffer reposted it or it was
+    enriched from Zernio history (initial schedule_shorts push). Reposts
+    additionally require the clip to be marked `evergreen` (per Tristan
+    2026-04-29: time-sensitive clips look stale months later). Never-posted
+    clips have no cooldown and skip the evergreen check (they've never aired).
     """
     clips = list(CLIPS_ARCHIVE.rglob("*.mp4"))
     if not clips:
@@ -257,20 +321,16 @@ def _eligible_archive_clips(state: dict, now: datetime,
     eligible: list[tuple[Path, datetime]] = []
     never_posted: list[Path] = []
     for clip in clips:
-        key = str(clip)
-        last_str = last_posted.get(key)
-        # Look up clip's evergreen status from metadata (clip_id = filename stem)
         meta = metadata.get(clip.stem, {})
         is_evergreen = bool(meta.get("evergreen", False))
+        last_dt = _last_posted_dt(clip.stem, last_posted)
 
-        if last_str:
-            last_dt = _parse_dt(last_str)
-            if last_dt and (now - last_dt).days < BUFFER_COOLDOWN_DAYS:
+        if last_dt:
+            if (now - last_dt).days < BUFFER_COOLDOWN_DAYS:
                 continue
-            sort_key = last_dt or datetime(1970, 1, 1, tzinfo=ET)
-            # Repost-eligibility requires evergreen (unless override)
             if require_evergreen and not is_evergreen:
                 continue
+            sort_key = last_dt
         else:
             sort_key = datetime(1970, 1, 1, tzinfo=ET)
             never_posted.append(clip)
@@ -300,7 +360,13 @@ def run() -> int:
         )
         return 2
 
-    per_day = _count_scheduled_per_day(client, now, horizon)
+    posts = _fetch_all_posts(client)
+    enriched = _enrich_state_from_zernio(state, posts)
+    if enriched:
+        _log(f"enriched last_posted from Zernio history: {enriched} stem(s) updated")
+        _save_state(state)
+
+    per_day = _count_scheduled_per_day(posts, now, horizon)
     total_scheduled = sum(per_day.values())
     _log(f"scheduled in next {BUFFER_HORIZON_DAYS}d: {total_scheduled} shorts across {len(per_day)} days")
 
