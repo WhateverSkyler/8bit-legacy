@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 """Force Merchant Center resync by bulk-touching all ACTIVE products.
 
-Adds a hidden tag `__mc-resync-2026-05-01` to every product via Shopify's
-bulkOperationRunMutation API. The tag itself is harmless — it's the
-products/update webhook that fires as a side effect that we actually need:
-the Google & YouTube channel app subscribes to that webhook and re-pushes
-the product to Merchant Center.
+Adds a hidden marker tag (default `__mc-resync-{today}`) to every product
+via Shopify's bulkOperationRunMutation API. The tag itself is harmless —
+it's the products/update webhook that fires as a side effect that we
+actually need: the Google & YouTube channel app subscribes to that webhook
+and re-pushes the product to Merchant Center.
 
-Why: the MC catalog collapsed from ~25K to 2 products around 2026-04-29 PM
-after the Feed A duplicate cleanup. The 2 surviving products both received
-metafield writes earlier that day, suggesting Shopify's G&Y app aged out
-products that hadn't been touched recently. This script touches every
-ACTIVE product to wake the push pipeline.
+Important: re-running with the SAME tag is a no-op (Shopify suppresses
+no-op tagsAdd) and won't fire fresh webhooks. Use a unique tag per
+re-sync wave (e.g. date-stamped, or task-specific like
+`__cl2-resync-2026-05-05`).
 
 Properties:
 - IDEMPOTENT — `tagsAdd` appends; running twice doesn't add the tag twice.
@@ -23,15 +22,17 @@ Properties:
   submits the JSONL and polls. Survives our process exiting.
 
 Usage:
-    python3 scripts/force-mc-resync.py --dry-run    # enumerate products only
-    python3 scripts/force-mc-resync.py --execute    # actually submit bulk op
-    python3 scripts/force-mc-resync.py --status     # check current bulk op
-    python3 scripts/force-mc-resync.py --cancel     # cancel running bulk op
+    python3 scripts/force-mc-resync.py --dry-run                              # enumerate products only
+    python3 scripts/force-mc-resync.py --execute                              # use auto-dated default tag
+    python3 scripts/force-mc-resync.py --execute --tag __cl2-resync-2026-05-05  # explicit tag
+    python3 scripts/force-mc-resync.py --status                               # check current bulk op
+    python3 scripts/force-mc-resync.py --cancel                               # cancel running bulk op
 """
 
 from __future__ import annotations
 
 import argparse
+import datetime
 import json
 import os
 import sys
@@ -48,7 +49,7 @@ load_dotenv(ROOT / "dashboard" / ".env.local")
 SHOPIFY_STORE = os.getenv("SHOPIFY_STORE_URL", "")
 SHOPIFY_TOKEN = os.getenv("SHOPIFY_ACCESS_TOKEN", "")
 API_VERSION = "2024-10"
-SYNC_TAG = "__mc-resync-2026-05-01"
+DEFAULT_SYNC_TAG = f"__mc-resync-{datetime.date.today().isoformat()}"
 JSONL_PATH = Path("/tmp/mc-resync-products.jsonl")
 
 
@@ -99,11 +100,11 @@ def enumerate_active_products() -> list[str]:
     return gids
 
 
-def write_jsonl(gids: list[str], path: Path) -> int:
+def write_jsonl(gids: list[str], path: Path, sync_tag: str) -> int:
     """Write JSONL with one tagsAdd input per line. Returns byte count."""
     with path.open("w") as f:
         for gid in gids:
-            f.write(json.dumps({"id": gid, "tags": [SYNC_TAG]}) + "\n")
+            f.write(json.dumps({"id": gid, "tags": [sync_tag]}) + "\n")
     return path.stat().st_size
 
 
@@ -237,6 +238,11 @@ def main() -> int:
     g.add_argument("--execute", action="store_true", help="Submit the bulk operation")
     g.add_argument("--status", action="store_true", help="Show current bulk op status")
     g.add_argument("--cancel", action="store_true", help="Cancel running bulk op")
+    parser.add_argument(
+        "--tag",
+        default=DEFAULT_SYNC_TAG,
+        help=f"Marker tag to add (default: {DEFAULT_SYNC_TAG}). Re-using a tag already on a product is a no-op and won't fire fresh webhooks — pick a unique tag per resync wave.",
+    )
     args = parser.parse_args()
 
     if args.status:
@@ -253,7 +259,7 @@ def main() -> int:
         return 0
 
     print("=== force-mc-resync ===")
-    print(f"Tag to add:  {SYNC_TAG}")
+    print(f"Tag to add:  {args.tag}")
     print(f"Mode:        {'EXECUTE' if args.execute else 'DRY RUN'}\n")
 
     print("Step 1: Enumerate ACTIVE products")
@@ -275,7 +281,7 @@ def main() -> int:
         )
 
     print(f"Step 2: Write JSONL → {JSONL_PATH}")
-    n_bytes = write_jsonl(gids, JSONL_PATH)
+    n_bytes = write_jsonl(gids, JSONL_PATH, args.tag)
     print(f"  → {n_bytes:,} bytes\n")
 
     print("Step 3: Staged upload to Shopify S3")

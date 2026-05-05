@@ -42,12 +42,14 @@ export async function POST() {
     }
 
     // Real API sync
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+    // Include TODAY in the window so safety checks see real-time spend.
+    // Today's data is partial/preliminary in Google Ads but more accurate than $0.
+    const today = new Date().toISOString().split("T")[0];
     const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0];
     const now = new Date().toISOString();
 
-    // Sync campaign performance
-    const campaigns = await getCampaignPerformance(config, thirtyDaysAgo, yesterday);
+    // Sync campaign performance (through today, inclusive)
+    const campaigns = await getCampaignPerformance(config, thirtyDaysAgo, today);
     for (const c of campaigns) {
       db.insert(googleAdsPerformance).values({
         date: c.date,
@@ -65,8 +67,8 @@ export async function POST() {
       }).run();
     }
 
-    // Sync product performance
-    const products = await getProductPerformance(config, thirtyDaysAgo, yesterday);
+    // Sync product performance (through today, inclusive)
+    const products = await getProductPerformance(config, thirtyDaysAgo, today);
     for (const p of products) {
       db.insert(googleAdsPerformance).values({
         date: p.date,
@@ -84,11 +86,11 @@ export async function POST() {
       }).run();
     }
 
-    // Sync search terms
-    const terms = await getSearchTermReport(config, thirtyDaysAgo, yesterday);
+    // Sync search terms (through today, inclusive)
+    const terms = await getSearchTermReport(config, thirtyDaysAgo, today);
     for (const t of terms) {
       db.insert(googleAdsSearchTerms).values({
-        date: yesterday,
+        date: today,
         searchTerm: t.searchTerm,
         campaignId: t.campaignId,
         impressions: t.impressions,

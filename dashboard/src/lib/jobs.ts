@@ -113,7 +113,8 @@ export function registerAllJobs(): void {
         return { itemsProcessed: 0, itemsChanged: 0, metadata: { skipped: "not configured" } };
       }
 
-      const resp = await fetch("http://localhost:3001/api/google-ads/sync", {
+      const port = process.env.PORT ?? process.env.DASHBOARD_PORT ?? "3002";
+      const resp = await fetch(`http://localhost:${port}/api/google-ads/sync`, {
         method: "POST",
         signal: AbortSignal.timeout(60_000),
       });
