@@ -7,9 +7,10 @@ in the FREE Listings feed (organic discovery is still valuable) but are blocked 
 paid Shopping ads via supplemental feed with `excluded_destination=Shopping_ads`.
 
 Shopify's Google & YouTube app emits one Merchant Center offer per variant. Offer IDs
-follow the convention: `shopify_US_{product_numeric_id}_{variant_numeric_id}`. The
-script enumerates all multi-variant games, identifies CIB variants by title, and
-outputs a CSV Google Ads Editor / Merchant Center can import.
+follow the convention: `shopify_ZZ_{product_numeric_id}_{variant_numeric_id}`
+(prefix changed from `shopify_US_` to `shopify_ZZ_` after Feed B was reinstalled
+2026-04-24 — see reference_mc_feed_offer_ids.md). The script enumerates all
+multi-variant games, identifies CIB variants by title, and outputs a CSV.
 
 Output:
   data/merchant-center-cib-exclusion.csv — 2 columns: id, excluded_destination
@@ -134,7 +135,7 @@ def _collect_cib_item_ids(products: list[dict]) -> list[dict]:
         for v in variants:
             if _is_cib_variant(v.get("title", "")):
                 variant_num = _gid_to_numeric(v["id"])
-                offer_id = f"shopify_US_{product_num}_{variant_num}"
+                offer_id = f"shopify_ZZ_{product_num}_{variant_num}"
                 out.append({
                     "id": offer_id,
                     "excluded_destination": "Shopping_ads",
