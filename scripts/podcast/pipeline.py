@@ -43,6 +43,12 @@ CLIPS_PLAN_DIR = ROOT / "data" / "podcast" / "clips_plan"
 CLIPS_DIR = ROOT / "data" / "podcast" / "clips"
 STATE_DIR = ROOT / "data" / "podcast"
 
+sys.path.insert(0, str(ROOT / "scripts"))
+try:
+    from navi_alerts import emit_navi_task  # noqa: E402
+except ImportError:
+    emit_navi_task = None  # graceful degrade if requests is missing
+
 STAGES = ["sources", "transcribe", "thumbnails", "metadata", "yt_upload",
           "pick_clips", "render_clips", "schedule"]
 
@@ -123,7 +129,54 @@ def stage_thumbnails(args, state) -> int:
 def stage_metadata(args, state) -> int:
     rc = _run(["python3", str(ROOT / "scripts" / "podcast" / "generate_metadata.py"),
                "--batch", str(TRANSCRIPTS), "--type", "topic"], args.dry_run)
+    if rc == 0 and not args.dry_run:
+        _emit_thumbnail_navi_task(args.episode)
     return rc
+
+
+def _emit_thumbnail_navi_task(episode: str) -> None:
+    """After metadata generation, emit a Navi task listing each video that needs
+    a custom thumbnail. The user drops matching PNGs in /media/podcast/custom-thumbnails/
+    (fuzzy filename match in youtube_upload.py's _find_thumbnail). YouTube videos
+    upload as scheduled-private until publishAt, so there's a window to swap thumbs
+    in YouTube Studio if the user doesn't get them dropped before yt_upload runs.
+    """
+    if emit_navi_task is None:
+        print("  [thumbnail-task] navi_alerts unavailable — skipping Navi task")
+        return
+    if not METADATA.exists():
+        print(f"  [thumbnail-task] no metadata dir at {METADATA} — skipping")
+        return
+    entries = []
+    for meta_file in sorted(METADATA.glob("*.json")):
+        try:
+            data = json.loads(meta_file.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        title = data.get("title", "(no title)")
+        entries.append((meta_file.stem, title))
+    if not entries:
+        print(f"  [thumbnail-task] no metadata files in {METADATA} — skipping")
+        return
+    lines = [f"Make YouTube thumbnails for {episode}.",
+             "",
+             "Drop matching PNGs in /mnt/pool/NAS/Media/8-Bit Legacy/podcast/custom-thumbnails/",
+             "(fuzzy filename match — name them similar to the source filename).",
+             "",
+             "Videos:"]
+    for stem, title in entries:
+        lines.append(f"  • {title}")
+        lines.append(f"    source: {stem}")
+    body = "\n".join(lines)
+    try:
+        emit_navi_task(
+            title=f"Make {len(entries)} podcast thumbnail(s) — {episode}",
+            description=body,
+            priority="medium",
+        )
+        print(f"  [thumbnail-task] emitted Navi task for {len(entries)} video(s)")
+    except Exception as exc:  # noqa: BLE001
+        print(f"  [thumbnail-task] Navi emit failed: {exc}")
 
 
 def stage_yt_upload(args, state) -> int:
