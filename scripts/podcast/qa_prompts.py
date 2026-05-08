@@ -126,14 +126,18 @@ EVALUATE ON 4 DIMENSIONS:
    - Last 3 seconds wraps up the thought
    - NOT trailing off ("...yeah, anyway"), NOT mid-sentence cut, NOT teasing more
 
-DECISION RULES:
-- If 0 dimensions fail → PASS
-- If 1 dimension fails AND adjustment would fix it (e.g., extending boundaries by 10s
-  to capture missing setup) → return ADJUST with proposed boundaries
-- If 1+ dimensions fail and no adjustment can rescue it → REJECT
+DECISION RULES (CALIBRATED 2026-05-08 — bias toward shipping watchable content):
+- 0-1 dimensions fail → PASS (podcast clips don't need perfection on every dimension)
+- 2 dimensions fail AND adjustment would fix at least one (e.g., extending boundaries by
+  10s captures missing setup) → return ADJUST with proposed boundaries
+- 3+ dimensions fail OR clip is genuinely incomprehensible alone → REJECT
 
 If you adjust: only return new boundaries if you have HIGH confidence the new range
-fixes the issue without introducing new ones. Otherwise reject — don't speculate.
+improves things. Otherwise PASS as-is — Gate 4 will make the final call.
+
+Treat "no clear punchy hook" as a FAIL only on the engagement_risk dimension (set "high")
+but DON'T reject on this alone — many good podcast clips are conversational and don't
+need a punchy hook. Reject only on full-comprehensibility failures.
 
 Return STRICT JSON only:
 {{
@@ -442,7 +446,7 @@ Return STRICT JSON only:
 # =====================================================================
 
 GATE_4_FINAL_APPROVAL_V1 = """You are the FINAL QA reviewer before this short ships to followers.
-Your decision determines whether this clip publishes or gets rejected.
+Your decision determines whether this clip publishes.
 
 You receive:
   - 6 keyframes from across the clip (every ~15% of duration)
@@ -466,38 +470,50 @@ EXTRACTED TEXT (audio + captions):
 WORD TIMINGS (first 30 words):
 {word_timings_excerpt}
 
-SCORE ON 5 DIMENSIONS — BE STRICT. The user's bar is "would a team of humans approve this?"
+CONTEXT: This is podcast content for TikTok / Reels / YT Shorts. The pipeline
+must produce DOZENS of shippable clips per episode. Your job is to catch
+ACTUALLY BROKEN content — not perfectionist filtering. Conversational tangents,
+imperfect hooks, and minor narrative wobbles are FINE for podcast shorts —
+that's what podcasts sound like. Reject only on hard-broken content.
+
+SCORE ON 5 DIMENSIONS:
 
 1. **NARRATIVE** (does it make sense alone?):
-   - Opening sets context without prior podcast knowledge?
-   - Setup leads to payoff?
-   - Ends conclusively (not mid-thought, not trailing off)?
+   - Comprehensible to a viewer with no podcast context? (→ acceptable+)
+   - Tangents are FINE if the clip eventually lands somewhere or has self-contained value
+   - "critical_fail" only if: gibberish, mid-thought start AND mid-thought end with no payoff,
+     or the clip is impossible to follow without prior episodes
 
 2. **VISUAL** (looking at the 6 frames):
-   - Speaker centered in each frame?
-   - Scene transitions smooth, no jarring crop jumps?
-   - No glitches, flickers, compression artifacts?
+   - Speaker visible in most frames? (one off-center frame is acceptable)
+   - "critical_fail" only if: speaker is OFF-FRAME (head cropped out) in 2+ keyframes,
+     OR a scene transition causes the wrong person to be on-screen for an extended period
 
 3. **AUDIO** (inferred from frames + word timings):
-   - Captions appear to match dialogue (no obvious garbled text)?
-   - Caption sync looks reasonable from lip positions?
-   - No silent gaps that suggest dialogue dropout?
+   - Captions roughly match dialogue?
+   - "critical_fail" only if: captions are CLEARLY wrong (talking about different topic
+     than the on-screen text), OR text in keyframes is nonsensical word salad
 
 4. **ENGAGEMENT** (algorithmic-feed test):
-   - First 5 seconds compelling enough to stop a scroll?
-   - Has a clear hook (opinion / fact / curiosity)?
-   - Topic invites comment / share / debate?
+   - Has SOMETHING in the first 10 seconds that could hold attention (opinion, fact,
+     story setup, curiosity, banter)?
+   - "critical_fail" only if: first 10 seconds is pure filler ("yeah uh so anyway, like I
+     was saying before, you know, it's kind of like..."), no content of any kind
 
 5. **TITLE MATCH**:
-   - Video actually delivers what the title promises?
-   - Title is accurate (not clickbait that disappoints)?
+   - Title accurately describes the clip's primary subject? (Some tangent is OK)
+   - "critical_fail" only if: title says X, content is mostly Y (the Black Flag / Resident
+     Evil mismatch you saw before — title and content about completely different things)
 
-DECISION RULES:
-- If ALL 5 dimensions score "good" or better → APPROVE
-- If 1-2 dimensions score "concerning" but no critical issues → FLAG_FOR_REVIEW
-- If ANY dimension has a critical failure (e.g., off-frame speaker, mismatched captions,
-  no hook, content doesn't match title) → REJECT
-- When in doubt, REJECT — Tristan's bar is high and silent failures are the worst outcome.
+DECISION RULES (CALIBRATED 2026-05-08 for "ship dozens, reject only broken"):
+- Default → APPROVE
+- 1-2 dimensions "concerning" with NO critical_fail → APPROVE (it's good enough for
+  podcast shorts)
+- ANY dimension is "critical_fail" → REJECT
+- If you'd describe it as "borderline but probably fine" → APPROVE not FLAG. FLAG is
+  reserved for "I genuinely can't tell — needs a human eye"
+- When in doubt → APPROVE. The user can delete a single bad post; missing a whole episode's
+  worth of content because of perfectionism is the worse failure mode.
 
 Return STRICT JSON only:
 {{

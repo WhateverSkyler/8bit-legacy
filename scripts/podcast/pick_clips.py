@@ -76,9 +76,11 @@ UNRESOLVED_PRONOUNS = {
 }
 SENTENCE_END_PUNCT = {".", "!", "?"}
 
-PICKS_REQUESTED = 14  # bumped 7→14 (2026-05-07): now picking shorts from the full
-# transcript instead of per-topic, so we need more candidates per source to fill
-# the cross-platform short pipeline. Validation will prune to target_count.
+PICKS_REQUESTED = 25  # bumped 14→25 (2026-05-08 PM): user goal is dozens of
+# shippable shorts per episode. With Gate 0/1/enrichment/2/3/4 attrition (~50%
+# per stage cumulative), starting from 25 candidates per source × ~7 sources
+# = ~175 raw candidates → ~30-50 surviving clips per episode. Hits the
+# "3 per day for 2 weeks" cadence with margin.
 
 # --- Title QA (2026-05-01: user feedback that some titles were inaccurate or too long) ---
 # Bias: "a little vague over too specific and inaccurate."
