@@ -1,0 +1,242 @@
+{
+  "01 - Main Theme.wav": {
+    "energy": "high",
+    "mood": "epic",
+    "podcast_appropriate": true,
+    "reason": "'Main Theme' titles conventionally signal a prominent, sweeping, high-energy orchestral or cinematic composition, likely instrumental and suitable as a podcast bed, though its boldness may overpower s"
+  },
+  "01 Main Theme & Overworld.wav": {
+    "energy": "high",
+    "mood": "epic",
+    "podcast_appropriate": true,
+    "reason": "'Main Theme & Overworld' strongly suggests a sweeping, orchestral video game score \u2014 likely instrumental, melodic, and energetic enough to work as a podcast bed for adventure, gaming, or tech-themed c"
+  },
+  "01-01. Main Theme.wav": {
+    "energy": "high",
+    "mood": "epic",
+    "podcast_appropriate": true,
+    "reason": "'Main Theme' titles are conventionally bold, sweeping, and cinematic, suggesting high-energy epic music suitable as a podcast intro or highlight bed."
+  },
+  "03 - To Tarrey Town.wav": {
+    "energy": "medium",
+    "mood": "upbeat",
+    "podcast_appropriate": true,
+    "reason": "\"Tarrey Town\" from The Legend of Zelda: Breath of the Wild is a well-known cheerful, warm, and gently upbeat town theme \u2014 instrumental, non-intrusive, and well-suited as a light background music bed, "
+  },
+  "03 - Toru Minegishi - Splattack!.wav": {
+    "energy": "high",
+    "mood": "playful",
+    "podcast_appropriate": true,
+    "reason": "\"Splattack!\" is the iconic main theme from Nintendo's Splatoon by Toru Minegishi, a frenetic, quirky, high-energy track with a playful cartoon-punk style that could work as a lively podcast bed but ma"
+  },
+  "03. Midnight Mass (Pokemon Red-Blue - Lavender Town).wav": {
+    "energy": "low",
+    "mood": "mysterious",
+    "podcast_appropriate": true,
+    "reason": "Lavender Town from Pok\u00e9mon Red/Blue is famously eerie and unsettling with a slow, haunting melody, making it a low-energy mysterious track that could work as a subtle atmospheric bed without conflicti"
+  },
+  "05 Littleroot Town.wav": {
+    "energy": "low",
+    "mood": "nostalgic",
+    "podcast_appropriate": true,
+    "reason": "Littleroot Town is the peaceful starting-village theme from Pok\u00e9mon Ruby/Sapphire, widely recognized as a gentle, warm, and nostalgic instrumental piece with low energy, making it suitable as a soft p"
+  },
+  "06 Float Islands.wav": {
+    "energy": "low",
+    "mood": "chill",
+    "podcast_appropriate": true,
+    "reason": "\"Float Islands\" evokes a drifting, serene, ambient quality suggesting a gentle, low-energy chill track well-suited as an unobtrusive podcast music bed."
+  },
+  "06 Super Mario Sunshine Delfino Plaza.wav": {
+    "energy": "medium",
+    "mood": "playful",
+    "podcast_appropriate": true,
+    "reason": "Delfino Plaza from Super Mario Sunshine is a well-known cheerful, lighthearted instrumental theme with a tropical, upbeat character and moderate energy, making it suitable as a non-distracting music b"
+  },
+  "06. Jun Ishikawa - Green Greens.wav": {
+    "energy": "medium",
+    "mood": "playful",
+    "podcast_appropriate": true,
+    "reason": "Green Greens is the iconic Kirby (HAL Laboratory) theme composed by Jun Ishikawa, known for its light, bouncy, cheerful melody \u2014 making it playful and medium-energy, and generally appropriate as a pod"
+  },
+  "09 -  Dire, Dire Docks.wav": {
+    "energy": "low",
+    "mood": "reflective",
+    "podcast_appropriate": true,
+    "reason": "Dire, Dire Docks is a beloved Super Mario 64 underwater theme known for its calm, melancholic, and gently flowing instrumental quality, making it a subtle and unobtrusive music bed."
+  },
+  "1-03 Pallet Town.wav": {
+    "energy": "low",
+    "mood": "nostalgic",
+    "podcast_appropriate": true,
+    "reason": "Pallet Town is the iconic, gentle starting-town theme from Pok\u00e9mon Red/Blue \u2014 a widely recognized chiptune/orchestral piece with a warm, nostalgic, low-energy feel that works well as a soft background"
+  },
+  "1-08 Junichi Masuda - Route 29.wav": {
+    "energy": "medium",
+    "mood": "upbeat",
+    "podcast_appropriate": true,
+    "reason": "Route 29 from Pok\u00e9mon Gold/Silver (composed by Junichi Masuda) is a well-known cheerful, lightly adventurous chiptune-style instrumental track with no vocals, making it upbeat, medium-energy, and suit"
+  },
+  "1-12. Kazumi Totaka - Bubblegum K.K.wav": {
+    "energy": "medium",
+    "mood": "playful",
+    "podcast_appropriate": true,
+    "reason": "'Bubblegum K.K.' is a K.K. Slider track from Animal Crossing known for its light, whimsical, bubblegum-pop style \u2014 cheerful and playful with moderate energy, making it a suitable, non-distracting inst"
+  },
+  "1-13  Mahito Yokota - Rosalina in the Observatory 2.wav": {
+    "energy": "low",
+    "mood": "reflective",
+    "podcast_appropriate": true,
+    "reason": "Rosalina's Observatory theme from Super Mario Galaxy is a well-known gentle, ethereal, and emotionally contemplative orchestral piece, making it a calm and non-intrusive background bed suitable for po"
+  },
+  "1-17 Mahito Yokota - Gusty Garden Galaxy.wav": {
+    "energy": "high",
+    "mood": "playful",
+    "podcast_appropriate": true,
+    "reason": "Gusty Garden Galaxy is a well-known Super Mario Galaxy orchestral track by Mahito Yokota, recognized for its whimsical, bouncy, high-energy orchestration \u2014 though its strong melodic identity and copyr"
+  },
+  "1-37 - Nobuo Uematsu - Main Theme - Super Smash Bros. Brawl.wav": {
+    "energy": "high",
+    "mood": "epic",
+    "podcast_appropriate": true,
+    "reason": "Nobuo Uematsu's Main Theme for Super Smash Bros. Brawl is a well-known orchestral/epic composition that is instrumental, sweeping, and high-energy, making it suitable as a podcast music bed though its"
+  },
+  "1-38 Kenta Nagata - Dragon Roost Island.wav": {
+    "energy": "medium",
+    "mood": "playful",
+    "podcast_appropriate": true,
+    "reason": "Dragon Roost Island from The Legend of Zelda: The Wind Waker (composed by Kenta Nagata) is a well-known upbeat, breezy, marimba-driven instrumental track with a light-hearted adventurous feel, making "
+  },
+  "101 - Ground Theme.wav": {
+    "energy": "medium",
+    "mood": "nostalgic",
+    "podcast_appropriate": true,
+    "reason": "\"Ground Theme\" strongly suggests the iconic Super Mario Bros. overworld theme \u2014 a cheerful, melodic, and widely recognizable instrumental that evokes nostalgia and would work as a light, non-intrusive"
+  },
+  "110 - Athletic Theme.wav": {
+    "energy": "high",
+    "mood": "upbeat",
+    "podcast_appropriate": true,
+    "reason": "'Athletic Theme' at 110 BPM strongly suggests a fast-paced, motivational instrumental track well-suited for energetic podcast segments such as highlights, intros, or sports/fitness content."
+  },
+  "130_ Eight Melodies.wav": {
+    "energy": "low",
+    "mood": "nostalgic",
+    "podcast_appropriate": true,
+    "reason": "'Eight Melodies' references the iconic Mother/EarthBound ending theme, known for its gentle, emotionally resonant, nostalgic tone, and the 130 BPM prefix likely denotes track ordering rather than temp"
+  },
+  "18 -  Stickerbrush Symphony.wav": {
+    "energy": "low",
+    "mood": "reflective",
+    "podcast_appropriate": true,
+    "reason": "Stickerbrush Symphony is a well-known ambient, melancholic instrumental piece from Donkey Kong Country 2, characterized by its gentle, dreamy, atmospheric tone that works well as a soft background bed"
+  },
+  "2-05 - Hirokazu Tanaka - Title Theme - Metroid [Original].wav": {
+    "energy": "low",
+    "mood": "mysterious",
+    "podcast_appropriate": true,
+    "reason": "The Metroid Title Theme by Hirokazu Tanaka is a famously sparse, eerie, and atmospheric chiptune piece \u2014 instrumental, low-energy, and moody \u2014 making it suitable as a subtle podcast music bed, though "
+  },
+  "2-07 Aquatic Ambience.wav": {
+    "energy": "low",
+    "mood": "chill",
+    "podcast_appropriate": true,
+    "reason": "'Aquatic Ambience' strongly suggests a calm, flowing, underwater-themed instrumental \u2014 likely gentle, atmospheric, and unobtrusive enough to sit comfortably under spoken podcast dialogue."
+  },
+  "2-14 Toru Minegishi - Midna's Lament.wav": {
+    "energy": "low",
+    "mood": "reflective",
+    "podcast_appropriate": true,
+    "reason": "Midna's Lament from The Legend of Zelda: Twilight Princess is a well-known melancholic, sparse piano piece conveying sorrow and introspection, making it a gentle, non-distracting instrumental bed suit"
+  },
+  "2-19. Shiho Fujii - Calamari Inkantation.wav": {
+    "energy": "medium",
+    "mood": "playful",
+    "podcast_appropriate": true,
+    "reason": "The title 'Calamari Inkantation' is a whimsical, pun-laden name (evoking squid ink and incantation) strongly associated with the Splatoon game franchise's quirky, upbeat style, suggesting a lightheart"
+  },
+  "2.07 - The Legend of Zelda Main Theme.wav": {
+    "energy": "high",
+    "mood": "epic",
+    "podcast_appropriate": true,
+    "reason": "The Legend of Zelda Main Theme is a widely recognized, orchestral/adventurous instrumental piece with a triumphant, epic quality and high energy, making it suitable as a music bed though copyright cle"
+  },
+  "20. Kenji Yamamoto - Brinstar - Red Soil Wetland Area.wav": {
+    "energy": "medium",
+    "mood": "mysterious",
+    "podcast_appropriate": true,
+    "reason": "Brinstar's Red Soil Wetland Area from Metroid (composed by Kenji Yamamoto) is a well-known atmospheric, slightly eerie instrumental track with a steady mid-energy groove, making it recognizable but su"
+  },
+  "25 Ocarina 'Zelda's Lullaby'.wav": {
+    "energy": "low",
+    "mood": "nostalgic",
+    "podcast_appropriate": true,
+    "reason": "Zelda's Lullaby is a well-known gentle, melancholic Nintendo melody played on ocarina, evoking nostalgia and calm at a slow, soft energy level that would sit unobtrusively under spoken-word content."
+  },
+  "32 Hyrule Field Morning Theme.wav": {
+    "energy": "low",
+    "mood": "reflective",
+    "podcast_appropriate": true,
+    "reason": "The Hyrule Field Morning Theme from The Legend of Zelda is a gentle, orchestral/acoustic piece with a calm, contemplative quality suited for background use under spoken-word content."
+  },
+  "35 Lost Woods.wav": {
+    "energy": "low",
+    "mood": "mysterious",
+    "podcast_appropriate": true,
+    "reason": "'Lost Woods' strongly evokes the iconic Zelda forest theme \u2014 a looping, ethereal, slightly mysterious and ambient piece with low energy, making it well-suited as an unobtrusive podcast music bed, thou"
+  },
+  "374 - Hajime Wakai; Shibo Fujii, Mahito Yokota; Takeshi Hama; Koji Kondo - Ballad of the Goddess from Skyward Sword.wav": {
+    "energy": "low",
+    "mood": "reflective",
+    "podcast_appropriate": true,
+    "reason": "The 'Ballad of the Goddess' from Zelda: Skyward Sword is a well-known orchestral/piano piece with a gentle, hymn-like, emotionally resonant quality that works well as a soft, unobtrusive background be"
+  },
+  "417-naoto_kubo-jump_up,_super_star!_ndc_festival_edition_8bit_version.wav": {
+    "energy": "high",
+    "mood": "playful",
+    "podcast_appropriate": true,
+    "reason": "A 'Jump Up, Super Star!' 8-bit festival cover strongly implies a bright, bouncy, chiptune/video-game aesthetic that is upbeat and playful with high energy, and being instrumental (8-bit version) makes"
+  },
+  "56 Ocarina 'Song of Storms'.wav": {
+    "energy": "medium",
+    "mood": "mysterious",
+    "podcast_appropriate": true,
+    "reason": "The 'Song of Storms' from The Legend of Zelda is a well-known ocarina melody with a swirling, stormy, mysterious character and moderate energy, making it recognizable background music that could distr"
+  },
+  "68 Gerudo Valley.wav": {
+    "energy": "high",
+    "mood": "epic",
+    "podcast_appropriate": true,
+    "reason": "Gerudo Valley from The Legend of Zelda is a well-known orchestral/flamenco-style theme with high energy and a bold, adventurous epic feel, making it suitable as a podcast music bed though copyright cl"
+  },
+  "A02 - Underground Theme - Super Mario Bros. (Composer - Koji Kondo - Artist - Kentaro Ishizaka).wav": {
+    "energy": "medium",
+    "mood": "mysterious",
+    "podcast_appropriate": true,
+    "reason": "The Super Mario Bros. Underground Theme is a well-known instrumental piece with a dark, cave-like mysterious vibe and moderate pulsing energy, making it recognizable but usable as a quirky or nostalgi"
+  },
+  "A15 - Bob-Omb Battlefield - Super Mario 64 (Composer - Koji Kondo).wav": {
+    "energy": "high",
+    "mood": "playful",
+    "podcast_appropriate": true,
+    "reason": "Bob-Omb Battlefield is a well-known upbeat, bouncy Nintendo 64 game track by Koji Kondo with high energy and playful character, making it a fun, recognizable instrumental bed suitable for lighthearted"
+  },
+  "D05 - Theme of Samus Aran - Space Warrior - Super Metroid (Composer - Kenji Yamamoto - Artist - Masato Kouda).wav": {
+    "energy": "medium",
+    "mood": "epic",
+    "podcast_appropriate": true,
+    "reason": "The 'Theme of Samus Aran' from Super Metroid is a well-known orchestral/synth sci-fi theme with an epic, heroic character and moderate energy, making it suitable as an atmospheric podcast music bed, t"
+  },
+  "F05 - Gourmet Race - Kirby Super Star (Composer - Jun Ishikawa and Dan Miyakawa - Artist - Motoi Sakuraba).wav": {
+    "energy": "high",
+    "mood": "playful",
+    "podcast_appropriate": true,
+    "reason": "Gourmet Race from Kirby Super Star is a well-known, upbeat and whimsical video game track with a fast, lighthearted tempo that works well as a background music bed without vocals."
+  },
+  "K09 - Unfounded Revenge ~ Smashing Song of Praise - Mother 3 (Composer - Shogo Sakai - Artist - Kentaro Ishizaka).wav": {
+    "energy": "high",
+    "mood": "intense",
+    "podcast_appropriate": false,
+    "reason": "\"Smashing Song of Praise\" from Mother 3 is a high-energy, chaotic battle/boss track with a dense, aggressive arrangement that would overwhelm podcast dialogue rather than support it."
+  }
+}

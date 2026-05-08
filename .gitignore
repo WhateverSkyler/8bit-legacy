@@ -16,7 +16,11 @@ data/podcast/clips/
 data/podcast/pipeline_state.json
 data/podcast/*.log
 data/podcast/qa_logs/
-data/music-beds/
+data/music-beds/*.wav
+data/music-beds/*.mp3
+data/music-beds/*.flac
+data/music-beds/*.ogg
+# DO commit the catalog — it's metadata, not raw audio
 data/social-media/final/
 data/social-media/*.csv
 data/social-media/*.log
