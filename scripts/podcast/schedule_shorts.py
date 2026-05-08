@@ -271,6 +271,43 @@ def _gate4_final_approval(mp4: Path, spec: dict, episode_dir: Path) -> dict | No
     return verdict
 
 
+def _gate4_batch_concurrent(items: list[tuple[Path, dict]],
+                           episode_dir: Path) -> dict[str, dict | None]:
+    """Run Gate 4 on N (mp4, spec) pairs concurrently. Returns {mp4.name: verdict}.
+
+    Uses asyncio.gather to run the Claude vision calls in parallel — for 10 clips
+    at ~16s each on Opus, this drops total Gate 4 wall time from ~160s to ~16s.
+    Side effects (move_to_rejected, emit_navi) happen inside _gate4_final_approval
+    and are independent across clips, so concurrent execution is safe.
+
+    On any exception per clip → that clip's verdict is None (let through).
+    """
+    try:
+        import asyncio
+    except ImportError:
+        # Fallback to sequential if no asyncio (shouldn't happen — stdlib)
+        return {mp4.name: _gate4_final_approval(mp4, spec, episode_dir)
+                for mp4, spec in items}
+
+    async def _one(mp4: Path, spec: dict) -> tuple[str, dict | None]:
+        try:
+            verdict = await asyncio.to_thread(_gate4_final_approval, mp4, spec, episode_dir)
+            return mp4.name, verdict
+        except Exception as exc:
+            print(f"  [gate4-batch] error on {mp4.name}: {exc}")
+            return mp4.name, None
+
+    async def _run() -> list[tuple[str, dict | None]]:
+        return await asyncio.gather(*(_one(m, s) for m, s in items))
+
+    print(f"  [gate4-batch] running {len(items)} Gate 4 calls concurrently...")
+    import time as _time
+    t0 = _time.time()
+    results = asyncio.run(_run())
+    print(f"  [gate4-batch] {len(items)} verdicts in {_time.time()-t0:.1f}s")
+    return dict(results)
+
+
 def schedule(episode: str, start_date: str, dry_run: bool = True,
              clips_plan_path: Path = CLIPS_PLAN_ALL,
              strict_titles: bool = False, force: bool = False) -> int:
@@ -358,18 +395,23 @@ def schedule(episode: str, start_date: str, dry_run: bool = True,
     log = []
     gate4_rejected = 0
     gate4_flagged = 0
+
+    # Pre-compute all Gate 4 verdicts CONCURRENTLY so the upload loop runs
+    # uninterrupted. Cuts ~3-5x wall time on 10-clip batches (Opus is ~16s/call).
+    gate4_inputs = [(mp4, plan_by_id.get(mp4.stem, {"hook": mp4.stem, "topics": []}))
+                    for mp4 in mp4s]
+    gate4_verdicts = _gate4_batch_concurrent(gate4_inputs, episode_clips_dir)
+
     for mp4, when in zip(mp4s, times):
         spec = plan_by_id.get(mp4.stem, {"hook": mp4.stem, "topics": []})
         caption = _caption_for(spec)
 
-        # GATE 4 (2026-05-07): final comprehensive QA via Claude Opus 4.7 multimodal.
-        # Sends 6 keyframes + spec + transcript + scene data. Routes:
+        # Look up the pre-computed Gate 4 verdict. Same routing as before:
         #   APPROVE         → continue to upload
         #   FLAG_FOR_REVIEW → skip upload, emit Navi for human review
         #   REJECT          → skip upload + move to _rejected/ + emit Navi
-        # Failures during QA infrastructure (network, missing keyframes) → let through
-        # so we don't block on infra issues.
-        g4 = _gate4_final_approval(mp4, spec, episode_clips_dir)
+        # Side effects (move/emit) already happened during the concurrent batch.
+        g4 = gate4_verdicts.get(mp4.name)
         if g4:
             decision = (g4.get("final_decision") or "").upper()
             if decision == "REJECT":

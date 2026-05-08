@@ -12,6 +12,65 @@ Gates in order:
 """
 
 # =====================================================================
+# GATE 0 — Topic coherence at segmentation time (text only, pre-pick)
+# =====================================================================
+# Catches the "lumpy topic" failure mode at the SOURCE — a topic that
+# auto-segmentation tagged as "Black Flag pricing debate" but actually
+# spans three unrelated discussions. Existing 4 gates downstream can't
+# fully fix this — if the topic itself is incoherent, no clip from it
+# will be coherent.
+
+GATE_0_TOPIC_COHERENCE_V1 = """You are auditing a topic-segmented chunk from a podcast for coherence.
+
+Auto-segmentation thinks this section is one coherent topic with the title and
+thesis below. Your job: does the transcript text actually support that, or does
+it span multiple unrelated subjects that should have been split?
+
+TOPIC TITLE: {title}
+TOPIC THESIS: {thesis}
+DURATION: {duration_sec:.1f}s ({duration_min:.1f} min)
+RANGE: {start_sec:.1f}s – {end_sec:.1f}s
+
+TRANSCRIPT TEXT:
+\"\"\"
+{transcript_text}
+\"\"\"
+
+EVALUATE:
+
+1. **Single coherent topic** — does the entire transcript discuss the title's subject?
+   - PASS: text follows the thesis throughout, with on-topic tangents
+   - SPLIT: clearly switches to a different subject mid-way (e.g., starts on Black Flag,
+            then tangents into Resident Evil for the second half)
+   - INCOHERENT: never really lands on a topic, just rambles across subjects
+
+2. **Title-thesis-content match**:
+   - Does the title accurately describe what's discussed?
+   - Does the thesis hold throughout the segment?
+
+3. **Split opportunity** (only if you marked SPLIT):
+   - Identify the approximate timestamp (in seconds, as positioned in the
+     transcript range provided) where one subject ends and the next begins.
+
+DECISION RULES:
+- All on-topic OR mostly-on-topic with minor tangents → PASS
+- Clear topic shift mid-way → SPLIT (provide proposed split timestamp)
+- Rambles across multiple subjects with no clear primary → INCOHERENT (drop topic)
+
+Return STRICT JSON only:
+{{
+  "decision": "PASS" | "SPLIT" | "INCOHERENT",
+  "primary_subject": "what the topic IS actually about, in 1 line",
+  "secondary_subjects": ["if SPLIT: list of other subjects covered"],
+  "split_timestamp_sec": null | <float, only if SPLIT, ABSOLUTE seconds in source>,
+  "title_match": "good" | "vague" | "wrong",
+  "thesis_holds": <bool>,
+  "reason": "one-sentence summary"
+}}
+"""
+
+
+# =====================================================================
 # GATE 1 — Narrative coherence re-validation (text only)
 # =====================================================================
 

@@ -438,35 +438,40 @@ def _gate1_narrative_coherence(candidates: list[dict], transcript: dict,
     with the narrative coherence prompt. Drop REJECTs, apply ADJUST boundaries,
     keep PASS as-is.
 
+    Runs all candidate validations CONCURRENTLY via asyncio.gather (one Claude
+    call per candidate). For ~14 candidates × ~3s each, this drops wall time
+    from ~42s sequential to ~3-5s concurrent. The Anthropic SDK's HTTP pool
+    handles parallel requests fine (default pool size ~100).
+
     Failures during validation (network/JSON errors) → keep the candidate (don't
     drop on infrastructure issues). Failures are logged.
     """
     try:
         # Lazy import — only needed when Gate 1 runs
-        from _qa_helpers import call_claude_text, log_gate_decision
+        from _qa_helpers import call_claude_text_async, log_gate_decision
         from qa_prompts import GATE_1_NARRATIVE_COHERENCE_V1
     except ImportError as exc:
         print(f"  [gate1] qa helpers unavailable ({exc}) — skipping narrative re-validation")
         return candidates
 
-    accepted: list[dict] = []
-    rejected_reasons: list[dict] = []
+    import asyncio
 
     # Episode stem for the per-episode JSONL log (all candidates share a source_stem)
     episode_stem = candidates[0].get("source_stem", "unknown") if candidates else "unknown"
 
+    # Build per-candidate prompts (synchronous — pure transcript text manipulation)
+    work: list[tuple[dict, str | None, str]] = []  # (cand, prompt_or_None, clip_id)
     for cand in candidates:
         try:
             start = float(cand.get("start_sec", 0))
             end = float(cand.get("end_sec", 0))
         except (TypeError, ValueError):
-            accepted.append(cand)  # malformed — let snap-and-validate catch it
+            work.append((cand, None, "?"))  # malformed — pass through
             continue
 
         extracted = _extract_text_in_range(transcript, start, end)
         if not extracted or len(extracted) < 50:
-            # Shouldn't happen — clip too short to evaluate. Let downstream catch.
-            accepted.append(cand)
+            work.append((cand, None, "?"))  # too short to evaluate
             continue
 
         prompt = GATE_1_NARRATIVE_COHERENCE_V1.format(
@@ -476,22 +481,56 @@ def _gate1_narrative_coherence(candidates: list[dict], transcript: dict,
             duration_sec=end - start,
             start_sec=start,
             end_sec=end,
-            extracted_text=extracted[:4000],  # cap for prompt size
+            extracted_text=extracted[:4000],
             surrounding_context=_surrounding_context(transcript, start, end)[:6000],
         )
+        clip_id = cand.get("clip_id") or cand.get("title", "?")[:60]
+        work.append((cand, prompt, clip_id))
 
-        try:
-            verdict = call_claude_text(prompt, max_tokens=1500)
-        except Exception as exc:
-            print(f"  [gate1] claude error on {cand.get('title','?')[:40]}: {exc} — keeping candidate")
+    # Concurrent fire of all Claude calls, preserving order
+    async def _gather_all() -> list:
+        tasks = []
+        for _cand, prompt, _cid in work:
+            if prompt is None:
+                tasks.append(asyncio.sleep(0, result=None))  # no-op placeholder
+            else:
+                tasks.append(call_claude_text_async(prompt, max_tokens=1500))
+        return await asyncio.gather(*tasks, return_exceptions=True)
+
+    print(f"  [gate1] running {sum(1 for _, p, _ in work if p)} candidates concurrently...")
+    t0 = __import__("time").time()
+    verdicts = asyncio.run(_gather_all())
+    elapsed = __import__("time").time() - t0
+    print(f"  [gate1] {sum(1 for _, p, _ in work if p)} concurrent calls completed in {elapsed:.1f}s")
+
+    # Process verdicts in original order — apply REJECT / ADJUST / PASS logic
+    accepted: list[dict] = []
+    rejected_reasons: list[dict] = []
+    for (cand, prompt, clip_id), verdict in zip(work, verdicts):
+        # Pass-through for cases that didn't produce a prompt
+        if prompt is None:
+            accepted.append(cand)
+            continue
+        # Network/exception → keep candidate, log error
+        if isinstance(verdict, Exception):
+            print(f"  [gate1] claude error on {cand.get('title','?')[:40]}: {verdict} — keeping candidate")
+            accepted.append(cand)
+            continue
+        # Empty / malformed verdict → keep candidate
+        if not verdict or not isinstance(verdict, dict):
             accepted.append(cand)
             continue
 
         decision = (verdict.get("decision") or "").upper()
         reason = verdict.get("reason", "?")
-        clip_id = cand.get("clip_id") or cand.get("title", "?")[:60]
 
-        # Log every Gate 1 decision (PASS / ADJUST / REJECT) for retrospective analysis
+        try:
+            start = float(cand.get("start_sec", 0))
+            end = float(cand.get("end_sec", 0))
+        except (TypeError, ValueError):
+            start = end = 0.0
+
+        # Log every Gate 1 decision for retrospective analysis
         log_gate_decision(episode_stem, "gate1", clip_id, verdict, extra={
             "title": cand.get("title", "?"),
             "duration_sec": end - start,
@@ -518,9 +557,8 @@ def _gate1_narrative_coherence(candidates: list[dict], transcript: dict,
                     cand = {**cand, "start_sec": new_start, "end_sec": new_end,
                             "_gate1_adjusted": True}
             except (TypeError, ValueError):
-                pass  # bad ADJUST values — keep original
+                pass
 
-        # Annotate engagement risk + hook info for downstream visibility
         cand["_gate1_hook_in_first_5_sec"] = bool(verdict.get("hook_in_first_5_sec"))
         cand["_gate1_engagement_risk"] = verdict.get("engagement_risk", "unknown")
         accepted.append(cand)

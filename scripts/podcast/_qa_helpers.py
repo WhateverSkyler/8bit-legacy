@@ -182,6 +182,36 @@ def call_claude_vision(prompt: str, image_paths: list[Path],
     return verdict
 
 
+# ===== Async wrappers (for concurrent gate execution) =======================
+# Used by pick_clips.py Gate 1 to fire ~14 candidates' Claude text calls
+# concurrently. Saves ~30-40s per episode by overlapping I/O-bound API calls.
+
+async def call_claude_text_async(prompt: str, model: str = SONNET_MODEL,
+                                 max_tokens: int = 1500, retry_hint: str = "") -> dict:
+    """Async wrapper around call_claude_text — uses asyncio.to_thread so the
+    sync Anthropic SDK runs on a worker thread without blocking the event loop.
+
+    Concurrent use: kick off N calls via asyncio.gather() and they run in
+    parallel up to the SDK's HTTP pool size (~100 by default).
+    """
+    import asyncio
+    return await asyncio.to_thread(
+        call_claude_text, prompt, model, max_tokens, retry_hint,
+    )
+
+
+async def call_claude_vision_async(prompt: str, image_paths: list,
+                                   model: str = SONNET_MODEL,
+                                   max_tokens: int = 2000,
+                                   media_type: str = "image/jpeg") -> dict:
+    """Async wrapper around call_claude_vision. Use for parallel Gate 4 across
+    multiple clips, or Gate 2 + Gate 3 on the same clip."""
+    import asyncio
+    return await asyncio.to_thread(
+        call_claude_vision, prompt, image_paths, model, max_tokens, media_type,
+    )
+
+
 # ===== Decision logging (per-episode JSONL) =================================
 
 def log_gate_decision(episode_stem: str, gate: str, clip_id: str,
