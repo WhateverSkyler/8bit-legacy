@@ -568,6 +568,161 @@ def _gate1_narrative_coherence(candidates: list[dict], transcript: dict,
     return accepted
 
 
+# --- Title quality + hashtag + audio mix audits (post-Gate 1, pre-render) ----
+# Run concurrently across surviving candidates. Each candidate gets its title
+# audited (+ optionally rewritten), per-clip hashtags generated, and a mood
+# tag for adaptive audio mixing in render_clip.py.
+
+def _post_pick_enrichment(picks: list[dict], transcript: dict) -> list[dict]:
+    """For each accepted pick: validate title, generate hashtags, classify mood.
+
+    All three calls per-clip run concurrently per-clip via asyncio.gather.
+    Surviving picks gain:
+      - Possibly rewritten title (if TITLE_QUALITY decided REWRITE)
+      - `_llm_hashtags` list (used by _caption.py if present)
+      - `_audio_mood` + `_audio_music_volume` (used by render_clip.py)
+
+    Failures (network/JSON) skip enrichment for that clip — never drop the clip.
+    """
+    if not picks:
+        return picks
+    try:
+        from _qa_helpers import call_claude_text_async, log_gate_decision
+        from qa_prompts import (
+            TITLE_QUALITY_AUDIT_V1, HASHTAG_SELECTION_V1, AUDIO_MIX_MOOD_V1,
+        )
+    except ImportError as exc:
+        print(f"  [enrich] qa helpers unavailable ({exc}) — skipping post-pick enrichment")
+        return picks
+
+    import asyncio
+    import time
+
+    episode_stem = picks[0].get("source_stem", "unknown") if picks else "unknown"
+
+    # Build all 3 prompts × N clips upfront
+    work: list[tuple[dict, dict]] = []  # (pick, {kind: prompt})
+    for p in picks:
+        try:
+            start = float(p.get("start_sec", 0))
+            end = float(p.get("end_sec", 0))
+        except (TypeError, ValueError):
+            work.append((p, {}))
+            continue
+        text = _extract_text_in_range(transcript, start, end)[:1500]
+        if not text:
+            work.append((p, {}))
+            continue
+        prompts = {
+            "title": TITLE_QUALITY_AUDIT_V1.format(
+                title=p.get("title", "?"),
+                hook=p.get("hook", "?"),
+                topics=", ".join(p.get("topics", [])) or "?",
+                extracted_text=text,
+            ),
+            "hashtags": HASHTAG_SELECTION_V1.format(
+                title=p.get("title", "?"),
+                hook=p.get("hook", "?"),
+                topics=", ".join(p.get("topics", [])) or "?",
+                extracted_text=text,
+            ),
+            "mood": AUDIO_MIX_MOOD_V1.format(
+                title=p.get("title", "?"),
+                extracted_text=text,
+            ),
+        }
+        work.append((p, prompts))
+
+    # Build flat task list, preserving (clip_idx, kind) labels
+    flat: list[tuple[int, str]] = []
+    coros = []
+    for i, (p, prompts) in enumerate(work):
+        for kind, prompt in prompts.items():
+            flat.append((i, kind))
+            coros.append(call_claude_text_async(prompt, max_tokens=800))
+
+    if not coros:
+        return picks
+
+    print(f"  [enrich] running {len(coros)} concurrent calls ({len(picks)} clips × 3 audits)...")
+
+    async def _run():
+        return await asyncio.gather(*coros, return_exceptions=True)
+
+    t0 = time.time()
+    results = asyncio.run(_run())
+    print(f"  [enrich] {len(coros)} calls completed in {time.time()-t0:.1f}s")
+
+    # Process results back per-clip
+    by_clip: dict[int, dict] = {i: {} for i in range(len(work))}
+    for (clip_i, kind), res in zip(flat, results):
+        by_clip[clip_i][kind] = res
+
+    enriched = []
+    for i, (p, _prompts) in enumerate(work):
+        verdicts = by_clip.get(i, {})
+        clip_id = p.get("clip_id") or p.get("title", "?")[:60]
+
+        # ---- Title audit ----
+        tv = verdicts.get("title")
+        if tv and not isinstance(tv, Exception) and isinstance(tv, dict):
+            log_gate_decision(episode_stem, "title_audit", clip_id, tv,
+                              extra={"original_title": p.get("title", "?")})
+            decision = (tv.get("decision") or "").upper()
+            if decision == "REWRITE":
+                new_title = tv.get("rewritten_title")
+                if new_title and isinstance(new_title, str) and 5 <= len(new_title) <= 90:
+                    print(f"  [title] REWRITE: '{p.get('title','?')[:40]}' → '{new_title[:40]}'")
+                    p["_original_title"] = p.get("title")
+                    p["title"] = new_title
+                    p["_title_rewritten"] = True
+            elif decision == "REJECT":
+                # Title gate REJECT means we couldn't even rewrite into something honest.
+                # Drop the clip entirely.
+                print(f"  [title] REJECT: '{p.get('title','?')[:40]}' — {tv.get('reason','?')}")
+                continue  # skip — not added to enriched
+            elif decision == "APPROVE_WITH_NOTE":
+                p["_title_warnings"] = tv.get("issues", [])
+
+        # ---- Hashtag generation ----
+        hv = verdicts.get("hashtags")
+        if hv and not isinstance(hv, Exception) and isinstance(hv, dict):
+            tags = hv.get("hashtags") or []
+            if isinstance(tags, list) and tags:
+                # Sanitize: lowercase, strip non-alphanumeric, ensure leading #
+                cleaned = []
+                seen = set()
+                for tag in tags:
+                    if not isinstance(tag, str): continue
+                    t = tag.strip().lstrip("#").lower()
+                    t = "".join(c for c in t if c.isalnum())
+                    if not t or t in seen: continue
+                    seen.add(t)
+                    cleaned.append(f"#{t}")
+                if cleaned:
+                    p["_llm_hashtags"] = cleaned[:10]
+                    log_gate_decision(episode_stem, "hashtag_gen", clip_id, hv,
+                                     extra={"n_tags_kept": len(p["_llm_hashtags"])})
+
+        # ---- Audio mix mood ----
+        mv = verdicts.get("mood")
+        if mv and not isinstance(mv, Exception) and isinstance(mv, dict):
+            mood = (mv.get("mood") or "").lower()
+            vol = mv.get("music_volume")
+            if mood in ("intense", "storytelling", "casual", "upbeat") and \
+               isinstance(vol, (int, float)) and 0.05 <= vol <= 0.20:
+                p["_audio_mood"] = mood
+                p["_audio_music_volume"] = float(vol)
+                log_gate_decision(episode_stem, "audio_mood", clip_id, mv)
+
+        enriched.append(p)
+
+    n_dropped = len(picks) - len(enriched)
+    if n_dropped:
+        print(f"  [enrich] dropped {n_dropped} clip(s) for irreparable title issues")
+    return enriched
+
+
 # --- Orchestrator -----------------------------------------------------------
 
 def pick_clips_from_transcript(
@@ -618,6 +773,10 @@ def pick_clips_from_transcript(
     for i, p in enumerate(final, 1):
         p["clip_id"] = f"{stem_key}_c{i}"
         p["source_stem"] = stem_key
+
+    # Post-pick enrichment: title quality audit, per-clip hashtag generation,
+    # adaptive audio mix mood. Runs all 3 audits per clip CONCURRENTLY.
+    final = _post_pick_enrichment(final, tx)
 
     print(
         f"  [STATS] {topic_name}: {len(candidates)} candidates → "

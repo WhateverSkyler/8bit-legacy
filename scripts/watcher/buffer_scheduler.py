@@ -123,8 +123,15 @@ def _load_clip_metadata() -> dict[str, dict]:
 
 
 def _caption_for(meta: dict) -> str:
-    """Mirror schedule_shorts.py's caption logic: hashtags only, capped at 15."""
-    return merged_hashtags(meta.get("topics", []))
+    """Mirror schedule_shorts.py's caption logic: hashtags only, capped at 15.
+
+    Uses per-clip LLM hashtags (`_llm_hashtags`) if present in the meta sidecar;
+    falls back to topic-derived tags otherwise. The buffer_scheduler reads
+    metadata from `clips_metadata/<stem>.json` produced by pick_clips, so
+    `_llm_hashtags` will be present for any clip generated after the LLM
+    hashtag pipeline was added.
+    """
+    return merged_hashtags(meta.get("topics", []), meta.get("_llm_hashtags"))
 
 
 # --- Zernio helpers --------------------------------------------------------
@@ -408,12 +415,40 @@ def run() -> int:
         _clear_alert(state, "running_low_on_fresh")
 
     if not eligible:
+        # Check for recent fresh content. If any clip was posted in the last 14 days,
+        # an empty `eligible` list is the EXPECTED post-drop state (everything is
+        # within cooldown because we just published a new episode). That's not a
+        # depletion event worth alerting — the `running_low_on_fresh` alert (above)
+        # handles the actual "need new episode" signal.
+        last_posted = state.get("last_posted", {})
+        most_recent_post = None
+        for ts in last_posted.values():
+            try:
+                dt = datetime.fromisoformat(ts)
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=ET)
+                if most_recent_post is None or dt > most_recent_post:
+                    most_recent_post = dt
+            except (ValueError, TypeError):
+                continue
+        recent_post_days = (now - most_recent_post).days if most_recent_post else None
+
+        if recent_post_days is not None and recent_post_days < 14:
+            _log(f"no eligible clips, but most recent post was {recent_post_days}d ago — "
+                 "expected post-drop cooldown state, suppressing alert")
+            # Keep alert clear so a real depletion later can fire fresh
+            _clear_alert(state, "no_eligible_clips")
+            state["last_run"] = now.isoformat()
+            _save_state(state)
+            return 0
+
         if _should_emit_alert(state, "no_eligible_clips"):
             emit_navi_task(
                 title="Buffer scheduler: no eligible archive clips",
                 description=(
                     f"All archive clips are within the {BUFFER_COOLDOWN_DAYS}-day cooldown "
-                    f"or the archive is empty. Drop a new podcast episode or reduce "
+                    f"or the archive is empty. Most recent post was "
+                    f"{recent_post_days}d ago. Drop a new podcast episode or reduce "
                     f"BUFFER_COOLDOWN_DAYS env var."
                 ),
                 priority="medium",

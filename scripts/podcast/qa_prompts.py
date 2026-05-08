@@ -276,6 +276,168 @@ Return STRICT JSON only:
 
 
 # =====================================================================
+# TITLE QUALITY AUDIT (post-pick, text only)
+# =====================================================================
+# Audits the title pick_clips.py wrote. Catches clickbait, vague filler,
+# inaccuracy, and length issues that Gate 4's title-match check doesn't
+# explicitly address.
+
+TITLE_QUALITY_AUDIT_V1 = """You audit the title for a short-form video before it goes live.
+
+Title: {title}
+Hook: {hook}
+Topics: {topics}
+Clip text (what viewers will hear, first 1500 chars):
+\"\"\"
+{extracted_text}
+\"\"\"
+
+Score on 4 dimensions:
+
+1. **Specific not vague**: Does the title name the actual subject? "GameStop's
+   eBay disaster" PASSES. "An interesting take on retro" FAILS.
+
+2. **Not clickbait**: No "you won't believe", "this changes everything",
+   excessive ALL CAPS, or promises the content doesn't deliver.
+
+3. **Length**: 4-12 words ideal. <4 words is usually too vague.
+   >12 words is usually overstuffed for a short-form post.
+
+4. **Accurate**: Title describes what's actually said in the clip text. NOT a
+   reframing or stretch.
+
+DECISIONS:
+- All 4 dimensions PASS → APPROVE
+- 1 dimension borderline → APPROVE_WITH_NOTE (still ship, log warning)
+- ≥1 dimension fails clearly → REWRITE (return a better title)
+- Cannot rewrite without lying → REJECT
+
+Return STRICT JSON only:
+{{
+  "scores": {{
+    "specific": "good" | "borderline" | "fail",
+    "not_clickbait": "good" | "borderline" | "fail",
+    "length": "good" | "borderline" | "fail",
+    "accurate": "good" | "borderline" | "fail"
+  }},
+  "decision": "APPROVE" | "APPROVE_WITH_NOTE" | "REWRITE" | "REJECT",
+  "rewritten_title": null | "<better title if REWRITE>",
+  "issues": ["specific issues if any"],
+  "reason": "one-sentence summary"
+}}
+"""
+
+
+# =====================================================================
+# HASHTAG SELECTION (post-pick, text only)
+# =====================================================================
+# Generate 12-15 RELEVANT hashtags for a clip based on its actual content.
+# Replaces the fixed DEFAULT_HASHTAGS list. Keeps algorithm-baseline
+# (#fyp/#foryoupage/#explorepage/#shorts) + brand (#8bitlegacy/#podcast)
+# tags fixed; the rest are LLM-chosen for relevance.
+
+HASHTAG_SELECTION_V1 = """Generate platform-optimized hashtags for a short-form video.
+
+Video title: {title}
+Hook: {hook}
+Topics: {topics}
+Content excerpt:
+\"\"\"
+{extracted_text}
+\"\"\"
+
+REQUIREMENTS:
+- Return 8-10 hashtags (we'll add 5 fixed ones for a 13-15 total).
+- All lowercase, no spaces, no special chars beyond letters/numbers.
+- Specific to THIS clip's content, not generic gaming.
+- Mix of: niche-specific (e.g., #soulslike if discussing soulsborne), platform-specific
+  (e.g., #ps5 if PS5 mentioned), broad-discoverability (e.g., #gamingnews if news).
+- Don't include any of these (we add them automatically):
+  #fyp, #foryoupage, #explorepage, #shorts, #8bitlegacy, #podcast,
+  #retrogaming, #retrogames, #videogames, #gaming, #nintendo, #playstation
+- Avoid spammy/banned hashtags or anything off-brand.
+
+Return STRICT JSON only:
+{{
+  "hashtags": ["#tag1", "#tag2", ...],
+  "reason": "why these tags fit the clip"
+}}
+"""
+
+
+# =====================================================================
+# AUDIO MIX MOOD CLASSIFIER (post-pick, text only)
+# =====================================================================
+# Classifies clip mood so render_clip.py can pick the appropriate
+# dialog-to-music ratio. Currently fixed at 0.12 — this lets it adapt.
+
+AUDIO_MIX_MOOD_V1 = """Classify the mood of this clip so we can mix audio appropriately.
+
+Title: {title}
+Content excerpt:
+\"\"\"
+{extracted_text}
+\"\"\"
+
+Categorize the clip's emotional energy:
+
+- **intense**: heated debate, passionate argument, controversial hot take.
+  → Music should be quiet (0.08) so dialogue cuts through clearly.
+
+- **storytelling**: personal anecdote, narrative, recollection.
+  → Music slightly under (0.10) so attention stays on the story.
+
+- **casual**: lighter chat, banter, joking, relaxed conversation.
+  → Music can be normal (0.12).
+
+- **upbeat**: hype, excitement, anticipation, positive energy.
+  → Music can be louder (0.14) to amplify energy.
+
+Pick ONE category. If borderline, pick the LOWER-energy option (safer for clarity).
+
+Return STRICT JSON only:
+{{
+  "mood": "intense" | "storytelling" | "casual" | "upbeat",
+  "music_volume": 0.08 | 0.10 | 0.12 | 0.14,
+  "reason": "one-sentence summary"
+}}
+"""
+
+
+# =====================================================================
+# MUSIC BED MOOD-MATCHING (used at music-bed catalog build time, OR per-clip)
+# =====================================================================
+# When building the music-bed catalog: per-bed mood classification.
+# When picking music per-clip: we use clip mood + bed catalog to find the best match.
+
+MUSIC_BED_MOOD_CLASSIFY_V1 = """You're classifying a music bed (instrumental track) for use under
+a podcast clip. Based on the filename/title metadata only (you can't hear it),
+infer the LIKELY mood and energy.
+
+Filename: {filename}
+Source/origin (if known): {source}
+
+Pick ONE primary mood and ONE energy level:
+
+Moods: intense | dramatic | reflective | nostalgic | upbeat | playful | epic | chill | mysterious | unknown
+Energy: low | medium | high | unknown
+
+If the filename gives no useful info (e.g., "track_03.mp3"), return mood=unknown.
+
+Also: is this likely PODCAST-APPROPRIATE? (Some music beds — vocal-heavy, dialogue-conflicting,
+explicit, brand-mismatched — shouldn't go under our podcast clips.)
+
+Return STRICT JSON only:
+{{
+  "mood": "intense" | "dramatic" | "reflective" | "nostalgic" | "upbeat" | "playful" | "epic" | "chill" | "mysterious" | "unknown",
+  "energy": "low" | "medium" | "high" | "unknown",
+  "podcast_appropriate": <bool>,
+  "reason": "one-sentence justification"
+}}
+"""
+
+
+# =====================================================================
 # GATE 4 — Final comprehensive approval (multimodal Opus)
 # =====================================================================
 

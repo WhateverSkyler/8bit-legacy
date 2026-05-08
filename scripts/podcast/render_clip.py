@@ -179,11 +179,56 @@ def _ffprobe_duration(path: Path) -> float:
     return float(out)
 
 
-def _pick_music_bed(seed: str | None = None) -> Path | None:
+def _pick_music_bed(seed: str | None = None, mood: str | None = None) -> Path | None:
+    """Select a music bed for a clip.
+
+    If `data/music-beds/_catalog.json` exists (built by build_music_catalog.py)
+    AND `mood` is provided (set by pick_clips' AUDIO_MIX_MOOD_V1 audit), restrict
+    candidates to mood-compatible + podcast-appropriate beds, then deterministically
+    pick by seed. Otherwise falls back to legacy random selection across all beds.
+
+    Mood compatibility map (clip mood → preferred bed moods):
+      intense:      dramatic, intense, epic
+      storytelling: reflective, nostalgic, chill, mysterious
+      casual:       chill, playful, nostalgic
+      upbeat:       upbeat, playful, epic
+    """
     candidates = sorted(list(MUSIC_BEDS.glob("*.wav")) + list(MUSIC_BEDS.glob("*.mp3")) +
                         list(MUSIC_BEDS.glob("*.flac")) + list(MUSIC_BEDS.glob("*.ogg")))
     if not candidates:
         return None
+
+    catalog_path = MUSIC_BEDS / "_catalog.json"
+    if mood and catalog_path.exists():
+        try:
+            import json as _json
+            catalog = _json.loads(catalog_path.read_text())
+        except Exception:
+            catalog = {}
+
+        compat = {
+            "intense":      {"dramatic", "intense", "epic"},
+            "storytelling": {"reflective", "nostalgic", "chill", "mysterious"},
+            "casual":       {"chill", "playful", "nostalgic"},
+            "upbeat":       {"upbeat", "playful", "epic"},
+        }
+        wanted = compat.get(mood.lower(), set())
+        # First pass: only podcast-appropriate beds with a wanted mood
+        filtered = [c for c in candidates
+                    if catalog.get(c.name, {}).get("podcast_appropriate", True)
+                    and catalog.get(c.name, {}).get("mood") in wanted]
+        if filtered:
+            rng = random.Random(seed)
+            chosen = rng.choice(filtered)
+            return chosen
+        # Second pass: ANY podcast-appropriate bed (mood didn't match but still safe)
+        appropriate = [c for c in candidates
+                       if catalog.get(c.name, {}).get("podcast_appropriate", True)]
+        if appropriate:
+            rng = random.Random(seed)
+            return rng.choice(appropriate)
+
+    # Legacy fallback: random across all beds (no catalog OR no mood signal).
     rng = random.Random(seed)
     return rng.choice(candidates)
 
@@ -477,12 +522,19 @@ def _build_video_filter(scenes: list[tuple[float, float, int]], ass_path: Path,
 def _build_ffmpeg_cmd(source_video: Path, start: float, end: float, duration: float,
                       scenes: list[tuple[float, float, int]], ass_path: Path,
                       music: Path | None, has_music: bool, crop_w: int,
-                      out_path: Path) -> list[str]:
+                      out_path: Path, music_volume: float = 0.12) -> list[str]:
     """Build the full ffmpeg command for one render. Pure function — no side effects.
 
     Factored out of render_clip() so Gate 2 + Gate 3 rescue paths can rebuild
     cmd with shifted captions or restricter scene detection and re-run.
+
+    Args:
+      music_volume: dialog-vs-music balance. Default 0.12 (legacy fixed value).
+        Pick_clips' AUDIO_MIX_MOOD_V1 audit overrides this per-clip via the
+        spec's `_audio_music_volume` field — intense=0.08, storytelling=0.10,
+        casual=0.12, upbeat=0.14. Clamped to [0.05, 0.20] for safety.
     """
+    music_volume = max(0.05, min(0.20, float(music_volume)))
     filter_parts = _build_video_filter(scenes, ass_path, crop_w=crop_w)
     vout_label = "[v0]"
     if END_CARD.exists():
@@ -495,10 +547,11 @@ def _build_ffmpeg_cmd(source_video: Path, start: float, end: float, duration: fl
         vout_label = "[vout]"
 
     if has_music:
-        # Music bed mixed quieter (2026-04-23: bumped from 0.15 → 0.12 per user ask
-        # for "5% quieter"; interpreted as a perceptible ~2dB cut).
+        # Music bed mixed quieter (2026-04-23: 0.15→0.12 baseline).
+        # 2026-05-08: now adaptive per clip mood (0.08 intense → 0.14 upbeat),
+        # set by pick_clips._post_pick_enrichment via AUDIO_MIX_MOOD_V1.
         filter_parts.append("[0:a]volume=1.0[dialog]")
-        filter_parts.append("[1:a]volume=0.12,aloop=loop=-1:size=2e9[music]")
+        filter_parts.append(f"[1:a]volume={music_volume:.3f},aloop=loop=-1:size=2e9[music]")
         filter_parts.append("[dialog][music]amix=duration=shortest:dropout_transition=3[aout]")
         aout_label = "[aout]"
     else:
@@ -565,7 +618,10 @@ def render_clip(spec: dict, episode: str, transcripts_by_stem: dict[str, dict],
     ass_path.write_text(ass_content)
     out_path = episode_clips_dir / f"{clip_id}.mp4"
 
-    music = _pick_music_bed(seed=clip_id)
+    # Mood-matched music selection: pick_clips' enrichment writes _audio_mood
+    # (intense/storytelling/casual/upbeat). _pick_music_bed prefers compatible
+    # beds from the catalog; falls back to random when no catalog/no mood.
+    music = _pick_music_bed(seed=clip_id, mood=spec.get("_audio_mood"))
     has_music = music is not None
 
     # Build the scene list that drives the crop graph. Explicit --crop-x from
@@ -575,10 +631,17 @@ def render_clip(spec: dict, episode: str, transcripts_by_stem: dict[str, dict],
     else:
         scenes = detect_scenes_and_crops(source_video, start, end, crop_w=crop_w)
 
+    # Adaptive audio mix: pick_clips' enrichment classifies clip mood and
+    # writes _audio_music_volume into the spec (0.08 intense / 0.10 storytelling /
+    # 0.12 casual / 0.14 upbeat). Default 0.12 if not set (older specs).
+    music_volume = float(spec.get("_audio_music_volume") or 0.12)
     cmd = _build_ffmpeg_cmd(source_video, start, end, duration, scenes,
-                            ass_path, music, has_music, crop_w, out_path)
+                            ass_path, music, has_music, crop_w, out_path,
+                            music_volume=music_volume)
 
-    print(f"[RENDER] {clip_id}  {duration:.1f}s  music={music.name if music else 'none'}")
+    mood_label = spec.get("_audio_mood", "?")
+    print(f"[RENDER] {clip_id}  {duration:.1f}s  music={music.name if music else 'none'}  "
+          f"mood={mood_label} vol={music_volume:.2f}")
     if dry_run:
         print("  " + " ".join(cmd))
         return out_path

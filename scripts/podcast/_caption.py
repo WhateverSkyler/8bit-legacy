@@ -10,17 +10,27 @@ two paths can't drift.
 
 from __future__ import annotations
 
-# 12 baseline tags + ≤3 topic tags = 15 max. YouTube Shorts ignores all
-# hashtags on any post with >15 of them, so the cap below is a real ceiling.
-DEFAULT_HASHTAGS: list[str] = [
-    # Algorithm/discovery
+# Algorithm + brand baseline that goes on every short. The LLM-driven per-clip
+# hashtags (set by pick_clips._post_pick_enrichment as `_llm_hashtags`) fill
+# the rest up to MAX_TOTAL_HASHTAGS=15. YouTube Shorts ignores all hashtags on
+# any post with >15 of them, so the cap is a real ceiling.
+BASELINE_HASHTAGS: list[str] = [
+    # Algorithm/discovery (always include — required by feedback memory)
     "#fyp", "#foryoupage", "#explorepage",
-    # Retro gaming niche
-    "#retrogaming", "#retrogames", "#videogames", "#gaming",
-    "#nintendo", "#playstation",
     # Brand + format
-    "#8bitlegacy", "#podcast", "#shorts",
+    "#8bitlegacy", "#shorts",
 ]
+
+# Fallback set used ONLY when LLM hashtag generation fails or is unavailable.
+# Replicates the prior fixed list. Once the LLM pipeline is reliable in prod,
+# the fallback gets exercised much less often.
+FALLBACK_HASHTAGS: list[str] = [
+    "#retrogaming", "#retrogames", "#videogames", "#gaming",
+    "#nintendo", "#playstation", "#podcast",
+]
+
+# Kept for back-compat with any caller that imports DEFAULT_HASHTAGS directly.
+DEFAULT_HASHTAGS = BASELINE_HASHTAGS + FALLBACK_HASHTAGS
 
 MAX_TOTAL_HASHTAGS = 15
 TITLE_HARD_MAX_CHARS = 70  # mirrors pick_clips.TITLE_HARD_MAX_CHARS
@@ -41,15 +51,28 @@ def topic_tags(topics: list[str], limit: int = 3) -> list[str]:
     return out
 
 
-def merged_hashtags(topics: list[str]) -> str:
+def merged_hashtags(topics: list[str], llm_tags: list[str] | None = None) -> str:
     """Return the final space-joined hashtag string for a clip's topics.
 
-    Combines DEFAULT_HASHTAGS + topic_tags(topics), dedupes, caps at 15.
+    Priority order (caller controls):
+      1. BASELINE_HASHTAGS (always present — algorithm + brand)
+      2. llm_tags (from pick_clips._post_pick_enrichment, per-clip relevance)
+      3. topic_tags(topics) (fallback if llm_tags missing/short)
+      4. FALLBACK_HASHTAGS (filler if still short)
+
+    Capped at MAX_TOTAL_HASHTAGS (15). Deduped case-insensitively.
+
+    `llm_tags` defaults to None to preserve the old single-arg call signature.
+    Callers pass `spec.get("_llm_hashtags")` to opt into per-clip relevance.
     """
-    all_tags = DEFAULT_HASHTAGS + topic_tags(topics)
+    pool = list(BASELINE_HASHTAGS)
+    if llm_tags:
+        pool.extend(llm_tags)
+    pool.extend(topic_tags(topics))
+    pool.extend(FALLBACK_HASHTAGS)
     seen: set[str] = set()
     deduped: list[str] = []
-    for tag in all_tags:
+    for tag in pool:
         key = tag.lower()
         if key not in seen:
             seen.add(key)

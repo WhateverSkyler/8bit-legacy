@@ -6,6 +6,11 @@ python-dotenv>=1.0,<2
 
 # Video pipeline
 faster-whisper>=1.0,<2
+# whisperX: forced word alignment via wav2vec2 — refines Whisper word timestamps
+# from ±300ms drift to ±50ms. Used by transcribe.py post-Whisper. Caption sync
+# is now correct at the source instead of being rescued downstream by Gate 2.
+# ~500MB wav2vec2 model is downloaded on first run, cached in /app/.cache.
+whisperx>=3.1,<4
 Pillow>=11.0,<12
 # OpenCV (headless, no GUI deps) — face detection for the vertical 9:16 crop
 opencv-python-headless>=4.10,<5

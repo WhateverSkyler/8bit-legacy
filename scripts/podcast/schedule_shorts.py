@@ -60,7 +60,11 @@ def _qa_title(spec: dict) -> tuple[str, list[str]]:
 
 def _caption_for(spec: dict) -> str:
     final_title, _ = _qa_title(spec)
-    hashtags = merged_hashtags(spec.get("topics", []))
+    # Per-clip LLM hashtags (set by pick_clips._post_pick_enrichment) take
+    # priority over topic-derived tags. Falls through to baseline+fallback if
+    # _llm_hashtags is missing or empty (e.g. older clip specs from before
+    # per-clip hashtag generation was added).
+    hashtags = merged_hashtags(spec.get("topics", []), spec.get("_llm_hashtags"))
     if final_title:
         return f"{final_title}\n\n{hashtags}"
     return hashtags
