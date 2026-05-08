@@ -1,0 +1,40 @@
+clip_id,duration_sec,final_status,g2,g3,g4,g4_reason,elapsed_sec
+03-ocarina-remake-zelda-rankings_auto_1080p_c2,73.0,APPROVED,pass,pass,APPROVE,,90.1
+05-tcg-scalping-culture-mom-and-pop_auto_1080p_c3,36.05,APPROVED,pass,manual_review,APPROVE,,60.2
+05-tcg-scalping-culture-mom-and-pop_auto_1080p_c4,51.54,APPROVED,pass,pass,APPROVE,,67.3
+06-epic-layoffs-nintendo-softening-switch2_auto_1080p_c1,38.633333,APPROVED,pass,pass,APPROVE,,60.0
+07-xbox-future-console-wars_auto_1080p_c3,59.0,APPROVED,pass,pass,APPROVE,,72.9
+07-xbox-future-console-wars_auto_1080p_c4,64.04,APPROVED,pass,pass,APPROVE,,81.5
+07-xbox-future-console-wars_auto_1080p_c5,57.15,APPROVED,pass,pass,APPROVE,,72.5
+8-Bit Podcast May 5 2026 FULL FINAL V2_1080p_c1,83.94,APPROVED,pass,pass,APPROVE,,109.9
+03-ocarina-remake-zelda-rankings_auto_1080p_c1,52.633333,FLAGGED@gate4,pass,pass,FLAG_FOR_REVIEW,"Hook premise about Wind Waker's art style reversal is strong, but clip drifts into a generic Zelda top-three list and opens with an out-of-context line, weakening title match and narrative cohesion.",74.3
+04-gamestop-ebay-tcg-power-grab_auto_1080p_c2,69.74,FLAGGED@gate4,pass,pass,FLAG_FOR_REVIEW,"Clip delivers on title with a strong closing punchline ('the company can go fuck itself'), but opens with a referential line and has minor filler that warrants a human glance before publishing.",94.8
+04-gamestop-ebay-tcg-power-grab_auto_1080p_c3,74.833333,FLAGGED@gate4,pass,pass,FLAG_FOR_REVIEW,"Core idea matches title and visuals/audio are clean, but the cold open lacks context and the ending trails into a new thought, weakening narrative completeness.",99.2
+04-gamestop-ebay-tcg-power-grab_auto_1080p_c5,80.55,FLAGGED@gate4,pass,pass,FLAG_FOR_REVIEW,"Clip delivers on title and ends on-thesis, but the opening line is a mid-conversation fragment that weakens the hook and may not stop a scroll.",114.3
+05-metroid-prime4-ps5pro-xbox_1080p_c3,50.9,FLAGGED@gate4,pass,pass,FLAG_FOR_REVIEW,"Clear hook and on-title payoff, but heavy filler/stumbles in the first 10 seconds risk early drop-off — worth a human pass before publishing.",77.6
+05-tcg-scalping-culture-mom-and-pop_auto_1080p_c1,50.36,FLAGGED@gate4,pass,pass,FLAG_FOR_REVIEW,"Strong topic and title match but weak cold open ('No, just kidding') and meandering ending dilute the GameStop scalping hook — needs human review on opening trim.",70.5
+06-epic-layoffs-nintendo-softening-switch2_auto_1080p_c2,59.8,FLAGGED@gate4,pass,pass,FLAG_FOR_REVIEW,"Strong topical payoff and title match, but the opening seconds are filler/affirmations that weaken the scroll-stopping hook.",76.7
+06-epic-layoffs-nintendo-softening-switch2_auto_1080p_c4,42.51,FLAGGED@gate4,pass,manual_review,FLAG_FOR_REVIEW,"Solid visuals/audio and on-topic core, but the clip tangents into Astro Bot/Sony and ends on a non-DK beat, weakening title alignment and payoff.",68.2
+06-epic-layoffs-nintendo-softening-switch2_auto_1080p_c5,34.04,FLAGGED@gate4,pass,pass,FLAG_FOR_REVIEW,"Strong topic and visuals, but the clip ends on a trailing 'Back to you, Madison' handoff and repetitive phrasing that weakens the conclusion — needs manual review of the outro trim.",53.1
+8-Bit Podcast April 14 2026 FULL FINAL_1080p_c1,74.333333,FLAGGED@gate4,pass,pass,FLAG_FOR_REVIEW,"Solid topic and title match, but the cold open lacks a punchy hook and references a prior point viewers haven't heard — worth a manual look before publishing.",95.5
+8-Bit Podcast May 5 2026 FULL FINAL V2_1080p_c3,80.2,FLAGGED@gate4,pass,pass,FLAG_FOR_REVIEW,Clip delivers the title's payoff but opens on an unrelated 'handholdy' tangent that weakens the hook and cold-open clarity — needs human review on whether to trim the intro.,100.8
+03-video-game-movies-and-shows_1080p_c3,53.566667,REJECTED@gate2,reject,,,,56.4
+03-video-game-movies-and-shows_1080p_c1,65.0,REJECTED@gate3(reject),pass,reject,,,73.4
+03-video-game-movies-and-shows_1080p_c2,48.64,REJECTED@gate3(reject),pass,reject,,,64.3
+04-gamestop-ebay-tcg-power-grab_auto_1080p_c1,58.43,REJECTED@gate3(reject),pass,reject,,,71.1
+04-gamestop-ebay-tcg-power-grab_auto_1080p_c4,55.52,REJECTED@gate3(reject),pass,reject,,,125.1
+05-metroid-prime4-ps5pro-xbox_1080p_c1,62.0,REJECTED@gate3(reject),pass,reject,,,62.7
+05-metroid-prime4-ps5pro-xbox_1080p_c4,52.466667,REJECTED@gate3(reject),pass,reject,,,60.9
+05-metroid-prime4-ps5pro-xbox_1080p_c5,54.34,REJECTED@gate3(reject),pass,reject,,,61.0
+05-tcg-scalping-culture-mom-and-pop_auto_1080p_c2,59.14,REJECTED@gate3(reject),pass,reject,,,66.1
+06-epic-layoffs-nintendo-softening-switch2_auto_1080p_c3,69.94,REJECTED@gate3(reject),pass,reject,,,77.4
+07-xbox-future-console-wars_auto_1080p_c1,57.01,REJECTED@gate3(reject),pass,reject,,,62.5
+8-Bit Podcast April 14 2026 FULL FINAL_1080p_c3,63.71,REJECTED@gate3(reject),pass,reject,,,75.5
+8-Bit Podcast April 14 2026 FULL FINAL_1080p_c4,45.233333,REJECTED@gate3(reject),pass,reject,,,57.3
+8-Bit Podcast April 14 2026 FULL FINAL_1080p_c5,51.86,REJECTED@gate3(reject),pass,reject,,,59.0
+05-metroid-prime4-ps5pro-xbox_1080p_c2,54.25,REJECTED@gate4,pass,pass,REJECT,Weak meta opening with no hook in the first 5 seconds and an unresolved trailing-off ending that fails to deliver the title's night-and-day payoff.,83.3
+05-tcg-scalping-culture-mom-and-pop_auto_1080p_c5,32.9,REJECTED@gate4,pass,pass,REJECT,"Cold open drops viewer mid-thought referencing 'crypto kids' with no context, weakening the hook and burying the title's payoff about Nintendo enabling scalpers.",55.8
+07-xbox-future-console-wars_auto_1080p_c2,56.7,REJECTED@gate4,pass,manual_review,REJECT,"Clip's actual content (Steam platform glazing) doesn't match the title/hook about CDPR burning trust until a rushed final beat, and the opening lacks a scroll-stopping hook.",82.4
+8-Bit Podcast April 14 2026 FULL FINAL_1080p_c2,55.5,REJECTED@gate4,pass,pass,REJECT,Clip opens mid-thought without context and ends on an abrupt Starfield tangent that breaks the indie-games narrative promised by the title.,78.0
+8-Bit Podcast May 5 2026 FULL FINAL V2_1080p_c2,60.35,REJECTED@gate4,pass,manual_review,REJECT,"Weak opening hook with 'I don't know' repetition, no clear ranking payoff, and title/hook mismatch — clip rambles across multiple games without delivering the promised top-three debate.",82.8
+8-Bit Podcast May 5 2026 FULL FINAL V2_1080p_c4,72.166667,REJECTED@gate4,pass,pass,REJECT,"Clip ends mid-sentence without payoff and the title's strong stance ('Dying and Good Riddance') doesn't match the hedged, speculative eBay-acquisition discussion that dominates the runtime.",93.5
