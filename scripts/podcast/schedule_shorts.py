@@ -120,9 +120,160 @@ def _accounts_by_platform(client: ZernioClient) -> dict[str, str]:
     return out
 
 
+def _previously_posted_stems() -> set[str]:
+    """Return the set of clip stems that appear in any past schedule_log.json
+    across all episodes. Used to skip clips that have already been pushed to
+    Zernio in any prior run, preventing the duplicate-posting failure mode
+    where re-running schedule_shorts.py on a folder containing carry-over
+    clips re-schedules them. (2026-05-07 user-flagged duplicate posts.)"""
+    posted: set[str] = set()
+    for log in CLIPS_DIR.glob("*/schedule_log.json"):
+        try:
+            entries = json.loads(log.read_text())
+        except Exception:
+            continue
+        for e in entries:
+            stem = (e.get("clip") or "").rsplit("/", 1)[-1]
+            if stem:
+                posted.add(stem)
+    return posted
+
+
+def _scheduled_in_zernio_stems(client: ZernioClient | None) -> set[str]:
+    """Return the set of clip stems currently scheduled in Zernio (any
+    platform, any account). Best-effort: if Zernio is unreachable, returns
+    empty set rather than blocking the run."""
+    if client is None:
+        return set()
+    try:
+        resp = client.list_posts(status="scheduled", limit=500)
+    except Exception:
+        return set()
+    items = resp.get("posts") if isinstance(resp, dict) else resp
+    if not isinstance(items, list):
+        return set()
+    stems: set[str] = set()
+    for p in items:
+        for m in p.get("mediaItems", []) or []:
+            url = m.get("url") or ""
+            raw = url.rsplit("/", 1)[-1].split("?")[0]
+            # Zernio prepends "<ts>_<rand>_" to uploaded filenames; strip it.
+            parts = raw.split("_", 2)
+            stem = parts[2] if len(parts) >= 3 else raw
+            if stem:
+                stems.add(stem)
+    return stems
+
+
+# ===== Gate 4 — Final comprehensive approval (Opus multimodal) ===============
+
+def _gate4_final_approval(mp4: Path, spec: dict, episode_dir: Path) -> dict | None:
+    """Pre-schedule comprehensive QA via Claude Opus 4.7 multimodal.
+
+    Extracts 6 keyframes, sends with the clip's spec + extracted transcript text
+    + scene data. Returns the verdict dict or None on infra error.
+
+    On REJECT: moves clip to _rejected/ + emits Navi.
+    On FLAG_FOR_REVIEW: emits Navi but doesn't move (clip stays for human approval).
+    On APPROVE: returns verdict; caller continues to upload.
+    """
+    try:
+        from _qa_helpers import (
+            call_claude_vision, extract_keyframes, video_duration_sec,
+            move_to_rejected, emit_reject_navi, emit_flag_navi,
+            log_gate_decision, OPUS_MODEL,
+        )
+        from qa_prompts import GATE_4_FINAL_APPROVAL_V1
+        import json as _json
+    except ImportError as exc:
+        print(f"  [gate4] qa helpers unavailable ({exc}) — skipping final approval")
+        return None
+
+    clip_id = mp4.stem
+    duration = video_duration_sec(mp4)
+    if duration < 5:
+        return {"final_decision": "APPROVE", "reason": "duration < 5s, skipping gate4"}
+
+    # 6 keyframes spread across the clip
+    kf_dir = episode_dir / "_kf" / clip_id
+    timestamps = [duration * pct for pct in (0.05, 0.20, 0.40, 0.60, 0.80, 0.95)]
+    keyframes = extract_keyframes(mp4, timestamps, kf_dir, prefix="g4")
+    if len(keyframes) < 4:
+        print(f"  [gate4] only {len(keyframes)} keyframes — skipping")
+        return None
+
+    # Pull extracted text from the transcript matching the source_stem
+    source_stem = spec.get("source_stem", "")
+    extracted_text = ""
+    word_excerpt = "(unavailable)"
+    if source_stem:
+        tx_path = ROOT / "data" / "podcast" / "transcripts" / f"{source_stem}.json"
+        if tx_path.exists():
+            try:
+                tx = _json.loads(tx_path.read_text())
+                start = float(spec.get("start_sec", 0))
+                end = float(spec.get("end_sec", duration))
+                parts = []
+                first_words = []
+                for seg in tx.get("segments", []):
+                    if seg["end"] < start:
+                        continue
+                    if seg["start"] > end:
+                        break
+                    parts.append(seg["text"].strip())
+                    if len(first_words) < 30:
+                        for w in (seg.get("words") or []):
+                            if len(first_words) >= 30:
+                                break
+                            first_words.append(w)
+                extracted_text = " ".join(parts).strip()[:5000]
+                word_excerpt = "\n".join(
+                    f"  [{w.get('start', 0):.2f}s] {w.get('word', '').strip()}"
+                    for w in first_words
+                ) or "(no words)"
+            except Exception as exc:
+                print(f"  [gate4] transcript read failed: {exc}")
+
+    # Compact scene summary (best-effort — may not be available)
+    scenes_summary = "(scene data not available at schedule stage)"
+
+    prompt = GATE_4_FINAL_APPROVAL_V1.format(
+        title=spec.get("title", "?"),
+        hook=spec.get("hook", "?"),
+        topics=", ".join(spec.get("topics", [])) or "?",
+        duration_sec=duration,
+        scenes_summary=scenes_summary,
+        extracted_text=extracted_text or "(transcript unavailable)",
+        word_timings_excerpt=word_excerpt,
+    )
+
+    try:
+        verdict = call_claude_vision(prompt, keyframes, model=OPUS_MODEL, max_tokens=2500)
+    except Exception as exc:
+        print(f"  [gate4] opus error: {exc} — letting clip through")
+        return None
+
+    decision = (verdict.get("final_decision") or "").upper()
+    print(f"  [gate4] decision={decision}")
+
+    # Log every Gate 4 decision (APPROVE / FLAG / REJECT)
+    log_gate_decision(source_stem, "gate4", clip_id, verdict, extra={
+        "duration_sec": duration,
+        "n_keyframes": len(keyframes),
+    })
+
+    if decision == "REJECT":
+        move_to_rejected(mp4, episode_dir, "Gate 4 (final approval)", verdict, clip_id)
+        emit_reject_navi(clip_id, "Gate 4 (final approval)", verdict, source_stem)
+    elif decision == "FLAG_FOR_REVIEW":
+        emit_flag_navi(clip_id, "Gate 4 (final approval)",
+                       verdict.get("issues", []) or [], source_stem)
+    return verdict
+
+
 def schedule(episode: str, start_date: str, dry_run: bool = True,
              clips_plan_path: Path = CLIPS_PLAN_ALL,
-             strict_titles: bool = False) -> int:
+             strict_titles: bool = False, force: bool = False) -> int:
     episode_clips_dir = CLIPS_DIR / _safe(episode)
     if not episode_clips_dir.exists():
         print(f"[FATAL] no clips dir: {episode_clips_dir}", file=sys.stderr)
@@ -135,6 +286,36 @@ def schedule(episode: str, start_date: str, dry_run: bool = True,
 
     plan = json.loads(clips_plan_path.read_text()) if clips_plan_path.exists() else []
     plan_by_id = {p["clip_id"]: p for p in plan}
+
+    # --- Dedupe (2026-05-07): skip any clip that already went out OR is queued.
+    # The directory glob above can include stale rendered clips from prior
+    # episodes that happen to share the folder. Without this gate, every
+    # re-run of schedule_shorts.py re-schedules them, producing the duplicate
+    # cross-platform posts that prompted this fix.
+    if not force:
+        posted_stems = _previously_posted_stems()
+        try:
+            zernio_stems = _scheduled_in_zernio_stems(ZernioClient())
+        except Exception:
+            zernio_stems = set()
+        skip_stems = posted_stems | zernio_stems
+        kept: list[Path] = []
+        skipped: list[tuple[Path, str]] = []
+        for mp4 in mp4s:
+            if mp4.name in skip_stems:
+                src = "queued" if mp4.name in zernio_stems else "posted"
+                skipped.append((mp4, src))
+            else:
+                kept.append(mp4)
+        if skipped:
+            print(f"[DEDUPE] {len(skipped)} clip(s) skipped (already {set(s for _,s in skipped)})")
+            for mp4, src in skipped:
+                print(f"  · {mp4.name}  [{src}]")
+            print("  Pass --force to re-schedule anyway.")
+        mp4s = kept
+        if not mp4s:
+            print("[OK] nothing new to schedule (all already posted or queued).")
+            return 0
 
     times = _build_schedule(len(mp4s), start_date)
     print(f"[PLAN] {len(mp4s)} clips · {SLOT_HOURS} ET · starting {start_date}")
@@ -175,9 +356,36 @@ def schedule(episode: str, start_date: str, dry_run: bool = True,
         return 2
 
     log = []
+    gate4_rejected = 0
+    gate4_flagged = 0
     for mp4, when in zip(mp4s, times):
         spec = plan_by_id.get(mp4.stem, {"hook": mp4.stem, "topics": []})
         caption = _caption_for(spec)
+
+        # GATE 4 (2026-05-07): final comprehensive QA via Claude Opus 4.7 multimodal.
+        # Sends 6 keyframes + spec + transcript + scene data. Routes:
+        #   APPROVE         → continue to upload
+        #   FLAG_FOR_REVIEW → skip upload, emit Navi for human review
+        #   REJECT          → skip upload + move to _rejected/ + emit Navi
+        # Failures during QA infrastructure (network, missing keyframes) → let through
+        # so we don't block on infra issues.
+        g4 = _gate4_final_approval(mp4, spec, episode_clips_dir)
+        if g4:
+            decision = (g4.get("final_decision") or "").upper()
+            if decision == "REJECT":
+                gate4_rejected += 1
+                log.append({"clip": mp4.name, "gate4": "REJECTED",
+                            "reason": g4.get("reason", "?")})
+                print(f"[GATE4] REJECT {mp4.name}: {g4.get('reason', '?')}")
+                continue
+            if decision == "FLAG_FOR_REVIEW":
+                gate4_flagged += 1
+                log.append({"clip": mp4.name, "gate4": "FLAGGED",
+                            "issues": g4.get("issues", [])})
+                print(f"[GATE4] FLAG {mp4.name}: held for human review")
+                continue
+            print(f"[GATE4] APPROVE {mp4.name}")
+
         try:
             media_url = _upload_file(client, mp4)
             payload = {
@@ -214,6 +422,8 @@ def main() -> int:
     parser.add_argument("--clips-plan", default=str(CLIPS_PLAN_ALL))
     parser.add_argument("--strict-titles", action="store_true",
                         help="Refuse to --execute if any title fails QA (length / words / blocklist)")
+    parser.add_argument("--force", action="store_true",
+                        help="Bypass dedupe (re-schedule clips even if already posted/queued)")
     g = parser.add_mutually_exclusive_group(required=True)
     g.add_argument("--dry-run", action="store_true")
     g.add_argument("--execute", action="store_true")
@@ -221,7 +431,7 @@ def main() -> int:
 
     return schedule(args.episode, args.start_date, dry_run=args.dry_run,
                     clips_plan_path=Path(args.clips_plan),
-                    strict_titles=args.strict_titles)
+                    strict_titles=args.strict_titles, force=args.force)
 
 
 if __name__ == "__main__":

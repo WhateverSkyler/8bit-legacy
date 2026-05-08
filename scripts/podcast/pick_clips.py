@@ -76,7 +76,9 @@ UNRESOLVED_PRONOUNS = {
 }
 SENTENCE_END_PUNCT = {".", "!", "?"}
 
-PICKS_REQUESTED = 7  # ask Claude for a few extra so validation can prune aggressively
+PICKS_REQUESTED = 14  # bumped 7→14 (2026-05-07): now picking shorts from the full
+# transcript instead of per-topic, so we need more candidates per source to fill
+# the cross-platform short pipeline. Validation will prune to target_count.
 
 # --- Title QA (2026-05-01: user feedback that some titles were inaccurate or too long) ---
 # Bias: "a little vague over too specific and inaccurate."
@@ -404,6 +406,130 @@ def _call_claude(topic_name: str, transcript_blob: str, n: int) -> list[dict]:
     return json.loads(text)
 
 
+# --- Gate 1: narrative coherence re-validation ------------------------------
+
+def _extract_text_in_range(transcript: dict, start_sec: float, end_sec: float) -> str:
+    """Concatenate segment text within [start_sec, end_sec]. Used by Gate 1
+    so Claude sees exactly what the viewer would hear."""
+    parts: list[str] = []
+    for seg in transcript.get("segments", []):
+        if seg["end"] < start_sec:
+            continue
+        if seg["start"] > end_sec:
+            break
+        parts.append(seg["text"].strip())
+    return " ".join(parts).strip()
+
+
+def _surrounding_context(transcript: dict, start_sec: float, end_sec: float,
+                         context_sec: float = 30.0) -> str:
+    """Pull 30s of text on either side of the clip — Claude needs this to judge
+    whether the clip's opening relies on prior context (e.g., 'he was saying...')."""
+    return _extract_text_in_range(
+        transcript,
+        max(0, start_sec - context_sec),
+        end_sec + context_sec,
+    )
+
+
+def _gate1_narrative_coherence(candidates: list[dict], transcript: dict,
+                              segments: list[dict]) -> list[dict]:
+    """For each candidate, send extracted-text + surrounding context to Claude
+    with the narrative coherence prompt. Drop REJECTs, apply ADJUST boundaries,
+    keep PASS as-is.
+
+    Failures during validation (network/JSON errors) → keep the candidate (don't
+    drop on infrastructure issues). Failures are logged.
+    """
+    try:
+        # Lazy import — only needed when Gate 1 runs
+        from _qa_helpers import call_claude_text, log_gate_decision
+        from qa_prompts import GATE_1_NARRATIVE_COHERENCE_V1
+    except ImportError as exc:
+        print(f"  [gate1] qa helpers unavailable ({exc}) — skipping narrative re-validation")
+        return candidates
+
+    accepted: list[dict] = []
+    rejected_reasons: list[dict] = []
+
+    # Episode stem for the per-episode JSONL log (all candidates share a source_stem)
+    episode_stem = candidates[0].get("source_stem", "unknown") if candidates else "unknown"
+
+    for cand in candidates:
+        try:
+            start = float(cand.get("start_sec", 0))
+            end = float(cand.get("end_sec", 0))
+        except (TypeError, ValueError):
+            accepted.append(cand)  # malformed — let snap-and-validate catch it
+            continue
+
+        extracted = _extract_text_in_range(transcript, start, end)
+        if not extracted or len(extracted) < 50:
+            # Shouldn't happen — clip too short to evaluate. Let downstream catch.
+            accepted.append(cand)
+            continue
+
+        prompt = GATE_1_NARRATIVE_COHERENCE_V1.format(
+            title=cand.get("title", "?"),
+            hook=cand.get("hook", "?"),
+            topics=", ".join(cand.get("topics", [])) or "?",
+            duration_sec=end - start,
+            start_sec=start,
+            end_sec=end,
+            extracted_text=extracted[:4000],  # cap for prompt size
+            surrounding_context=_surrounding_context(transcript, start, end)[:6000],
+        )
+
+        try:
+            verdict = call_claude_text(prompt, max_tokens=1500)
+        except Exception as exc:
+            print(f"  [gate1] claude error on {cand.get('title','?')[:40]}: {exc} — keeping candidate")
+            accepted.append(cand)
+            continue
+
+        decision = (verdict.get("decision") or "").upper()
+        reason = verdict.get("reason", "?")
+        clip_id = cand.get("clip_id") or cand.get("title", "?")[:60]
+
+        # Log every Gate 1 decision (PASS / ADJUST / REJECT) for retrospective analysis
+        log_gate_decision(episode_stem, "gate1", clip_id, verdict, extra={
+            "title": cand.get("title", "?"),
+            "duration_sec": end - start,
+            "start_sec": start, "end_sec": end,
+        })
+
+        if decision == "REJECT":
+            print(f"  [gate1] REJECT: {cand.get('title','?')[:50]} — {reason}")
+            rejected_reasons.append({
+                "title": cand.get("title", "?"),
+                "reason": reason,
+                "issues": verdict.get("issues", []),
+            })
+            continue
+
+        if decision == "ADJUST":
+            adj = verdict.get("adjusted_boundaries") or {}
+            try:
+                new_start = float(adj.get("start_sec", start))
+                new_end = float(adj.get("end_sec", end))
+                if new_end - new_start >= 20 and new_start >= 0 and new_end > new_start:
+                    print(f"  [gate1] ADJUST: {cand.get('title','?')[:50]} "
+                          f"{start:.1f}–{end:.1f}s → {new_start:.1f}–{new_end:.1f}s")
+                    cand = {**cand, "start_sec": new_start, "end_sec": new_end,
+                            "_gate1_adjusted": True}
+            except (TypeError, ValueError):
+                pass  # bad ADJUST values — keep original
+
+        # Annotate engagement risk + hook info for downstream visibility
+        cand["_gate1_hook_in_first_5_sec"] = bool(verdict.get("hook_in_first_5_sec"))
+        cand["_gate1_engagement_risk"] = verdict.get("engagement_risk", "unknown")
+        accepted.append(cand)
+
+    n_rej = len(candidates) - len(accepted)
+    print(f"  [gate1] {len(candidates)} candidates → {len(accepted)} accepted, {n_rej} rejected")
+    return accepted
+
+
 # --- Orchestrator -----------------------------------------------------------
 
 def pick_clips_from_transcript(
@@ -421,6 +547,12 @@ def pick_clips_from_transcript(
         return []
 
     candidates = _call_claude(topic_name, transcript_blob, PICKS_REQUESTED)
+
+    # GATE 1 (2026-05-07): re-validate narrative coherence on each raw candidate
+    # using a fresh Claude call with the EXTRACTED segment text. This catches
+    # clips Claude initially scored well but that fail the stand-alone test
+    # when actually checked against the chosen boundaries.
+    candidates = _gate1_narrative_coherence(candidates, tx, segments)
 
     validated: list[dict] = []
     rejected: list[dict] = []
@@ -466,7 +598,7 @@ def main() -> int:
     parser.add_argument("transcript", nargs="?", help="Path to a transcript JSON")
     parser.add_argument("--batch", help="Directory of transcripts to process")
     parser.add_argument("--dry-run", action="store_true", help="Skip Claude call; show stats only")
-    parser.add_argument("--target-count", type=int, default=5, help="Final picks per topic (default 5)")
+    parser.add_argument("--target-count", type=int, default=10, help="Final picks per source (default 10)")
     args = parser.parse_args()
 
     if not args.transcript and not args.batch:

@@ -67,19 +67,24 @@ FACE_SAMPLES_PER_SCENE = 5
 
 # --- Scene detection ---------------------------------------------------------
 # Sampling stride when walking the clip to find hard camera cuts (seconds).
-# 0.4s is the sweet spot: dense enough to place a cut within a single frame of
-# the true boundary, sparse enough to keep detection under ~1s wall-time.
-SCENE_SAMPLE_STRIDE_SEC = 0.4
+# Lowered 0.4 → 0.15 (2026-05-07): a 0.4s stride could miss the true cut
+# boundary by up to 0.4s, so the new camera angle would render with the OLD
+# scene's crop_x for up to 0.4s before the next sample triggered a new scene.
+# Combined with merge-into-previous, this manifested as ~1s of "cut to Madison
+# but he's still off-frame" before the centering snapped. 0.15s → max stride
+# latency 0.15s, ~3x compute on detection (still <1s wall on a 60s clip).
+SCENE_SAMPLE_STRIDE_SEC = 0.15
 # Bhattacharyya distance above which consecutive frames are flagged as a cut.
-# Range [0,1]; 0 = identical, 1 = disjoint histograms. For hard cuts between
-# different cameras in a podcast, observed values are typically > 0.40;
-# within-scene frame-to-frame values are typically < 0.20. 0.35 splits the
-# difference with margin.
 BHATTA_CUT_THRESHOLD = 0.35
-# Scenes shorter than this are merged into the previous scene (drops
-# transition frames + avoids 1-sample "scenes" that would spawn tiny trim
-# segments in the filter graph).
-MIN_SCENE_DURATION_SEC = 0.6
+# Scenes shorter than this get merged into the NEXT scene (not previous).
+# Lowered 0.6 → 0.25 + flipped merge direction (2026-05-07). Old behavior was
+# the second compounding bug behind the visible centering delay: when a brief
+# transitional frame (camera switching) sat between two stable scenes, we'd
+# absorb it into the PREVIOUS scene, extending the old crop_x into the new
+# camera's content for up to MIN_SCENE_DURATION_SEC. Merging into NEXT means
+# brief scenes inherit the upcoming camera's face position so the new speaker
+# is centered the moment they appear on-screen.
+MIN_SCENE_DURATION_SEC = 0.25
 # Safety rail: if scene detection returns more scenes than this for a short,
 # something is wrong with the content (compressed artifacts, rapid-fire cuts,
 # etc.). Fall back to fixed center crop rather than produce a filter graph
@@ -252,6 +257,7 @@ def detect_scenes_and_crops(
     end_sec: float,
     crop_w: int = CROP_W,
     source_w: int = SOURCE_W,
+    cut_threshold: float = BHATTA_CUT_THRESHOLD,
 ) -> list[tuple[float, float, int]]:
     """Detect camera cuts inside [start_sec, end_sec] and return per-scene
     crop offsets.
@@ -259,6 +265,14 @@ def detect_scenes_and_crops(
     Returns a list of (scene_start_rel, scene_end_rel, crop_x) tuples, where
     times are CLIP-RELATIVE (0-based). Always returns at least one tuple
     covering the full duration — callers never have to handle an empty list.
+
+    Args:
+      cut_threshold: Bhattacharyya distance above which two consecutive
+        sampled frames are flagged as a hard cut. Default 0.35 (BHATTA_CUT_THRESHOLD).
+        Gate 3 rerender rescue lowers this to 0.25 to catch softer cuts the
+        first pass missed (the fix path when a clip's framing is judged
+        reject_reframe by Claude — a tighter threshold splits more scenes,
+        each gets fresh face detection).
 
     Safe fallbacks (all return a single-scene center crop):
       - OpenCV not installed / cv2 can't open the source
@@ -321,7 +335,7 @@ def detect_scenes_and_crops(
             hist = _hsv_hist(frame)
             if prev_hist is not None:
                 d = cv2.compareHist(prev_hist, hist, cv2.HISTCMP_BHATTACHARYYA)
-                if d > BHATTA_CUT_THRESHOLD:
+                if d > cut_threshold:
                     cut_points.append(t_rel)
             prev_hist = hist
         cut_points.append(duration)
@@ -333,13 +347,29 @@ def detect_scenes_and_crops(
                 scenes_rel.append((a, b))
 
         # --- Merge scenes shorter than MIN_SCENE_DURATION_SEC ----------------
+        # Merge into the NEXT scene (not previous) so brief transitional frames
+        # take on the upcoming camera's crop_x. Fixes "speaker appears off-center
+        # for ~1s after a cut" by ensuring the new camera's crop is established
+        # immediately at the cut, not delayed by a transitional sliver.
         merged: list[tuple[float, float]] = []
+        carry_start: float | None = None
         for s, e in scenes_rel:
-            if merged and (e - s) < MIN_SCENE_DURATION_SEC:
+            scene_start = carry_start if carry_start is not None else s
+            if (e - scene_start) < MIN_SCENE_DURATION_SEC:
+                # Defer this scene's content into the NEXT iteration's start.
+                if carry_start is None:
+                    carry_start = scene_start
+                continue
+            merged.append((scene_start, e))
+            carry_start = None
+        # If a trailing brief scene was carried but never absorbed into a next,
+        # attach it to the previous scene so we don't drop content.
+        if carry_start is not None:
+            if merged:
                 ps, _pe = merged[-1]
-                merged[-1] = (ps, e)
+                merged[-1] = (ps, scenes_rel[-1][1] if scenes_rel else carry_start)
             else:
-                merged.append((s, e))
+                merged = [(carry_start, scenes_rel[-1][1] if scenes_rel else duration)]
         if not merged:
             merged = [(0.0, duration)]
 
@@ -347,51 +377,44 @@ def detect_scenes_and_crops(
             print(f"  [SCENES] {len(merged)} scenes > cap {MAX_SCENES} → 1 scene, center crop")
             return fallback
 
-        # --- Pass 2: for each scene, detect face → crop_x --------------------
-        # Scene continuity: when a scene's face detection fails, prefer the
-        # most recent successful crop_x from a prior scene rather than
-        # snapping back to dead-center. This fixes the visible "subject jumps
-        # to middle" failure mode on cuts where one camera angle has the
-        # subject visibly off-center but face detection is shaky.
-        result: list[tuple[float, float, int]] = []
-        any_face = False
-        last_good_crop_x: int | None = None
+        # --- Pass 2: detect face_x per scene, then assign crop_x with look-ahead --
+        # Two-pass design (2026-05-07): pass 1 collects raw face_x for each scene;
+        # pass 2 fills None entries by looking AHEAD to the next detected face,
+        # not BACK to the previous one. Looking back was the centering bug —
+        # after a hard cut to a new speaker, brief detection failure on the
+        # incoming scene would inherit the previous speaker's crop, leaving the
+        # new speaker visibly off-frame until the next sample succeeded.
+        face_xs: list[int | None] = []
         for s, e in merged:
-            face_x = _face_center_for_range(
+            face_xs.append(_face_center_for_range(
                 cap, cascades, start_sec + s, start_sec + e,
-            )
-            if face_x is None:
-                # Carry forward the previous scene's crop_x if we have one.
-                # Only use the dead-center fallback if NO scene in this clip
-                # has succeeded yet.
-                crop_x = last_good_crop_x if last_good_crop_x is not None else CENTER_CROP_X
-            else:
-                any_face = True
-                crop_x = face_x - crop_w // 2
-                crop_x = max(0, min(source_w - crop_w, crop_x))
-                last_good_crop_x = crop_x
-            result.append((s, e, crop_x))
-
-        # Backfill leading scenes that failed before any face was found:
-        # if scene 0 missed but scene 2 hit, retroactively give scenes 0 and 1
-        # scene 2's crop_x. Avoids "first 3 seconds dead-center, then snap".
-        if any_face:
-            first_good = next((cx for _s, _e, cx in result if cx != CENTER_CROP_X), None)
-            if first_good is not None:
-                fixed: list[tuple[float, float, int]] = []
-                seen_good = False
-                for s, e, cx in result:
-                    if cx == CENTER_CROP_X and not seen_good:
-                        fixed.append((s, e, first_good))
-                    else:
-                        if cx != CENTER_CROP_X:
-                            seen_good = True
-                        fixed.append((s, e, cx))
-                result = fixed
-
+            ))
+        any_face = any(fx is not None for fx in face_xs)
         if not any_face:
-            print(f"  [SCENES] {len(result)} scenes, 0 faces → 1 scene, center crop")
+            print(f"  [SCENES] {len(merged)} scenes, 0 faces → 1 scene, center crop")
             return fallback
+        # Last-resort fallback: if every later scene also failed, use the most
+        # recent successful crop_x. Keeps stable shots stable when face detection
+        # is briefly noisy mid-scene rather than crossing a real cut.
+        result: list[tuple[float, float, int]] = []
+        last_good_crop_x: int | None = None
+        for i, ((s, e), fx) in enumerate(zip(merged, face_xs)):
+            if fx is not None:
+                cx = fx - crop_w // 2
+                cx = max(0, min(source_w - crop_w, cx))
+                last_good_crop_x = cx
+            else:
+                # Look ahead for the next detected face_x.
+                next_fx = next((face_xs[j] for j in range(i + 1, len(face_xs))
+                                if face_xs[j] is not None), None)
+                if next_fx is not None:
+                    cx = next_fx - crop_w // 2
+                    cx = max(0, min(source_w - crop_w, cx))
+                elif last_good_crop_x is not None:
+                    cx = last_good_crop_x
+                else:
+                    cx = CENTER_CROP_X
+            result.append((s, e, cx))
 
         # Optimization: if every scene lands on the same crop_x, collapse to
         # the fast single-scene path (identical output, simpler filter graph).
@@ -451,6 +474,65 @@ def _build_video_filter(scenes: list[tuple[float, float, int]], ass_path: Path,
     return parts
 
 
+def _build_ffmpeg_cmd(source_video: Path, start: float, end: float, duration: float,
+                      scenes: list[tuple[float, float, int]], ass_path: Path,
+                      music: Path | None, has_music: bool, crop_w: int,
+                      out_path: Path) -> list[str]:
+    """Build the full ffmpeg command for one render. Pure function — no side effects.
+
+    Factored out of render_clip() so Gate 2 + Gate 3 rescue paths can rebuild
+    cmd with shifted captions or restricter scene detection and re-run.
+    """
+    filter_parts = _build_video_filter(scenes, ass_path, crop_w=crop_w)
+    vout_label = "[v0]"
+    if END_CARD.exists():
+        filter_parts.append(
+            f"[2:v]scale=1080:1920,format=rgba,fade=t=in:st={max(0, duration-4):.2f}:d=0.5:alpha=1[ec]"
+        )
+        filter_parts.append(
+            f"[v0][ec]overlay=0:0:enable='gte(t,{max(0, duration-4):.2f})'[vout]"
+        )
+        vout_label = "[vout]"
+
+    if has_music:
+        # Music bed mixed quieter (2026-04-23: bumped from 0.15 → 0.12 per user ask
+        # for "5% quieter"; interpreted as a perceptible ~2dB cut).
+        filter_parts.append("[0:a]volume=1.0[dialog]")
+        filter_parts.append("[1:a]volume=0.12,aloop=loop=-1:size=2e9[music]")
+        filter_parts.append("[dialog][music]amix=duration=shortest:dropout_transition=3[aout]")
+        aout_label = "[aout]"
+    else:
+        aout_label = "0:a"
+
+    filter_complex = ";".join(filter_parts)
+
+    cmd = [
+        "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+        "-ss", f"{start:.3f}", "-to", f"{end:.3f}", "-i", str(source_video),
+    ]
+    if has_music and music is not None:
+        cmd += ["-stream_loop", "-1", "-i", str(music)]
+    if END_CARD.exists():
+        if not has_music:
+            # if no music, end_card becomes input [1], not [2]
+            filter_complex = filter_complex.replace("[2:v]", "[1:v]")
+        cmd += ["-i", str(END_CARD)]
+
+    cmd += [
+        "-filter_complex", filter_complex,
+        "-map", vout_label,
+        "-map", aout_label,
+        "-c:v", "libx264", "-preset", "medium", "-crf", "22",
+        "-pix_fmt", "yuv420p",
+        "-r", "30",
+        "-c:a", "aac", "-b:a", "192k",
+        "-movflags", "+faststart",
+        "-t", f"{duration:.3f}",
+        str(out_path),
+    ]
+    return cmd
+
+
 def render_clip(spec: dict, episode: str, transcripts_by_stem: dict[str, dict],
                 crop_x: int | None = None, crop_w: int = CROP_W, dry_run: bool = False) -> Path | None:
     clip_id = spec["clip_id"]
@@ -493,62 +575,8 @@ def render_clip(spec: dict, episode: str, transcripts_by_stem: dict[str, dict],
     else:
         scenes = detect_scenes_and_crops(source_video, start, end, crop_w=crop_w)
 
-    filter_parts = _build_video_filter(scenes, ass_path, crop_w=crop_w)
-    vout_label = "[v0]"
-    if END_CARD.exists():
-        filter_parts.append(
-            f"[2:v]scale=1080:1920,format=rgba,fade=t=in:st={max(0, duration-4):.2f}:d=0.5:alpha=1[ec]"
-        )
-        filter_parts.append(
-            f"[v0][ec]overlay=0:0:enable='gte(t,{max(0, duration-4):.2f})'[vout]"
-        )
-        vout_label = "[vout]"
-
-    if has_music:
-        # Music bed mixed quieter (2026-04-23: bumped from 0.15 → 0.12 per user ask
-        # for "5% quieter"; interpreted as a perceptible ~2dB cut).
-        filter_parts.append("[0:a]volume=1.0[dialog]")
-        filter_parts.append("[1:a]volume=0.12,aloop=loop=-1:size=2e9[music]")
-        filter_parts.append("[dialog][music]amix=duration=shortest:dropout_transition=3[aout]")
-        aout_label = "[aout]"
-    else:
-        aout_label = "0:a"
-
-    filter_complex = ";".join(filter_parts)
-
-    cmd = [
-        "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
-        "-ss", f"{start:.3f}", "-to", f"{end:.3f}", "-i", str(source_video),
-    ]
-    if has_music:
-        cmd += ["-stream_loop", "-1", "-i", str(music)]
-    else:
-        # keep input indexes predictable even without music
-        pass
-    if END_CARD.exists():
-        if not has_music:
-            # if no music, end_card becomes input [1], not [2]
-            filter_complex = filter_complex.replace("[2:v]", "[1:v]")
-        cmd += ["-i", str(END_CARD)]
-
-    cmd += [
-        "-filter_complex", filter_complex,
-        "-map", vout_label,
-    ]
-    if aout_label.startswith("["):
-        cmd += ["-map", aout_label]
-    else:
-        cmd += ["-map", aout_label]
-
-    cmd += [
-        "-c:v", "libx264", "-preset", "medium", "-crf", "22",
-        "-pix_fmt", "yuv420p",
-        "-r", "30",
-        "-c:a", "aac", "-b:a", "192k",
-        "-movflags", "+faststart",
-        "-t", f"{duration:.3f}",
-        str(out_path),
-    ]
+    cmd = _build_ffmpeg_cmd(source_video, start, end, duration, scenes,
+                            ass_path, music, has_music, crop_w, out_path)
 
     print(f"[RENDER] {clip_id}  {duration:.1f}s  music={music.name if music else 'none'}")
     if dry_run:
@@ -562,16 +590,307 @@ def render_clip(spec: dict, episode: str, transcripts_by_stem: dict[str, dict],
         return None
     print(f"[DONE] {out_path.relative_to(ROOT)}")
 
+    # ----- Rerender closures (used by Gate 2 + Gate 3 rescue paths) ------
+    # State captured: words, duration, ass_path, source_video, start, end, crop_w,
+    # music, has_music, scenes, out_path, cmd. Each closure mutates the
+    # appropriate input file (ASS for Gate 2; scenes for Gate 3) then re-runs
+    # ffmpeg. Returns True on success.
+    def _rerender_with_caption_offset(offset_sec: float) -> bool:
+        """Gate 2 rescue: shift every word's start/end by offset_sec, rewrite
+        ASS, re-run ffmpeg. Positive offset = captions appear later (audio is
+        ahead of captions). Negative = earlier (audio lags captions)."""
+        shifted = [{
+            "start": max(0.0, w["start"] + offset_sec),
+            "end": min(duration, w["end"] + offset_sec),
+            "word": w["word"],
+        } for w in words]
+        # Drop any words pushed entirely outside the clip window after shift
+        shifted = [w for w in shifted if w["end"] > w["start"]]
+        ass_path.write_text(build_ass(shifted, duration=duration))
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+        if proc.returncode != 0:
+            print(f"  [gate2-rescue] ffmpeg returned {proc.returncode}: {proc.stderr[-500:]}")
+            return False
+        return True
+
+    def _rerender_with_stricter_scenes() -> tuple[bool, list[tuple[float, float, int]]]:
+        """Gate 3 rescue: re-run scene detection with cut_threshold=0.25 (vs
+        default 0.35). Tighter threshold → more scene boundaries → each new
+        scene gets fresh face-detection sampling. Returns (ok, new_scenes)."""
+        nonlocal scenes
+        new_scenes = detect_scenes_and_crops(
+            source_video, start, end,
+            crop_w=crop_w, cut_threshold=0.25,
+        )
+        if new_scenes == scenes:
+            print("  [gate3-rescue] stricter threshold returned identical scenes — no rerender")
+            return False, scenes
+        new_cmd = _build_ffmpeg_cmd(
+            source_video, start, end, duration, new_scenes,
+            ass_path, music, has_music, crop_w, out_path,
+        )
+        proc = subprocess.run(new_cmd, capture_output=True, text=True)
+        if proc.returncode != 0:
+            print(f"  [gate3-rescue] ffmpeg returned {proc.returncode}: {proc.stderr[-500:]}")
+            return False, scenes
+        scenes = new_scenes  # update for downstream preview generation
+        return True, new_scenes
+
+    # GATE 2 (2026-05-07): caption-audio sync verification via Claude Vision.
+    # Extract 2 keyframes (early + late), send with word timings to Claude.
+    # On rerender_with_offset, rebuild ASS with shifted timings + re-run ffmpeg
+    # + re-call Gate 2 once. Cap retries at 1.
+    g2 = _gate2_caption_sync(out_path, words, spec, duration, episode_clips_dir,
+                             clip_id, rerender_func=_rerender_with_caption_offset)
+    if g2 and g2.get("recommendation") == "reject":
+        return None  # _gate2 handles reject routing + Navi
+
     # QA preview: 2x2 contact sheet at 25/50/75/95% of clip duration.
-    # Saved to <episode>/preview/<clip_id>.jpg so a human can quickly browse
-    # framing across all queued clips before they go live. Non-fatal if it
-    # fails — primary render already succeeded.
     try:
         _generate_preview(out_path, clip_id, episode_clips_dir, scenes, duration)
     except Exception as exc:
         print(f"  [PREVIEW] generation failed (non-fatal): {exc}")
 
+    # GATE 3 (2026-05-07): framing/centering verification via Claude Vision.
+    # Extract 4 keyframes, send with scene-detection data. On reject_reframe,
+    # re-run scene detection with cut_threshold=0.25 + re-render + re-call Gate 3.
+    # Cap retries at 1. If still fails OR rec='reject', move to _rejected/.
+    g3 = _gate3_framing(out_path, scenes, duration, spec, episode_clips_dir,
+                       clip_id, rerender_func=_rerender_with_stricter_scenes)
+    if g3 and g3.get("recommendation") in ("reject", "reject_reframe"):
+        return None
+
     return out_path
+
+
+# ===== Gate 2 + Gate 3 — multimodal QA via Claude Vision =====================
+# (2026-05-07 evening) Wraps each rendered clip with two LLM checks:
+#   Gate 2: do the burned captions match the audio? (sync verification)
+#   Gate 3: is the speaker centered in keyframes? (framing verification)
+# Both decide pass / reject; reject moves clip to _rejected/ + emits Navi task.
+
+def _gate2_caption_sync(out_path: Path, words: list[dict], spec: dict,
+                        duration: float, episode_dir: Path, clip_id: str,
+                        rerender_func=None, _retry: int = 0) -> dict | None:
+    """Send 2 keyframes (early + late) + word timings to Claude Vision.
+    Returns the verdict dict, or None on infra error (in which case we
+    let the clip through — don't drop on infrastructure flakes).
+
+    Rescue path: if Claude returns recommendation='rerender_with_offset' and
+    rerender_func is provided, shift caption timings by estimated_offset_sec,
+    re-render, and re-call Gate 2 ONCE. _retry caps the recursion at 1 attempt.
+    """
+    try:
+        from _qa_helpers import (
+            call_claude_vision, extract_keyframes,
+            move_to_rejected, emit_reject_navi, log_gate_decision, SONNET_MODEL,
+        )
+        from qa_prompts import GATE_2_CAPTION_SYNC_V1
+    except ImportError as exc:
+        print(f"  [gate2] qa helpers unavailable ({exc}) — skipping caption sync check")
+        return None
+
+    if duration < 4:
+        # Too short to extract two distinct keyframes; skip
+        return {"recommendation": "pass", "reason": "duration < 4s, skipping gate2"}
+
+    kf_dir = episode_dir / "_kf" / clip_id
+    timestamps = [2.0, max(2.5, duration - 2.5)]
+    # Use a different prefix on retry so we don't overwrite the original keyframes
+    # (useful for post-mortem inspection of why Claude rejected the rescue).
+    prefix = "g2" if _retry == 0 else f"g2_retry{_retry}"
+    keyframes = extract_keyframes(out_path, timestamps, kf_dir, prefix=prefix)
+    if len(keyframes) < 2:
+        print(f"  [gate2] only {len(keyframes)} keyframes extracted — skipping")
+        return None
+
+    # Word timings excerpt — first 30 words, formatted compactly
+    word_excerpt = "\n".join(
+        f"  [{w.get('start', 0):.2f}s-{w.get('end', 0):.2f}s] {w.get('word', '').strip()}"
+        for w in words[:30]
+    ) or "(no words in transcript range)"
+
+    prompt = GATE_2_CAPTION_SYNC_V1.format(
+        title=spec.get("title", "?"),
+        duration_sec=duration,
+        word_timings_excerpt=word_excerpt,
+    )
+
+    try:
+        verdict = call_claude_vision(prompt, keyframes, model=SONNET_MODEL, max_tokens=1500)
+    except Exception as exc:
+        print(f"  [gate2] claude vision error: {exc} — letting clip through")
+        return None
+
+    rec = (verdict.get("recommendation") or "").lower()
+    quality = verdict.get("sync_quality", "?")
+    label = "gate2-retry" if _retry else "gate2"
+    print(f"  [{label}] sync={quality} rec={rec}")
+
+    # Log every Gate 2 decision (PASS / DRIFT / REJECT including rescue retries)
+    episode_stem = spec.get("source_stem", "unknown")
+    log_gate_decision(episode_stem, label, clip_id, verdict, extra={
+        "duration_sec": duration,
+        "n_keyframes": len(keyframes),
+    })
+
+    if rec == "reject":
+        episode = spec.get("source_stem", "?")
+        move_to_rejected(out_path, episode_dir, f"Gate 2 (caption sync) — retry={_retry}",
+                         verdict, clip_id)
+        emit_reject_navi(clip_id, "Gate 2 (caption sync)", verdict, episode)
+    elif rec == "rerender_with_offset" and rerender_func is not None and _retry == 0:
+        offset = verdict.get("estimated_offset_sec")
+        if offset is None or not isinstance(offset, (int, float)):
+            print(f"  [gate2] rerender requested but no estimated_offset_sec — skipping rescue")
+            return verdict
+        # Cap the offset to a sane range; Whisper drift rarely exceeds 1s.
+        # Refuse to apply offsets > 2s — that's almost certainly a hallucination.
+        if abs(offset) > 2.0:
+            print(f"  [gate2] offset {offset}s exceeds 2s sanity cap — rejecting instead")
+            episode = spec.get("source_stem", "?")
+            verdict["_rescue_skipped"] = f"offset {offset}s out of bounds"
+            move_to_rejected(out_path, episode_dir, "Gate 2 (offset out of bounds)",
+                             verdict, clip_id)
+            emit_reject_navi(clip_id, "Gate 2 (offset out of bounds)", verdict, episode)
+            verdict["recommendation"] = "reject"
+            return verdict
+        print(f"  [gate2] RESCUE: re-rendering with caption offset {offset:+.2f}s")
+        if not rerender_func(float(offset)):
+            print(f"  [gate2] rescue rerender failed — falling back to reject")
+            episode = spec.get("source_stem", "?")
+            verdict["_rescue_failed"] = True
+            move_to_rejected(out_path, episode_dir, "Gate 2 (rescue rerender failed)",
+                             verdict, clip_id)
+            emit_reject_navi(clip_id, "Gate 2 (rescue rerender failed)", verdict, episode)
+            verdict["recommendation"] = "reject"
+            return verdict
+        # Recurse once to validate the rescued render
+        retry_verdict = _gate2_caption_sync(out_path, words, spec, duration,
+                                            episode_dir, clip_id,
+                                            rerender_func=None, _retry=1)
+        if retry_verdict is None:
+            return verdict  # original verdict if retry infra-failed
+        if (retry_verdict.get("recommendation") or "").lower() in ("pass",):
+            print(f"  [gate2] RESCUE SUCCESS: clip passes after offset retry")
+            retry_verdict["_rescued_from_offset"] = float(offset)
+            return retry_verdict
+        # Retry didn't pass — propagate its decision (likely reject by now)
+        return retry_verdict
+    elif rec == "rerender_with_offset" and _retry > 0:
+        # Caption still misaligned after rescue rerender — give up, reject
+        print(f"  [gate2-retry] rescue did not fix sync — rejecting")
+        episode = spec.get("source_stem", "?")
+        move_to_rejected(out_path, episode_dir, "Gate 2 (rescue still misaligned)",
+                         verdict, clip_id)
+        emit_reject_navi(clip_id, "Gate 2 (rescue still misaligned)", verdict, episode)
+        verdict["recommendation"] = "reject"
+    return verdict
+
+
+def _gate3_framing(out_path: Path, scenes: list[tuple[float, float, int]],
+                   duration: float, spec: dict, episode_dir: Path, clip_id: str,
+                   rerender_func=None, _retry: int = 0) -> dict | None:
+    """Send 4 keyframes (25/50/75/95% of duration) + scene data to Claude Vision.
+    Verdict: pass / manual_review / reject_reframe / reject.
+
+    Rescue path: if Claude returns reject_reframe and rerender_func is provided,
+    re-run scene detection with stricter Bhattacharyya threshold (0.25 vs 0.35),
+    re-render, re-call Gate 3 ONCE. If still fails, REJECT. _retry caps recursion.
+    """
+    try:
+        from _qa_helpers import (
+            call_claude_vision, extract_keyframes,
+            move_to_rejected, emit_reject_navi, emit_flag_navi,
+            log_gate_decision, SONNET_MODEL,
+        )
+        from qa_prompts import GATE_3_FRAMING_V1
+    except ImportError as exc:
+        print(f"  [gate3] qa helpers unavailable ({exc}) — skipping framing check")
+        return None
+
+    if duration < 8:
+        return {"recommendation": "pass", "reason": "duration < 8s, skipping gate3"}
+
+    kf_dir = episode_dir / "_kf" / clip_id
+    timestamps = [duration * pct for pct in (0.25, 0.50, 0.75, 0.95)]
+    prefix = "g3" if _retry == 0 else f"g3_retry{_retry}"
+    keyframes = extract_keyframes(out_path, timestamps, kf_dir, prefix=prefix)
+    if len(keyframes) < 3:
+        print(f"  [gate3] only {len(keyframes)} keyframes — skipping")
+        return None
+
+    scenes_summary = ", ".join(
+        f"({s:.1f}-{e:.1f}s, cx={cx})" for s, e, cx in scenes[:8]
+    )
+    frame_timestamps = ", ".join(f"{t:.1f}s" for t in timestamps[:len(keyframes)])
+
+    prompt = GATE_3_FRAMING_V1.format(
+        title=spec.get("title", "?"),
+        duration_sec=duration,
+        frame_timestamps=frame_timestamps,
+        scenes_summary=scenes_summary,
+    )
+
+    try:
+        verdict = call_claude_vision(prompt, keyframes, model=SONNET_MODEL, max_tokens=2000)
+    except Exception as exc:
+        print(f"  [gate3] claude vision error: {exc} — letting clip through")
+        return None
+
+    rec = (verdict.get("recommendation") or "").lower()
+    quality = verdict.get("overall_quality", "?")
+    label = "gate3-retry" if _retry else "gate3"
+    print(f"  [{label}] quality={quality} rec={rec}")
+
+    # Log every Gate 3 decision (PASS / MANUAL_REVIEW / REJECT_REFRAME / REJECT)
+    episode_stem = spec.get("source_stem", "unknown")
+    log_gate_decision(episode_stem, label, clip_id, verdict, extra={
+        "duration_sec": duration,
+        "n_keyframes": len(keyframes),
+        "n_scenes": len(scenes),
+    })
+
+    episode = spec.get("source_stem", "?")
+
+    if rec == "reject":
+        # No rescue path — Claude says framing is fundamentally broken
+        move_to_rejected(out_path, episode_dir, f"Gate 3 (framing) — reject", verdict, clip_id)
+        emit_reject_navi(clip_id, "Gate 3 (framing)", verdict, episode)
+    elif rec == "reject_reframe" and rerender_func is not None and _retry == 0:
+        print(f"  [gate3] RESCUE: re-running scene detection with cut_threshold=0.25")
+        ok, new_scenes = rerender_func()
+        if not ok:
+            print(f"  [gate3] rescue rerender failed — falling back to reject")
+            verdict["_rescue_failed"] = True
+            move_to_rejected(out_path, episode_dir, "Gate 3 (rescue rerender failed)",
+                             verdict, clip_id)
+            emit_reject_navi(clip_id, "Gate 3 (rescue rerender failed)", verdict, episode)
+            verdict["recommendation"] = "reject"
+            return verdict
+        # Re-call Gate 3 with the new scenes
+        retry_verdict = _gate3_framing(out_path, new_scenes, duration, spec,
+                                       episode_dir, clip_id,
+                                       rerender_func=None, _retry=1)
+        if retry_verdict is None:
+            return verdict
+        retry_rec = (retry_verdict.get("recommendation") or "").lower()
+        if retry_rec in ("pass", "manual_review"):
+            print(f"  [gate3] RESCUE SUCCESS: clip {retry_rec} after stricter scene detection")
+            retry_verdict["_rescued_from"] = "reject_reframe"
+            retry_verdict["_new_scene_count"] = len(new_scenes)
+            return retry_verdict
+        # Retry still wants reject → propagate
+        return retry_verdict
+    elif rec == "reject_reframe":
+        # No rerender_func or already in retry — treat as final reject
+        move_to_rejected(out_path, episode_dir, f"Gate 3 (reject_reframe, retry={_retry})",
+                         verdict, clip_id)
+        emit_reject_navi(clip_id, "Gate 3 (reject_reframe final)", verdict, episode)
+        verdict["recommendation"] = "reject"
+    elif rec == "manual_review":
+        emit_flag_navi(clip_id, "Gate 3 (framing)", verdict.get("frames", []) or [], episode)
+    return verdict
 
 
 def _generate_preview(rendered_mp4: Path, clip_id: str, episode_dir: Path,
