@@ -1,0 +1,115 @@
+{
+  "episode": "Episode_April_14th_2026",
+  "timestamp": "2026-05-07T23:23:49-0400",
+  "elapsed_sec": 642.9,
+  "n_clips": 8,
+  "status_counts": {
+    "REJECTED@gate4": 4,
+    "REJECTED@gate3(reject)": 1,
+    "FLAGGED@gate4": 1,
+    "REJECTED@gate2": 2
+  },
+  "results": [
+    {
+      "clip_id": "05-metroid-prime4-ps5pro-xbox_1080p_c1",
+      "duration_sec": 62.86,
+      "source_stem": "05-metroid-prime4-ps5pro-xbox_1080p",
+      "words_count": 208,
+      "g2": "pass",
+      "g3": "manual_review",
+      "g4": "REJECT",
+      "elapsed_total_sec": 85.7,
+      "final_status": "REJECTED@gate4",
+      "scenes_count": 4,
+      "g4_reason": "Clip opens mid-thought with no context and buries its controversial hook ~20s deep, failing the cold-scroll test despite a solid title premise."
+    },
+    {
+      "clip_id": "05-metroid-prime4-ps5pro-xbox_1080p_c2",
+      "duration_sec": 36.166667,
+      "source_stem": "05-metroid-prime4-ps5pro-xbox_1080p",
+      "words_count": 151,
+      "g2": "pass",
+      "g3": "reject",
+      "g4": null,
+      "elapsed_total_sec": 38.7,
+      "final_status": "REJECTED@gate3(reject)",
+      "scenes_count": 1
+    },
+    {
+      "clip_id": "05-metroid-prime4-ps5pro-xbox_1080p_c3",
+      "duration_sec": 67.333333,
+      "source_stem": "05-metroid-prime4-ps5pro-xbox_1080p",
+      "words_count": 129,
+      "g2": "pass",
+      "g3": "pass",
+      "g4": "FLAG_FOR_REVIEW",
+      "elapsed_total_sec": 100.5,
+      "final_status": "FLAGGED@gate4",
+      "scenes_count": 1,
+      "g4_reason": "Clip's payoff (don't buy PS5 Pro) lands, but the cold open lacks the path-tracing context promised in the hook and caption text doesn't fully match the provided transcript \u2014 needs human review before "
+    },
+    {
+      "clip_id": "05-metroid-prime4-ps5pro-xbox_1080p_c4",
+      "duration_sec": 50.966667,
+      "source_stem": "05-metroid-prime4-ps5pro-xbox_1080p",
+      "words_count": 164,
+      "g2": "reject",
+      "g3": null,
+      "g4": null,
+      "elapsed_total_sec": 61.8,
+      "final_status": "REJECTED@gate2",
+      "scenes_count": 1
+    },
+    {
+      "clip_id": "05-metroid-prime4-ps5pro-xbox_1080p_c5",
+      "duration_sec": 48.02,
+      "source_stem": "05-metroid-prime4-ps5pro-xbox_1080p",
+      "words_count": 198,
+      "g2": "reject",
+      "g3": null,
+      "g4": null,
+      "elapsed_total_sec": 52.8,
+      "final_status": "REJECTED@gate2",
+      "scenes_count": 2
+    },
+    {
+      "clip_id": "8-Bit Podcast April 14 2026 FULL FINAL_1080p_c1",
+      "duration_sec": 64.966667,
+      "source_stem": "8-Bit Podcast April 14 2026 FULL FINAL_1080p",
+      "words_count": 236,
+      "g2": "pass",
+      "g3": "pass",
+      "g4": "REJECT",
+      "elapsed_total_sec": 100.9,
+      "final_status": "REJECTED@gate4",
+      "scenes_count": 1,
+      "g4_reason": "On-screen captions across all 6 keyframes do not match the provided transcript, indicating a serious caption/audio mismatch that also undermines the title's promise."
+    },
+    {
+      "clip_id": "8-Bit Podcast April 14 2026 FULL FINAL_1080p_c10",
+      "duration_sec": 77.333333,
+      "source_stem": "8-Bit Podcast April 14 2026 FULL FINAL_1080p",
+      "words_count": 243,
+      "g2": "pass",
+      "g3": "pass",
+      "g4": "REJECT",
+      "elapsed_total_sec": 102.9,
+      "final_status": "REJECTED@gate4",
+      "scenes_count": 4,
+      "g4_reason": "Captions visible in frames don't match the transcript, title is a raw filename, and the clip is a low-engagement podcast intro with no hook or payoff."
+    },
+    {
+      "clip_id": "8-Bit Podcast April 14 2026 FULL FINAL_1080p_c11",
+      "duration_sec": 70.85,
+      "source_stem": "8-Bit Podcast April 14 2026 FULL FINAL_1080p",
+      "words_count": 225,
+      "g2": "pass",
+      "g3": "pass",
+      "g4": "REJECT",
+      "elapsed_total_sec": 98.3,
+      "final_status": "REJECTED@gate4",
+      "scenes_count": 2,
+      "g4_reason": "No hook, generic filename title, mid-thought ending, and captions in frames don't match the transcript \u2014 clip is not ship-ready."
+    }
+  ]
+}
