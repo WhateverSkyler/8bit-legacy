@@ -15,7 +15,12 @@ data/podcast/transcripts/
 data/podcast/clips/
 data/podcast/pipeline_state.json
 data/podcast/*.log
+data/podcast/qa_logs/
 data/music-beds/
 data/social-media/final/
 data/social-media/*.csv
 data/social-media/*.log
+
+# Local-only design assets (PSDs, thumbnail working files — large binaries)
+podcast-assets/
+*.psd
