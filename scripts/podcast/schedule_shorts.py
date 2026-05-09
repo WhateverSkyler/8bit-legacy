@@ -465,6 +465,21 @@ def schedule(episode: str, start_date: str, dry_run: bool = True,
     log_path = episode_clips_dir / "schedule_log.json"
     log_path.write_text(json.dumps(log, indent=2))
     print(f"\n[LOG] {log_path.relative_to(ROOT)}")
+
+    # End-of-run summary Navi task (replaces per-clip spam — user feedback 2026-05-08)
+    try:
+        from _qa_helpers import emit_episode_summary_navi
+        approved = sum(1 for e in log if e.get("post_id") and not e.get("gate4"))
+        flagged = sum(1 for e in log if e.get("gate4") == "FLAGGED_BUT_SHIPPING")
+        rejected = sum(1 for e in log if e.get("gate4") == "REJECTED")
+        emit_episode_summary_navi(episode, {
+            "approved": approved,
+            "flagged_shipping": flagged,
+            "rejected": rejected,
+            "total": len(log),
+        })
+    except Exception as exc:
+        print(f"[summary-navi] failed: {exc}")
     return 0
 
 

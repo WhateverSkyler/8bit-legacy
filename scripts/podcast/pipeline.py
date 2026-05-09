@@ -49,8 +49,8 @@ try:
 except ImportError:
     emit_navi_task = None  # graceful degrade if requests is missing
 
-STAGES = ["sources", "transcribe", "thumbnails", "metadata", "yt_upload",
-          "pick_clips", "render_clips", "schedule"]
+STAGES = ["sources", "transcribe", "auto_segment", "thumbnails", "metadata",
+          "yt_upload", "pick_clips", "render_clips", "schedule"]
 
 ET = ZoneInfo("America/New_York")
 
@@ -103,16 +103,79 @@ def _yt_schedule_map(start_date: str, stems: list[str], full_stem: str | None) -
 
 
 def stage_sources(args, state) -> int:
-    if not args.source:
-        print("  [skip] no --source provided")
+    if not args.source and not args.full_video:
+        print("  [skip] no --source or --full-video provided")
         return 0
-    return _run(["python3", str(ROOT / "scripts" / "podcast" / "prepare_sources.py"),
-                 "--source", args.source], args.dry_run)
+    cmd = ["python3", str(ROOT / "scripts" / "podcast" / "prepare_sources.py")]
+    if args.source:
+        cmd.extend(["--source", args.source])
+    if args.full_video:
+        cmd.extend(["--full-video", args.full_video])
+    return _run(cmd, args.dry_run)
 
 
 def stage_transcribe(args, state) -> int:
     return _run(["python3", str(ROOT / "scripts" / "podcast" / "transcribe.py"),
                  "--batch", str(SOURCE_1080P)], args.dry_run)
+
+
+def stage_auto_segment(args, state) -> int:
+    """Auto-detect topic boundaries in the full-episode transcript and cut the
+    full MP4 into per-topic videos. Skipped when:
+      - No --full-video provided
+      - Manual topic cuts already exist (non-full *.mp4 in source/1080p/)
+      - The auto_segment stage has already run for this episode and produced
+        _auto_*.mp4 files (idempotency)
+
+    Plan vs execute is controlled by --auto-segment-mode (default: execute).
+    """
+    if not args.full_video:
+        print("  [skip] no --full-video provided — auto-segment requires the full episode")
+        return 0
+
+    full_path = Path(args.full_video)
+    if not full_path.exists():
+        print(f"  [skip] full video missing: {full_path}")
+        return 0
+
+    full_stem = full_path.stem
+    full_1080p = SOURCE_1080P / f"{full_stem}_1080p.mp4"
+    if not full_1080p.exists():
+        # prepare_sources.py should have produced this when --full-video was passed.
+        print(f"  [skip] full 1080p not found: {full_1080p} — prepare_sources must run first")
+        return 0
+
+    full_transcript = TRANSCRIPTS / f"{full_stem}_1080p.json"
+    if not full_transcript.exists():
+        print(f"  [skip] full transcript not found: {full_transcript}")
+        return 0
+
+    # Skip if manual topic cuts exist (someone pre-segmented; don't double-process)
+    if not args.force_auto_segment:
+        manual_topics = [
+            v for v in SOURCE_1080P.glob("*.mp4")
+            if "full" not in v.stem.lower()
+            and "_auto_" not in v.stem
+            and v.stem != full_1080p.stem
+        ]
+        if manual_topics:
+            print(f"  [skip] {len(manual_topics)} manual topic(s) found — auto-segment disabled")
+            print("         (pass --force-auto-segment to override)")
+            return 0
+
+    # Skip if auto-segment already produced files (idempotent re-run)
+    existing_auto = list(SOURCE_1080P.glob("*_auto_1080p.mp4"))
+    if existing_auto and not args.force_auto_segment:
+        print(f"  [skip] {len(existing_auto)} auto-segment file(s) already exist; --force-auto-segment to redo")
+        return 0
+
+    return _run([
+        "python3", str(ROOT / "scripts" / "podcast" / "topic_segment.py"),
+        "--transcript", str(full_transcript),
+        "--full-video-1080p", str(full_1080p),
+        "--episode", args.episode,
+        "--mode", args.auto_segment_mode,
+    ], args.dry_run)
 
 
 def stage_thumbnails(args, state) -> int:
@@ -225,8 +288,40 @@ def stage_yt_upload(args, state) -> int:
 
 
 def stage_pick_clips(args, state) -> int:
+    """Pick short-form clips from the CURRENT-EPISODE transcripts only.
+
+    Episode-scoped (2026-05-08 fix): user complaint was that re-running
+    pick_clips on a fresh episode was ALSO picking from old episodes'
+    transcripts still on disk. April 14 was getting "milked again" alongside
+    May 5 because pick_clips iterated all *.json in transcripts/.
+
+    Resolution order:
+      1. If --full-video given → use that transcript (single-source pick from
+         the full episode, no auto-segment topic-cuts considered)
+      2. Else → episode-scoped batch: include only transcripts modified in
+         the last 7 days (captures the current episode's freshly-generated
+         transcripts + any auto_segment topic-cuts from THIS run)
+      3. Else error out — no longer silently globs whole transcripts dir.
+
+    Rationale for #1 (single-full path): when both full and auto-segmented
+    topic transcripts exist, picking from each leads to content overlap.
+    """
+    import time as _time
+    if args.full_video:
+        full_stem = Path(args.full_video).stem
+        full_transcript = TRANSCRIPTS / f"{full_stem}_1080p.json"
+        if full_transcript.exists():
+            print(f"  picking from full transcript only: {full_transcript.name}")
+            return _run(["python3", str(ROOT / "scripts" / "podcast" / "pick_clips.py"),
+                         str(full_transcript)], args.dry_run)
+
+    # Episode-scoped batch: pick_clips.py --mtime-within-days 7 filters out
+    # transcripts older than 7 days. This captures the current episode's
+    # freshly-generated transcripts (just touched by transcribe/auto_segment)
+    # and excludes already-published prior episodes' leftovers.
     return _run(["python3", str(ROOT / "scripts" / "podcast" / "pick_clips.py"),
-                 "--batch", str(TRANSCRIPTS)], args.dry_run)
+                 "--batch", str(TRANSCRIPTS),
+                 "--mtime-within-days", "7"], args.dry_run)
 
 
 def stage_render_clips(args, state) -> int:
@@ -260,6 +355,7 @@ def stage_schedule(args, state) -> int:
 STAGE_FNS = {
     "sources": stage_sources,
     "transcribe": stage_transcribe,
+    "auto_segment": stage_auto_segment,
     "thumbnails": stage_thumbnails,
     "metadata": stage_metadata,
     "yt_upload": stage_yt_upload,
@@ -279,6 +375,13 @@ def main() -> int:
     parser.add_argument("--resume", action="store_true", help="Skip stages marked completed")
     parser.add_argument("--stage", choices=STAGES, help="Run a single stage")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--auto-segment-mode", choices=["plan", "execute"], default="execute",
+                        help="auto_segment stage: 'execute' (default) cuts video if quality gates "
+                             "pass; 'plan' emits Navi task only without cutting. The stage's internal "
+                             "validation (≥3 valid topics, coherent theses, coverage check) protects "
+                             "against bad output — failures auto-bail with a Navi alert for review.")
+    parser.add_argument("--force-auto-segment", action="store_true",
+                        help="Run auto_segment even if manual topic cuts or prior _auto_ files exist")
     args = parser.parse_args()
 
     state = _load_state(args.episode)

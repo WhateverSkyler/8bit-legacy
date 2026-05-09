@@ -951,6 +951,10 @@ def main() -> int:
     parser.add_argument("--batch", help="Directory of transcripts to process")
     parser.add_argument("--dry-run", action="store_true", help="Skip Claude call; show stats only")
     parser.add_argument("--target-count", type=int, default=10, help="Final picks per source (default 10)")
+    parser.add_argument("--mtime-within-days", type=int, default=0,
+                        help="Only consider --batch transcripts modified within N days. "
+                             "0=disabled (default). Use 7 to scope to current episode and avoid "
+                             "re-picking already-published episodes.")
     args = parser.parse_args()
 
     if not args.transcript and not args.batch:
@@ -960,7 +964,18 @@ def main() -> int:
     if args.transcript:
         targets.append(Path(args.transcript).resolve())
     if args.batch:
-        targets.extend(sorted(Path(args.batch).resolve().glob("*.json")))
+        all_in_batch = sorted(Path(args.batch).resolve().glob("*.json"))
+        if args.mtime_within_days > 0:
+            import time as _time
+            cutoff = _time.time() - (args.mtime_within_days * 86400)
+            filtered = [p for p in all_in_batch if p.stat().st_mtime >= cutoff]
+            n_skipped = len(all_in_batch) - len(filtered)
+            if n_skipped:
+                print(f"[scope] skipped {n_skipped} transcript(s) older than {args.mtime_within_days}d "
+                      f"(prevent re-picking already-published episodes)")
+            targets.extend(filtered)
+        else:
+            targets.extend(all_in_batch)
 
     CLIPS_PLAN_DIR.mkdir(parents=True, exist_ok=True)
     all_picks: list[dict] = []

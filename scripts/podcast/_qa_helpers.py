@@ -322,8 +322,23 @@ def move_to_rejected(clip_path: Path, episode_dir: Path,
     return target
 
 
+def _per_clip_navi_enabled() -> bool:
+    """Per-clip Navi tasks default OFF (user feedback 2026-05-08: spam).
+    Disk logs (qa_logs/<source>.jsonl + <episode>/_rejected/*reject.json) remain.
+    Set QA_GATE_NAVI_ENABLED=1 to bring back per-clip pings."""
+    return os.getenv("QA_GATE_NAVI_ENABLED", "0") in ("1", "true", "True", "yes")
+
+
 def emit_reject_navi(clip_id: str, gate: str, reason: dict, episode: str = "") -> None:
-    """Emit a Navi task explaining why a clip was rejected."""
+    """Emit a Navi task explaining why a clip was rejected.
+
+    Default OFF — per-clip rejects flooded Tristan's Navi during multi-clip
+    pipeline runs. Disk record at <episode>/_rejected/<clip_id>_reject.json
+    + qa_logs/<source>.jsonl is the audit trail. Use emit_episode_summary_navi
+    for a single end-of-run roll-up instead.
+    """
+    if not _per_clip_navi_enabled():
+        return
     if emit_navi_task is None:
         print(f"  [navi] unavailable; reject reason logged to disk only")
         return
@@ -343,7 +358,10 @@ def emit_reject_navi(clip_id: str, gate: str, reason: dict, episode: str = "") -
 
 
 def emit_flag_navi(clip_id: str, gate: str, issues: list, episode: str = "") -> None:
-    """Emit a Navi task for clips that need human review (FLAG_FOR_REVIEW)."""
+    """Emit a Navi task for clips that need human review (FLAG_FOR_REVIEW).
+    Default OFF — see emit_reject_navi docstring."""
+    if not _per_clip_navi_enabled():
+        return
     if emit_navi_task is None:
         return
     body = (
@@ -359,3 +377,35 @@ def emit_flag_navi(clip_id: str, gate: str, issues: list, episode: str = "") -> 
         )
     except Exception as exc:
         print(f"  [navi] emit failed: {exc}")
+
+
+def emit_episode_summary_navi(episode_stem: str, totals: dict) -> None:
+    """One Navi task per episode, after schedule completes.
+    Replaces the per-clip spam. `totals` is a dict like:
+        {"approved": 12, "flagged_shipping": 3, "rejected": 27, "total": 42, "cost_usd": 3.10}
+    """
+    if emit_navi_task is None:
+        return
+    try:
+        approved = totals.get("approved", 0)
+        flagged = totals.get("flagged_shipping", 0) + totals.get("flagged", 0)
+        rejected = totals.get("rejected", 0)
+        cost = totals.get("cost_usd", 0)
+        body = (
+            f"Episode QA summary — {episode_stem}\n\n"
+            f"Approved + shipped: {approved}\n"
+            f"Flagged but shipped: {flagged}\n"
+            f"Rejected: {rejected}\n"
+            f"Total processed: {totals.get('total', approved + flagged + rejected)}\n"
+            f"QA cost: ${cost:.4f}\n\n"
+            f"Per-clip details: data/podcast/qa_logs/<source_stem>.jsonl\n"
+            f"Rejected MP4s: data/podcast/clips/<episode>/_rejected/\n"
+            f"Run: python3 scripts/podcast/qa_log_summary.py {episode_stem}"
+        )
+        emit_navi_task(
+            title=f"QA episode summary: {episode_stem[:50]} ({approved}+{flagged} shipped, {rejected} rejected)",
+            description=body,
+            priority="medium" if rejected > approved else "low",
+        )
+    except Exception as exc:
+        print(f"  [navi] episode summary emit failed: {exc}")
