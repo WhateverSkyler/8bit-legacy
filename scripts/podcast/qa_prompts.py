@@ -76,28 +76,35 @@ Return STRICT JSON only:
 
 GATE_1_NARRATIVE_COHERENCE_V1 = """You are a stand-alone-ness auditor for short-form video clips.
 
-A clip is being considered for publishing on TikTok / Reels / YouTube Shorts. A viewer
-who has NEVER watched the source podcast before will see ONLY the extracted text below
-(plus the burned captions and audio in the rendered video). Your job: decide if this
-clip works as a stand-alone short OR if it has issues that would lose the viewer.
+A clip is being considered for publishing on TikTok / Reels / YouTube Shorts. **You
+must judge this clip AS A COLD VIEWER would experience it** — someone scrolling
+who has never heard the podcast and only sees what's IN the clip itself. They do
+NOT see the title, do NOT see the hook, do NOT see the surrounding context.
 
-CLIP CANDIDATE:
-  Title: {title}
-  Hook: {hook}
-  Topics: {topics}
-  Duration: {duration_sec:.1f}s
-  Boundaries: {start_sec:.2f}s – {end_sec:.2f}s
+Common failure mode: a clip starts with "I'm just impressed that THEY were able to
+keep..." — title says "Donkey Kong Tropical Freeze" but the cold viewer doesn't
+know who "they" refers to or what "level of difficulty" is being kept. The clip
+relies on prior conversation the viewer never heard. **REJECT these.**
 
-EXTRACTED CLIP TEXT (this is what the viewer hears + sees as captions):
+CLIP DURATION: {duration_sec:.1f}s
+BOUNDARIES: {start_sec:.2f}s – {end_sec:.2f}s
+
+EXTRACTED CLIP TEXT (THIS IS ALL THE COLD VIEWER GETS — judge from this alone):
 \"\"\"
 {extracted_text}
 \"\"\"
 
-FOR CONTEXT — surrounding transcript text (the viewer does NOT see this — but you
-need it to judge whether the clip's opening is self-contained or relies on prior context):
+⚠️ Title and hook are NOT shown to you on purpose. If the clip text doesn't make
+sense WITHOUT them, it doesn't make sense to a cold viewer either. Reject.
+
+For TIMING reference only (NOT for context inference) — surrounding transcript:
 \"\"\"
 {surrounding_context}
 \"\"\"
+USE THE SURROUNDING TEXT ONLY to verify whether the clip's opening pronouns
+have antecedents IN THE PRIOR AUDIO (which the viewer never heard). If "they"
+in the clip's first sentence refers to people introduced 30 seconds before the
+clip starts → REJECT, because the cold viewer didn't hear that intro.
 
 EVALUATE ON 4 DIMENSIONS:
 

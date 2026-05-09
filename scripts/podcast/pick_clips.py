@@ -70,10 +70,32 @@ BAD_OPENING_WORDS = {
     # Mid-thought markers
     "like", "you", "i",  # "like I was saying", "you know what", "I mean"
     "oh",
+    # Contractions of the above (2026-05-08 fix: "I'm just impressed..." was
+    # passing because i'm wasn't matching "i" — it's stripped to "i'm" not "i")
+    "i'm", "i've", "i'll", "i'd",
+    "you're", "you've", "you'll", "you'd",
+    "we're", "we've", "we'll", "we'd",
+    "they're", "they've", "they'll", "they'd",
+    "he's", "she's", "it's",
+    "that's", "what's", "there's", "here's",
+    "don't", "doesn't", "didn't", "won't", "wouldn't", "couldn't", "shouldn't",
+    "isn't", "aren't", "wasn't", "weren't", "hasn't", "haven't", "hadn't",
 }
 UNRESOLVED_PRONOUNS = {
     "he", "she", "they", "it", "that", "this", "those", "these", "him", "her", "them",
+    # Contractions still imply unresolved subject
+    "he's", "she's", "it's", "they're", "they've", "they'll", "they'd",
+    "that's", "those're", "these're",
 }
+# Pronouns that, if appearing within the FIRST 10 WORDS of a clip, suggest
+# the clip starts mid-conversation (the antecedent is in earlier audio the
+# viewer never heard). Used by _has_orphan_pronoun_in_opener.
+EARLY_OPENER_PRONOUNS = {
+    "he", "she", "they", "it", "that", "this", "those", "these", "them", "him", "her",
+}
+# Sentinel words that, if appearing BEFORE a pronoun, indicate the pronoun
+# IS resolvable from clip-internal text (a noun was just introduced).
+ANTECEDENT_PROXY_TAGS = {"NN", "NNS", "NNP", "NNPS"}  # nouns from POS tag prefixes
 SENTENCE_END_PUNCT = {".", "!", "?"}
 
 PICKS_REQUESTED = 25  # bumped 14→25 (2026-05-08 PM): user goal is dozens of
@@ -258,6 +280,112 @@ def _segment_ends_cleanly(seg: dict) -> bool:
     return bool(text) and text[-1] in SENTENCE_END_PUNCT
 
 
+def _has_orphan_pronoun_in_opener(opener_text: str, max_words: int = 10) -> tuple[bool, str]:
+    """Detect mid-conversation starts: pronoun in first N words with no antecedent
+    earlier in the clip's own opening text.
+
+    Example BAD: "I'm just impressed that they were able to keep that level..."
+        → "they" is in first 10 words but no noun has been introduced yet — viewer
+          has no idea who "they" are.
+
+    Example OK: "Donkey Kong's animation is incredible. They nailed every level."
+        → "Donkey Kong" introduced before "they" → resolvable from clip-internal text.
+
+    Returns (is_orphan, reason).
+    """
+    import re as _re
+    words = _re.findall(r"[A-Za-z']+", opener_text.lower())[:max_words]
+    if not words:
+        return False, ""
+    # Track whether ANY noun-ish word has appeared before the pronoun.
+    # Cheap heuristic: capitalized proper nouns (we lowercased so check raw text)
+    # OR common-noun-ish words that aren't function words.
+    raw_words = _re.findall(r"[A-Za-z']+", opener_text)[:max_words]
+    function_words = {
+        "i", "i'm", "i've", "i'll", "i'd", "you", "we", "we're", "they", "they're",
+        "the", "a", "an", "of", "to", "in", "on", "at", "for", "with", "by", "from",
+        "and", "but", "or", "if", "when", "where", "why", "how", "is", "was", "are",
+        "were", "be", "been", "have", "has", "had", "do", "does", "did", "will",
+        "would", "could", "should", "may", "might", "can", "just", "really", "very",
+        "so", "as", "all", "any", "some", "more", "most", "less", "few", "also",
+        "this", "that", "these", "those", "it", "its", "their", "his", "her", "our",
+    }
+
+    seen_noun = False
+    for raw, w in zip(raw_words, words):
+        # Strip apostrophe trail for matching
+        w_clean = w.rstrip("'s").rstrip("'")
+        # Treat capitalized words (not at sentence start) as proper nouns
+        if raw[0].isupper() and not seen_noun:
+            seen_noun = True
+            continue
+        if w in EARLY_OPENER_PRONOUNS or w_clean in EARLY_OPENER_PRONOUNS:
+            if not seen_noun:
+                return True, f"orphan pronoun '{w}' in opener ({' '.join(words[:10])})"
+        # Generic noun-like: > 3 chars, not a function word, mostly letters
+        if len(w_clean) > 3 and w_clean not in function_words:
+            seen_noun = True
+    return False, ""
+
+
+def _opener_mentions_topic(opener_text: str, title: str, topics: list[str],
+                          max_seconds: float = 10.0) -> tuple[bool, str]:
+    """Mechanical check: clip's first ~10 seconds of text must mention at least
+    one keyword from the title or topics list. Otherwise the viewer doesn't
+    know what the clip is about within 5-10 sec — fails the scroll-stop test.
+
+    Args:
+      opener_text: text of the clip's first ~max_seconds (caller-extracted).
+      title: clip's title (e.g., "Donkey Kong Tropical Freeze Might Be the Best 2D Platformer Ever")
+      topics: clip's topics list (e.g., ["donkey kong", "platformers", "nintendo"])
+
+    Returns (mentions_topic, reason).
+    """
+    import re as _re
+    opener_lower = (opener_text or "").lower()
+    if not opener_lower:
+        return False, "empty opener"
+
+    # Extract content words from title (drop stopwords/short words)
+    title_words = set(_re.findall(r"[a-z]+", (title or "").lower()))
+    stopwords = {"the", "a", "an", "of", "to", "in", "on", "at", "for", "with", "by",
+                 "and", "but", "or", "is", "are", "be", "been", "have", "has", "had",
+                 "do", "does", "did", "will", "would", "could", "should", "may", "might",
+                 "this", "that", "these", "those", "it", "its", "their", "his", "her",
+                 "be", "best", "ever", "very", "much", "more", "most", "many", "some",
+                 "any", "all", "what", "why", "how", "when", "where", "than"}
+    title_keywords = {w for w in title_words if w not in stopwords and len(w) >= 3}
+
+    # Topics → flatten to words
+    topic_keywords = set()
+    for t in (topics or []):
+        for w in _re.findall(r"[a-z]+", str(t).lower()):
+            if len(w) >= 3 and w not in stopwords:
+                topic_keywords.add(w)
+
+    keywords = title_keywords | topic_keywords
+    if not keywords:
+        return True, "no keywords to check (title+topics empty)"
+
+    # Find any keyword in opener
+    opener_words = set(_re.findall(r"[a-z]+", opener_lower))
+    matches = keywords & opener_words
+    if matches:
+        return True, f"opener mentions: {sorted(matches)[:3]}"
+    return False, f"opener mentions NONE of {sorted(keywords)[:5]} (first words: {opener_lower[:120]})"
+
+
+def _opener_text_in_seconds(segments: list[dict], start_sec: float, n_seconds: float = 10.0) -> str:
+    """Concatenate segment text within [start_sec, start_sec + n_seconds]."""
+    parts = []
+    end_sec = start_sec + n_seconds
+    for seg in segments:
+        if seg.get("end", 0) < start_sec: continue
+        if seg.get("start", 0) > end_sec: break
+        parts.append(seg.get("text", "").strip())
+    return " ".join(parts).strip()
+
+
 def _snap_and_validate(
     pick: dict,
     segments: list[dict],
@@ -316,7 +444,30 @@ def _snap_and_validate(
         opens_bad = first_word in BAD_OPENING_WORDS or first_word in UNRESOLVED_PRONOUNS
         ends_clean = _segment_ends_cleanly(end_seg)
 
-        if opens_bad and attempt < max_extensions:
+        # ---- DEEP OPENER CHECKS (2026-05-08) ----
+        # The first-word check is necessary but not sufficient. "I'm just impressed
+        # that they were able to keep..." passes the first-word check (i'm) but is
+        # actually mid-conversation. So also check:
+        #   (a) Orphan pronouns within first 10 words ("they" with no antecedent)
+        #   (b) Topic keyword present in first 10 seconds (else viewer doesn't know
+        #       what we're talking about within the scroll-stop window)
+        opener_text = _opener_text_in_seconds(segments[start_idx:], new_start, n_seconds=10.0)
+        opener_orphan, orphan_reason = _has_orphan_pronoun_in_opener(opener_text, max_words=10)
+        topic_ok, topic_reason = _opener_mentions_topic(
+            opener_text, pick.get("title", ""), pick.get("topics") or [],
+        )
+
+        # Combine all opener-quality issues into a single "opens_bad" decision
+        opener_issues = []
+        if opens_bad:
+            opener_issues.append(f"first word '{first_word}'")
+        if opener_orphan:
+            opener_issues.append(orphan_reason)
+        if not topic_ok:
+            opener_issues.append(topic_reason)
+        opener_failed = bool(opener_issues)
+
+        if opener_failed and attempt < max_extensions:
             # Try pulling in the previous segment first (gives more context).
             # If that's not possible OR we've already tried it once unsuccessfully,
             # fall back to skipping forward past the filler-opening segment.
@@ -332,8 +483,8 @@ def _snap_and_validate(
             continue
 
         # Accept / reject
-        if opens_bad:
-            return pick, False, f"opens with unresolved '{first_word}' after rescue attempts"
+        if opener_failed:
+            return pick, False, f"opener fails: {' | '.join(opener_issues)}"
         if not ends_clean:
             return pick, False, f"end not sentence-terminal after rescue attempts"
 
@@ -476,10 +627,12 @@ def _gate1_narrative_coherence(candidates: list[dict], transcript: dict,
             work.append((cand, None, "?"))  # too short to evaluate
             continue
 
+        # Cold-viewer eval: do NOT pass title/hook to Gate 1. Claude was
+        # confabulating context from the hook to "explain" mid-conversation
+        # starts. By withholding title/hook, Claude must judge the clip's
+        # standalone-ness from clip text alone — same as a real viewer.
+        # (Title/hook are still passed to Gate 4 which validates title-content match.)
         prompt = GATE_1_NARRATIVE_COHERENCE_V1.format(
-            title=cand.get("title", "?"),
-            hook=cand.get("hook", "?"),
-            topics=", ".join(cand.get("topics", [])) or "?",
             duration_sec=end - start,
             start_sec=start,
             end_sec=end,
