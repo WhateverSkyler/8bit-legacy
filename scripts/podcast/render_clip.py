@@ -541,27 +541,25 @@ def detect_scenes_and_crops(
 
 
 # Title overlay tunables (top-of-frame text shown for first N seconds)
-TITLE_OVERLAY_SECONDS = 5.0
-TITLE_OVERLAY_FONT_SIZE = 72
-TITLE_OVERLAY_MAX_CHARS_PER_LINE = 24  # forces wrap on 2 lines for typical titles
-TITLE_OVERLAY_Y_OFFSET = 160           # px from top of 1920-tall frame
-TITLE_OVERLAY_BOX_OPACITY = 0.55       # background box behind text for readability
+TITLE_OVERLAY_SECONDS = 5.0          # total time the title is on screen
+TITLE_OVERLAY_FADE_IN = 0.4          # fade-in duration at the start
+TITLE_OVERLAY_FADE_OUT = 0.5         # fade-out duration at the end
+TITLE_OVERLAY_FONT_SIZE = 84         # bumped 72→84 for stronger presence at thumbnail size
+TITLE_OVERLAY_MAX_CHARS_PER_LINE = 22  # 2-3 lines wrap for typical 4-8 word titles
+TITLE_OVERLAY_Y_OFFSET = 240         # px from top — clears the iOS clock + lower for breathing room
+TITLE_OVERLAY_LINE_SPACING = 18
+
+# Brand color (matches active-word ORANGE used for karaoke captions). Hex form
+# for ffmpeg's drawtext fontcolor= argument. The 0x prefix is added at use site.
+BRAND_ORANGE_HEX = "ff9526"
+
+# Intro fade-from-black: short polish so the clip doesn't pop in cold.
+INTRO_FADE_DURATION = 0.4
 
 
-def _escape_drawtext(s: str) -> str:
-    """Escape special chars for ffmpeg drawtext filter."""
-    # Order matters: backslash first, then the rest
-    s = s.replace("\\", "\\\\")
-    s = s.replace(":", "\\:")
-    s = s.replace("'", "’")  # smart-quote substitution avoids quote-escape hell
-    s = s.replace("%", "\\%")
-    s = s.replace(",", "\\,")
-    return s
-
-
-def _wrap_title(s: str, max_chars: int = TITLE_OVERLAY_MAX_CHARS_PER_LINE) -> str:
-    """Word-wrap a title into 2-3 lines for the overlay, returning a string with
-    literal newlines (ffmpeg drawtext supports \\n as line break)."""
+def _wrap_title(s: str, max_chars: int = TITLE_OVERLAY_MAX_CHARS_PER_LINE) -> list[str]:
+    """Word-wrap a title into a list of lines (no joining — caller handles file
+    or filter output). Caps at 3 lines, truncating with … if longer."""
     words = s.split()
     lines: list[str] = []
     cur = ""
@@ -574,63 +572,111 @@ def _wrap_title(s: str, max_chars: int = TITLE_OVERLAY_MAX_CHARS_PER_LINE) -> st
             cur = candidate
     if cur:
         lines.append(cur)
-    # Cap at 3 lines (truncate longest title fragment if it overflows)
     if len(lines) > 3:
         lines = lines[:3]
         lines[-1] = lines[-1] + "…"
-    return "\n".join(lines)
+    return lines
 
 
-def _title_overlay_filter(title: str | None) -> str:
-    """Return the ffmpeg drawtext filter segment for the title overlay, or
-    an empty string if no title is provided. Designed to be inlined after
-    scale=1080:1920 so coordinates match the final frame size.
+def _title_overlay_filter(title: str | None, episode_dir: Path, clip_id: str) -> str:
+    """Return the ffmpeg drawtext filter segment for the title overlay.
+
+    Two layers, both reading the wrapped title from a sidecar .txt file via
+    drawtext's `textfile=` parameter — fixes the X-in-box bug where literal
+    `\\n` chars in `text=` rendered as missing-glyph boxes.
+
+      layer 1 (drop shadow): solid black, offset (+6, +6) px, alpha 0.55
+      layer 2 (main):        white text, thin black outline, animated alpha
+
+    Animation: fades in over FADE_IN seconds, holds full opacity, fades out
+    over FADE_OUT seconds before disappearing at SECONDS. Drop shadow shares
+    the same alpha curve. NO heavy background rectangle (the prior version's
+    big black box was unprofessional).
     """
     if not title or not title.strip():
         return ""
-    wrapped = _wrap_title(title.strip())
-    safe = _escape_drawtext(wrapped)
-    # Bebas Neue font path matches the Dockerfile install location
+
+    lines = _wrap_title(title.strip())
+    # Sidecar file ffmpeg reads at render time. textfile= sidesteps every
+    # quote/colon/newline escape issue inline `text=` had.
+    title_txt = episode_dir / f"{clip_id}.title.txt"
+    title_txt.write_text("\n".join(lines))
+
     font_path = "/usr/local/share/fonts/bebas-neue/BebasNeue-Regular.ttf"
-    return (
-        f",drawtext=fontfile='{font_path}'"
-        f":text='{safe}'"
-        f":fontcolor=white"
+
+    # Alpha curve: fade in 0→FADE_IN, hold, fade out (SECONDS-FADE_OUT)→SECONDS.
+    # Backslash-comma needed because ',' inside drawtext expressions terminates
+    # the filter argument otherwise.
+    fade_in_end = TITLE_OVERLAY_FADE_IN
+    fade_out_start = TITLE_OVERLAY_SECONDS - TITLE_OVERLAY_FADE_OUT
+    alpha_expr = (
+        f"if(lt(t\\,{fade_in_end:.2f})\\,t/{fade_in_end:.2f}\\,"
+        f"if(gt(t\\,{fade_out_start:.2f})\\,"
+        f"({TITLE_OVERLAY_SECONDS:.2f}-t)/{TITLE_OVERLAY_FADE_OUT:.2f}\\,"
+        f"1))"
+    )
+
+    common = (
+        f"fontfile='{font_path}'"
+        f":textfile='{title_txt}'"
         f":fontsize={TITLE_OVERLAY_FONT_SIZE}"
-        f":borderw=4:bordercolor=black"
+        f":line_spacing={TITLE_OVERLAY_LINE_SPACING}"
+        f":enable='lte(t\\,{TITLE_OVERLAY_SECONDS})'"
+        f":alpha='{alpha_expr}'"
+    )
+
+    # Drop shadow — black, offset down + right, behind the main text.
+    shadow = (
+        f",drawtext={common}"
+        f":fontcolor=black@0.55"
+        f":x=(w-text_w)/2+6"
+        f":y={TITLE_OVERLAY_Y_OFFSET + 6}"
+    )
+    # Main text — white with thin orange outline (brand pop) over a subtle
+    # black border for legibility against busy backgrounds.
+    main_text = (
+        f",drawtext={common}"
+        f":fontcolor=white"
+        f":borderw=4:bordercolor=0x{BRAND_ORANGE_HEX}"
         f":x=(w-text_w)/2"
         f":y={TITLE_OVERLAY_Y_OFFSET}"
-        f":line_spacing=8"
-        f":box=1:boxcolor=black@{TITLE_OVERLAY_BOX_OPACITY}:boxborderw=18"
-        f":enable='lte(t,{TITLE_OVERLAY_SECONDS})'"
     )
+    return shadow + main_text
 
 
 def _build_video_filter(scenes: list[tuple[float, float, int]], ass_path: Path,
-                        crop_w: int = CROP_W, title: str | None = None) -> list[str]:
+                        crop_w: int = CROP_W, title: str | None = None,
+                        episode_dir: Path | None = None,
+                        clip_id: str | None = None) -> list[str]:
     """Build the video-branch filter segments that produce the `[v0]` label
     (a 1080x1920 stream with captions burned in). Callers then append the
     end-card overlay and audio branches the same way regardless of scene
     count.
 
     Single-scene fast path (identical to pre-fix behavior):
-        [0:v]crop=...,scale=1080:1920,setsar=1,drawtext=...,subtitles='...'[v0]
+        [0:v]crop=...,scale=1080:1920,setsar=1,fade=in,drawtext=...,subtitles='...'[v0]
 
     Multi-scene path: split the video N ways, trim+crop each branch with its
     own offset, concat, then apply subtitles to the rebuilt 0-based timeline.
 
-    Title overlay (2026-05-11): if `title` is non-empty, a drawtext layer is
-    inserted AFTER scale and BEFORE subtitles. It shows the title at the top
-    of the frame for the first TITLE_OVERLAY_SECONDS so cold viewers know
-    the topic immediately even with audio off. The drawtext goes on the FINAL
-    concat'd stream (not per-scene) so the text is continuous across cuts.
+    Polish (2026-05-11):
+      - Title overlay (drawtext) at top of frame for first TITLE_OVERLAY_SECONDS,
+        animated alpha (fade in/out), brand-orange outline + drop shadow.
+      - Intro fade-in from black over INTRO_FADE_DURATION sec — clip no longer
+        cold-pops in.
+      The intro fade and title overlay both apply to the FINAL concat'd stream
+      so they're continuous regardless of internal scene count.
     """
-    title_filter = _title_overlay_filter(title)
+    title_filter = _title_overlay_filter(title, episode_dir, clip_id) if (
+        title and episode_dir is not None and clip_id is not None
+    ) else ""
+    intro_fade = f",fade=t=in:st=0:d={INTRO_FADE_DURATION:.2f}:color=black"
     n = len(scenes)
     if n <= 1:
         _s, _e, cx = scenes[0]
         return [
             f"[0:v]crop={crop_w}:1080:{cx}:0,scale=1080:1920,setsar=1"
+            f"{intro_fade}"
             f"{title_filter},"
             f"subtitles='{ass_path}'[v0]"
         ]
@@ -646,6 +692,7 @@ def _build_video_filter(scenes: list[tuple[float, float, int]], ass_path: Path,
     concat_inputs = "".join(f"[s{i}]" for i in range(n))
     parts.append(
         f"{concat_inputs}concat=n={n}:v=1:a=0,setsar=1"
+        f"{intro_fade}"
         f"{title_filter},"
         f"subtitles='{ass_path}'[v0]"
     )
@@ -656,7 +703,9 @@ def _build_ffmpeg_cmd(source_video: Path, start: float, end: float, duration: fl
                       scenes: list[tuple[float, float, int]], ass_path: Path,
                       music: Path | None, has_music: bool, crop_w: int,
                       out_path: Path, music_volume: float = 0.12,
-                      title: str | None = None) -> list[str]:
+                      title: str | None = None,
+                      episode_dir: Path | None = None,
+                      clip_id: str | None = None) -> list[str]:
     """Build the full ffmpeg command for one render. Pure function — no side effects.
 
     Factored out of render_clip() so Gate 2 + Gate 3 rescue paths can rebuild
@@ -667,9 +716,12 @@ def _build_ffmpeg_cmd(source_video: Path, start: float, end: float, duration: fl
         Pick_clips' AUDIO_MIX_MOOD_V1 audit overrides this per-clip via the
         spec's `_audio_music_volume` field — intense=0.08, storytelling=0.10,
         casual=0.12, upbeat=0.14. Clamped to [0.05, 0.20] for safety.
+      episode_dir, clip_id: required for the title overlay's textfile= sidecar.
+        If either is None, the title overlay is silently skipped.
     """
     music_volume = max(0.05, min(0.20, float(music_volume)))
-    filter_parts = _build_video_filter(scenes, ass_path, crop_w=crop_w, title=title)
+    filter_parts = _build_video_filter(scenes, ass_path, crop_w=crop_w, title=title,
+                                       episode_dir=episode_dir, clip_id=clip_id)
     vout_label = "[v0]"
     if END_CARD.exists():
         filter_parts.append(
@@ -774,7 +826,8 @@ def render_clip(spec: dict, episode: str, transcripts_by_stem: dict[str, dict],
     title_text = spec.get("title", "")
     cmd = _build_ffmpeg_cmd(source_video, start, end, duration, scenes,
                             ass_path, music, has_music, crop_w, out_path,
-                            music_volume=music_volume, title=title_text)
+                            music_volume=music_volume, title=title_text,
+                            episode_dir=episode_clips_dir, clip_id=clip_id)
 
     mood_label = spec.get("_audio_mood", "?")
     print(f"[RENDER] {clip_id}  {duration:.1f}s  music={music.name if music else 'none'}  "
@@ -829,6 +882,7 @@ def render_clip(spec: dict, episode: str, transcripts_by_stem: dict[str, dict],
             source_video, start, end, duration, new_scenes,
             ass_path, music, has_music, crop_w, out_path,
             music_volume=music_volume, title=title_text,
+            episode_dir=episode_clips_dir, clip_id=clip_id,
         )
         proc = subprocess.run(new_cmd, capture_output=True, text=True)
         if proc.returncode != 0:
