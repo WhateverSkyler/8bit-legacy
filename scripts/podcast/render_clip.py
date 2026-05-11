@@ -581,32 +581,35 @@ def _wrap_title(s: str, max_chars: int = TITLE_OVERLAY_MAX_CHARS_PER_LINE) -> li
 def _title_overlay_filter(title: str | None, episode_dir: Path, clip_id: str) -> str:
     """Return the ffmpeg drawtext filter segment for the title overlay.
 
-    Two layers, both reading the wrapped title from a sidecar .txt file via
-    drawtext's `textfile=` parameter — fixes the X-in-box bug where literal
-    `\\n` chars in `text=` rendered as missing-glyph boxes.
+    ONE drawtext per line per layer. The previous attempt used a single
+    drawtext with textfile= containing a `\\n` newline — ffmpeg's drawtext
+    breaks the line as expected BUT also renders the U+000A character as
+    a missing-glyph box (because Bebas Neue has no glyph for it). The
+    artifact appeared at the end of line 1 in every multi-line title.
 
-      layer 1 (drop shadow): solid black, offset (+6, +6) px, alpha 0.55
-      layer 2 (main):        white text, thin black outline, animated alpha
+    Per-line rendering means: NO newlines anywhere. Each line is its own
+    sidecar .txt file, drawn at its own y-coordinate, with its own shadow +
+    main pair. Cost is 2N drawtext filters for N lines (typical N=2-3).
 
-    Animation: fades in over FADE_IN seconds, holds full opacity, fades out
-    over FADE_OUT seconds before disappearing at SECONDS. Drop shadow shares
-    the same alpha curve. NO heavy background rectangle (the prior version's
-    big black box was unprofessional).
+      layer 1 (shadow):  black @0.6, offset (+5, +5) — drop-shadow read
+      layer 2 (main):    white, brand-orange outline, animated alpha
+
+    Animation: fades in over FADE_IN seconds, holds, fades out over
+    FADE_OUT seconds before disappearing at SECONDS. Both layers share
+    the same alpha curve.
     """
     if not title or not title.strip():
         return ""
 
     lines = _wrap_title(title.strip())
-    # Sidecar file ffmpeg reads at render time. textfile= sidesteps every
-    # quote/colon/newline escape issue inline `text=` had.
-    title_txt = episode_dir / f"{clip_id}.title.txt"
-    title_txt.write_text("\n".join(lines))
+    if not lines:
+        return ""
 
     font_path = "/usr/local/share/fonts/bebas-neue/BebasNeue-Regular.ttf"
 
     # Alpha curve: fade in 0→FADE_IN, hold, fade out (SECONDS-FADE_OUT)→SECONDS.
-    # Backslash-comma needed because ',' inside drawtext expressions terminates
-    # the filter argument otherwise.
+    # Backslash-comma needed because ',' inside drawtext expressions otherwise
+    # terminates the filter argument.
     fade_in_end = TITLE_OVERLAY_FADE_IN
     fade_out_start = TITLE_OVERLAY_SECONDS - TITLE_OVERLAY_FADE_OUT
     alpha_expr = (
@@ -616,32 +619,39 @@ def _title_overlay_filter(title: str | None, episode_dir: Path, clip_id: str) ->
         f"1))"
     )
 
-    common = (
-        f"fontfile='{font_path}'"
-        f":textfile='{title_txt}'"
-        f":fontsize={TITLE_OVERLAY_FONT_SIZE}"
-        f":line_spacing={TITLE_OVERLAY_LINE_SPACING}"
-        f":enable='lte(t\\,{TITLE_OVERLAY_SECONDS})'"
-        f":alpha='{alpha_expr}'"
-    )
+    line_height = TITLE_OVERLAY_FONT_SIZE + TITLE_OVERLAY_LINE_SPACING
+    parts: list[str] = []
+    for i, line in enumerate(lines):
+        # Write each line to its own sidecar so textfile= reads pure text.
+        title_txt = episode_dir / f"{clip_id}.title.{i}.txt"
+        title_txt.write_text(line)
 
-    # Drop shadow — black, offset down + right, behind the main text.
-    shadow = (
-        f",drawtext={common}"
-        f":fontcolor=black@0.55"
-        f":x=(w-text_w)/2+6"
-        f":y={TITLE_OVERLAY_Y_OFFSET + 6}"
-    )
-    # Main text — white with thin orange outline (brand pop) over a subtle
-    # black border for legibility against busy backgrounds.
-    main_text = (
-        f",drawtext={common}"
-        f":fontcolor=white"
-        f":borderw=4:bordercolor=0x{BRAND_ORANGE_HEX}"
-        f":x=(w-text_w)/2"
-        f":y={TITLE_OVERLAY_Y_OFFSET}"
-    )
-    return shadow + main_text
+        y_main = TITLE_OVERLAY_Y_OFFSET + i * line_height
+        y_shadow = y_main + 5
+
+        common = (
+            f"fontfile='{font_path}'"
+            f":textfile='{title_txt}'"
+            f":fontsize={TITLE_OVERLAY_FONT_SIZE}"
+            f":enable='lte(t\\,{TITLE_OVERLAY_SECONDS})'"
+            f":alpha='{alpha_expr}'"
+        )
+        # Shadow first so it draws behind the main layer.
+        parts.append(
+            f",drawtext={common}"
+            f":fontcolor=black@0.6"
+            f":x=(w-text_w)/2+5"
+            f":y={y_shadow}"
+        )
+        # Main: white fill + brand-orange outline for the brand pop.
+        parts.append(
+            f",drawtext={common}"
+            f":fontcolor=white"
+            f":borderw=4:bordercolor=0x{BRAND_ORANGE_HEX}"
+            f":x=(w-text_w)/2"
+            f":y={y_main}"
+        )
+    return "".join(parts)
 
 
 def _build_video_filter(scenes: list[tuple[float, float, int]], ass_path: Path,

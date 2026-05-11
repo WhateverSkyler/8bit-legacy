@@ -144,7 +144,10 @@ echo
 echo "==> Pulling output log + preview HTML + rendered MP4s back to Mac"
 mkdir -p "/tmp/${EPISODE_SAFE}"
 ssh -i "$SSH_KEY" "truenas_admin@${TRUENAS_IP}" 'cat /tmp/test-on-episode-runner.out' > "/tmp/${EPISODE_SAFE}/run.log"
-rsync -az -e "ssh -i $SSH_KEY" \
+# --delete is essential: prior test runs leave stale .mp4s in /tmp/<EP>/ that
+# mislead spot-checks (you think you're inspecting the new render, but you're
+# looking at last run's output). Mirror the remote dir exactly.
+rsync -az --delete -e "ssh -i $SSH_KEY" \
   "truenas_admin@${TRUENAS_IP}:/mnt/pool/apps/8bit-pipeline/data/podcast/clips/${EPISODE_SAFE}/" \
   "/tmp/${EPISODE_SAFE}/" 2>&1 | tail -10
 
