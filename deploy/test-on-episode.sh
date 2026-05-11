@@ -21,9 +21,13 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-EPISODE="${1:?usage: $0 \"Episode May 5 2026\"}"
+EPISODE="${1:?usage: $0 \"Episode May 5 2026\" \"<full-video-stem>\"}"
 EPISODE_SAFE="$(echo "$EPISODE" | tr ' ' '_')"
-FULL_VIDEO_HOST="${2:-/media/podcast/archive/${EPISODE}/8-Bit Podcast May 5 2026 FULL FINAL V2.mp4}"
+# The transcript stem (without _1080p.json suffix). Default matches May 5.
+# This is the FULL EPISODE transcript — we pick from it via chunked 30-min
+# windows so all good content (including content NOT in any auto-segmented
+# topic video) gets considered.
+FULL_TRANSCRIPT_STEM="${2:-8-Bit Podcast May 5 2026 FULL FINAL V2}"
 
 TRUENAS_IP="${TRUENAS_IP:-192.168.4.2}"
 SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_ed25519}"
@@ -59,9 +63,11 @@ set -e
     /app/scripts/podcast/realign_transcript.py --batch
 
   echo
-  echo "==> [3/4] Pipeline: pick_clips → render → preview (NO schedule)"
-  # We do each stage explicitly so the schedule stage (which would publish)
-  # never runs. The preview stage generates the HTML for human review.
+  echo "==> [3/4] Pipeline: pick_clips (chunked, FROM FULL ONLY) → render → preview (NO schedule)"
+  # We pick from the FULL EPISODE transcript ONLY (not the auto-segmented topic
+  # videos), in 30-minute chunked windows. This catches good content that
+  # didn't make it into any auto-segmented topic. We do each stage explicitly
+  # so the schedule stage (which would publish) never runs.
   docker run --rm --name 8bit-test-pipeline \\
     -v /mnt/pool/apps/8bit-pipeline/data:/app/data \\
     -v /mnt/pool/apps/8bit-pipeline/config:/app/config \\
@@ -73,8 +79,18 @@ set -e
     -c "
       set -e
       cd /app
-      echo '--- pick_clips ---'
-      python3 scripts/podcast/pick_clips.py --batch /app/data/podcast/transcripts --mtime-within-days 30
+      FULL_TRANSCRIPT='/app/data/podcast/transcripts/${FULL_TRANSCRIPT_STEM}_1080p.json'
+      if [ ! -f \"\$FULL_TRANSCRIPT\" ]; then
+        echo \"FATAL: full transcript not found: \$FULL_TRANSCRIPT\"
+        ls /app/data/podcast/transcripts/
+        exit 1
+      fi
+      echo '--- clearing old clips_plan/_all.json so we only get FULL picks ---'
+      rm -f /app/data/podcast/clips_plan/*.json
+      echo '--- pick_clips: FROM FULL EPISODE ONLY, chunked 30-min windows ---'
+      python3 scripts/podcast/pick_clips.py \"\$FULL_TRANSCRIPT\" --chunk-minutes 30 --target-count 30
+      echo '--- copying picks to _all.json so render_clip.py finds them ---'
+      cp /app/data/podcast/clips_plan/${FULL_TRANSCRIPT_STEM}_1080p.json /app/data/podcast/clips_plan/_all.json
       echo '--- render_clips ---'
       python3 scripts/podcast/render_clip.py --batch /app/data/podcast/clips_plan/_all.json --episode \"$EPISODE\"
       echo '--- preview_queue ---'

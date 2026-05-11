@@ -311,9 +311,15 @@ def stage_pick_clips(args, state) -> int:
         full_stem = Path(args.full_video).stem
         full_transcript = TRANSCRIPTS / f"{full_stem}_1080p.json"
         if full_transcript.exists():
-            print(f"  picking from full transcript only: {full_transcript.name}")
+            print(f"  picking from full transcript only (chunked, 30-min windows): {full_transcript.name}")
+            # --chunk-minutes 30 splits the full episode into ~4 chunks for a 2hr
+            # episode. Each chunk gets its own 25-pick Claude call. Combined,
+            # we get ~100 candidates → ~30-40 final picks after gates.
+            # Without chunking, the single 25-pick call against the truncated
+            # 80k-char transcript would miss content in the middle/end of the
+            # episode that didn't make it to any auto-segmented topic.
             return _run(["python3", str(ROOT / "scripts" / "podcast" / "pick_clips.py"),
-                         str(full_transcript)], args.dry_run)
+                         str(full_transcript), "--chunk-minutes", "30"], args.dry_run)
 
     # Episode-scoped batch: pick_clips.py --mtime-within-days 7 filters out
     # transcripts older than 7 days. This captures the current episode's

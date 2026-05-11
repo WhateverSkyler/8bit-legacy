@@ -884,17 +884,67 @@ def pick_clips_from_transcript(
     transcript_path: Path,
     dry_run: bool = False,
     target_count: int = 5,
+    chunk_minutes: int = 0,
 ) -> list[dict]:
+    """Pick clips from a transcript.
+
+    chunk_minutes (default 0 = disabled): if >0 AND the transcript is longer than
+    chunk_minutes*60*1.5 seconds, splits the transcript into N windows and runs
+    Claude once per window, then combines all candidates and runs them through
+    Gate 1 + snap + dedup + enrichment as one batch. Necessary for full-episode
+    transcripts (2hr+) where a single 25-pick Claude call misses content in the
+    middle/end. Recommended: --chunk-minutes 30 for full episodes → 4 chunks ×
+    25 candidates each = 100 candidates, capturing content from the FULL episode
+    that may not have been included in any auto-segmented topic video.
+    """
     tx = json.loads(transcript_path.read_text())
     segments = tx.get("segments", [])
-    topic_name = transcript_path.stem.replace("_1080p", "").replace("-", " ").title()
-    transcript_blob = _format_transcript_for_prompt(tx)
-
-    if dry_run:
-        print(f"[DRY] {topic_name}: {len(segments)} segments, {len(transcript_blob)} chars for Claude")
+    if not segments:
         return []
+    topic_name = transcript_path.stem.replace("_1080p", "").replace("-", " ").title()
+    stem_key = transcript_path.stem
 
-    candidates = _call_claude(topic_name, transcript_blob, PICKS_REQUESTED)
+    duration = max((s.get("end", 0) for s in segments), default=0)
+    use_chunks = chunk_minutes > 0 and duration > (chunk_minutes * 60 * 1.5)
+
+    if use_chunks:
+        n_chunks = max(2, round(duration / (chunk_minutes * 60)))
+        chunk_dur = duration / n_chunks
+        print(f"  [chunked] {topic_name}: {duration:.0f}s ÷ {n_chunks} chunks "
+              f"({chunk_dur/60:.0f} min each), {PICKS_REQUESTED} picks per chunk")
+
+        if dry_run:
+            for i in range(n_chunks):
+                start = i * chunk_dur
+                end = (i + 1) * chunk_dur
+                chunk_segs = [s for s in segments if s["end"] >= start and s["start"] <= end]
+                print(f"  [DRY chunk {i+1}/{n_chunks}] {start/60:.1f}-{end/60:.1f} min: {len(chunk_segs)} segs")
+            return []
+
+        candidates: list[dict] = []
+        for i in range(n_chunks):
+            start = i * chunk_dur
+            end = (i + 1) * chunk_dur
+            chunk_segs = [s for s in segments if s["end"] >= start and s["start"] <= end]
+            if not chunk_segs:
+                continue
+            chunk_tx = {**tx, "segments": chunk_segs}
+            chunk_blob = _format_transcript_for_prompt(chunk_tx, max_chars=120_000)
+            chunk_label = f"{topic_name} (window {i+1}/{n_chunks}, {start/60:.0f}-{end/60:.0f} min)"
+            try:
+                cands = _call_claude(chunk_label, chunk_blob, PICKS_REQUESTED)
+                print(f"  [chunk {i+1}/{n_chunks}] Claude returned {len(cands)} candidates")
+                candidates.extend(cands)
+            except Exception as exc:
+                print(f"  [chunk {i+1}/{n_chunks}] FAILED: {exc}")
+        print(f"  [chunked] {len(candidates)} total candidates from {n_chunks} chunks → Gate 1...")
+    else:
+        # Single-source path (used for short transcripts and topic videos)
+        transcript_blob = _format_transcript_for_prompt(tx)
+        if dry_run:
+            print(f"[DRY] {topic_name}: {len(segments)} segments, {len(transcript_blob)} chars for Claude")
+            return []
+        candidates = _call_claude(topic_name, transcript_blob, PICKS_REQUESTED)
 
     # GATE 1 (2026-05-07): re-validate narrative coherence on each raw candidate
     # using a fresh Claude call with the EXTRACTED segment text. This catches
@@ -924,7 +974,6 @@ def pick_clips_from_transcript(
     final = deduped[:target_count]
     final.sort(key=lambda p: p["start_sec"])
 
-    stem_key = transcript_path.stem
     for i, p in enumerate(final, 1):
         p["clip_id"] = f"{stem_key}_c{i}"
         p["source_stem"] = stem_key
@@ -955,6 +1004,12 @@ def main() -> int:
                         help="Only consider --batch transcripts modified within N days. "
                              "0=disabled (default). Use 7 to scope to current episode and avoid "
                              "re-picking already-published episodes.")
+    parser.add_argument("--chunk-minutes", type=int, default=0,
+                        help="Split long transcripts (>chunk-minutes*1.5) into N-minute windows "
+                             "and pick separately from each. 0=disabled. Use 30 for 2hr+ full "
+                             "episodes — produces 4x more candidates than a single 25-pick call. "
+                             "Necessary when picking from FULL transcript so good moments not "
+                             "captured in any auto-segmented topic still get found.")
     args = parser.parse_args()
 
     if not args.transcript and not args.batch:
@@ -981,8 +1036,16 @@ def main() -> int:
     all_picks: list[dict] = []
     for t in targets:
         try:
+            # When chunking is enabled (long full-episode transcripts), bump
+            # target_count proportionally so we keep more of the additional
+            # candidates the chunked path generates. 4 chunks worth of content
+            # means up to ~4x as many final picks should survive.
+            tc = args.target_count
+            if args.chunk_minutes > 0:
+                tc = max(args.target_count, args.target_count * 3)  # cap to 3x to avoid explosion
             picks = pick_clips_from_transcript(
-                t, dry_run=args.dry_run, target_count=args.target_count
+                t, dry_run=args.dry_run, target_count=tc,
+                chunk_minutes=args.chunk_minutes,
             )
             out = CLIPS_PLAN_DIR / t.name
             out.write_text(json.dumps(picks, indent=2))
