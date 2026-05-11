@@ -52,14 +52,16 @@ except ImportError:
     pass
 
 
-# --- Duration policy (2026-04-23: biased toward completion rate) ---
-# TikTok/Reels reward near-full watches. A 75s clip watched 70% through beats a
-# 50s clip watched 40%, BUT shorter clips have a meaningful completion-rate
-# advantage, so we bias toward the lower end of a still-standalone arc.
-DURATION_FLOOR_SEC = 30.0      # below this the clip feels like a fragment
-DURATION_TARGET_LO = 45.0      # sweet-spot lower bound
-DURATION_TARGET_HI = 65.0      # sweet-spot upper bound
-DURATION_CEILING_SEC = 85.0    # hard cap — longer clips tank watch-through rate
+# --- Duration policy ---
+# 2026-05-11: hard ceiling lowered 85→59s. YouTube Shorts cuts off at 60s —
+# anything ≥60s posts as a regular long-form video (different algorithm, ranks
+# in a different feed). To qualify as a Short on YT + Reel on IG/FB + short on
+# TikTok simultaneously, the clip MUST be <60s. We aim for 35-55s as the sweet
+# spot for cross-platform completion rate.
+DURATION_FLOOR_SEC = 25.0      # below this the clip feels like a fragment
+DURATION_TARGET_LO = 35.0      # sweet-spot lower bound (more breathing room than before)
+DURATION_TARGET_HI = 55.0      # sweet-spot upper bound (5s margin under YT's hard cap)
+DURATION_CEILING_SEC = 59.0    # HARD CAP — over 60s = not a Short on YouTube
 
 # --- Stand-alone validators ---
 BAD_OPENING_WORDS = {
@@ -161,11 +163,15 @@ STAND-ALONE REQUIREMENTS (non-negotiable):
 2. **Complete arc.** Setup → payoff. A punchline without setup, or a setup without payoff, is a reject.
 3. **Clean end.** Ends on a conclusion, punchline, strong claim, or a "tell me what you think" callout. Does NOT fade out mid-thought, trail off into filler, or cut on a "yeah, I don't know, whatever."
 
-DURATION TARGET (optimized for TikTok/Reels completion rate):
-- Sweet spot: 45–65 seconds
-- Floor: 30 seconds (below this feels like a fragment, no payoff)
-- Ceiling: 85 seconds (above this watch-through tanks on algorithm)
-Err shorter if the arc lands cleanly; longer videos lose more viewers proportionally than they gain.
+DURATION TARGET (hard constraint, optimized for cross-platform Shorts qualification):
+- Sweet spot: 35–55 seconds
+- Floor: 25 seconds (below this feels like a fragment, no payoff)
+- HARD CEILING: 59 seconds (NEVER exceed — YouTube Shorts caps at 60s, anything
+  longer posts as a regular long-form video which has a completely different
+  algorithm and feed. Must be <60s to qualify as a Short on YT + Reel on IG/FB
+  + short-form on TikTok simultaneously.)
+Err shorter if the arc lands cleanly. Cutting at the punchline beats overstaying
+the welcome — completion rate matters more than length.
 
 WHAT MAKES A STRONG PICK:
 - Confident opinion with stakes ("Nintendo is making a mistake with X because...")
@@ -386,6 +392,107 @@ def _opener_text_in_seconds(segments: list[dict], start_sec: float, n_seconds: f
     return " ".join(parts).strip()
 
 
+def _starts_mid_phrase(start_seg: dict, prev_seg: dict | None) -> bool:
+    """Detect when a clip's first segment starts mid-phrase — i.e., the
+    previous segment ends without sentence-terminal punctuation AND ends with
+    a phrase that continues into the current one.
+
+    Catches the "Ocarina of Time" → "Time" cut: prev segment was "...I think the
+    best Zelda game is Ocarina of " ending mid-phrase, and the chosen start
+    segment begins with "Time," which loses the "Ocarina of" context.
+
+    Returns True if we should pull in the previous segment.
+    """
+    if not prev_seg:
+        return False
+    prev_text = (prev_seg.get("text") or "").strip()
+    if not prev_text:
+        return False
+    # If prev segment ends with sentence-terminal punctuation, clip start is fine.
+    if prev_text[-1] in SENTENCE_END_PUNCT:
+        return False
+    # If prev segment ends with comma/no-punct AND its last word looks like an
+    # incomplete phrase (preposition, article, "of"/"the"/"a"/"an"), the current
+    # segment likely continues that phrase.
+    last_word = re.findall(r"[A-Za-z']+", prev_text)
+    if not last_word:
+        return False
+    last_lower = last_word[-1].lower()
+    PHRASE_LEADERS = {
+        "of", "the", "a", "an", "to", "for", "in", "on", "at", "with", "and",
+        "or", "but", "is", "are", "was", "were", "be", "been", "have", "has",
+        "had", "do", "does", "did", "will", "would", "could", "should", "can",
+        "this", "that", "these", "those",
+    }
+    return last_lower in PHRASE_LEADERS
+
+
+def _find_setup_question_backward(segments: list[dict], current_start_idx: int,
+                                  title: str, topics: list[str],
+                                  max_lookback_sec: float = 30.0) -> int | None:
+    """Search backward up to max_lookback_sec for a segment that DOES mention
+    the topic — typically a question that sets up the discussion.
+
+    User feedback 2026-05-11: the "Yoshi and Kirby got too easy" clip starts
+    with the response but the question "do you think Nintendo will ever go
+    back to making harder games?" was 5-15 sec earlier and is the perfect
+    hook. We want to pull start back to include it.
+
+    Returns the new start_idx if found, else None.
+    """
+    if current_start_idx <= 0:
+        return None
+
+    # Extract topic keywords (same logic as _opener_mentions_topic)
+    title_words = set(re.findall(r"[a-z]+", (title or "").lower()))
+    stopwords = {"the", "a", "an", "of", "to", "in", "on", "at", "for", "with", "by",
+                 "and", "but", "or", "is", "are", "be", "been", "have", "has", "had",
+                 "do", "does", "did", "will", "would", "could", "should", "may", "might",
+                 "this", "that", "these", "those", "it", "its", "their", "his", "her",
+                 "be", "best", "ever", "very", "much", "more", "most", "many", "some",
+                 "any", "all", "what", "why", "how", "when", "where", "than"}
+    title_keywords = {w for w in title_words if w not in stopwords and len(w) >= 3}
+    topic_keywords = set()
+    for t in (topics or []):
+        for w in re.findall(r"[a-z]+", str(t).lower()):
+            if len(w) >= 3 and w not in stopwords:
+                topic_keywords.add(w)
+    keywords = title_keywords | topic_keywords
+    if not keywords:
+        return None
+
+    current_start_time = segments[current_start_idx].get("start", 0)
+    earliest_ok_time = current_start_time - max_lookback_sec
+
+    # Walk backward looking for segments that mention the topic AND start a
+    # sentence (ending the prior with punctuation, or being a question).
+    best_idx: int | None = None
+    for i in range(current_start_idx - 1, -1, -1):
+        seg = segments[i]
+        if seg.get("start", 0) < earliest_ok_time:
+            break
+        text = (seg.get("text") or "").strip()
+        if not text:
+            continue
+        seg_words = set(re.findall(r"[a-z]+", text.lower()))
+        matches = keywords & seg_words
+        if not matches:
+            continue
+        # Found a topic-mentioning segment. Make sure it's a clean sentence start —
+        # the segment BEFORE it must end with terminal punctuation (or i==0).
+        if i == 0:
+            return i
+        prev_text = (segments[i - 1].get("text") or "").strip()
+        if prev_text and prev_text[-1] in SENTENCE_END_PUNCT:
+            # Clean sentence boundary — this is a great place to start
+            return i
+        # Otherwise keep this as a backup but keep searching for a cleaner one
+        if best_idx is None:
+            best_idx = i
+
+    return best_idx
+
+
 def _snap_and_validate(
     pick: dict,
     segments: list[dict],
@@ -408,6 +515,34 @@ def _snap_and_validate(
 
     if start_idx > end_idx:
         return pick, False, "start after end"
+
+    # ---- Pre-validation fix 1: pull in previous segment if the chosen start
+    # segment starts mid-phrase (2026-05-11 user feedback: "Ocarina of Time" →
+    # "Time" cut). When the prior segment ends without terminal punctuation AND
+    # ends on a phrase leader (of/the/a/in/on/etc.), extend back one segment.
+    if start_idx > 0:
+        if _starts_mid_phrase(segments[start_idx], segments[start_idx - 1]):
+            start_idx -= 1
+
+    # ---- Pre-validation fix 2: look back for the topic-introducing question
+    # (2026-05-11 user feedback: "Yoshi and Kirby got too easy" should start
+    # with "do you think Nintendo will ever go back to making harder games?").
+    # If the opener doesn't mention the topic, search up to 30s before for a
+    # cleaner-starting sentence that does.
+    initial_opener_text = _opener_text_in_seconds(
+        segments[start_idx:], segments[start_idx]["start"], n_seconds=10.0,
+    )
+    initial_topic_ok, _ = _opener_mentions_topic(
+        initial_opener_text, pick.get("title", ""), pick.get("topics") or [],
+    )
+    if not initial_topic_ok:
+        new_idx = _find_setup_question_backward(
+            segments, start_idx,
+            pick.get("title", ""), pick.get("topics") or [],
+            max_lookback_sec=30.0,
+        )
+        if new_idx is not None and new_idx < start_idx:
+            start_idx = new_idx
 
     # --- Validation loop with rescue: try current boundaries, then extend back/forward ---
     # 2026-04-26: bumped max_extensions 2→4 and added forward-skip fallback for

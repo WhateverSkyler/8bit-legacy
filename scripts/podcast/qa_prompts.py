@@ -303,32 +303,72 @@ Clip text (what viewers will hear, first 1500 chars):
 {extracted_text}
 \"\"\"
 
-Score on 4 dimensions:
+CONTEXT: this title gets used TWO ways for cold scrolling viewers:
+  (a) as the post caption on TikTok / IG Reels / YT Shorts
+  (b) as a TEXT OVERLAY rendered on the first 5 seconds of the video itself
 
-1. **Specific not vague**: Does the title name the actual subject? "GameStop's
-   eBay disaster" PASSES. "An interesting take on retro" FAILS.
+So it MUST (1) immediately tell a stranger what the clip is about, (2) sound
+natural — like a human podcast editor wrote it, not a content-marketing AI —
+and (3) fit cleanly as a 1-2 line overlay (~24 chars per line).
 
-2. **Not clickbait**: No "you won't believe", "this changes everything",
-   excessive ALL CAPS, or promises the content doesn't deliver.
+Score on 5 dimensions:
 
-3. **Length**: 4-12 words ideal. <4 words is usually too vague.
-   >12 words is usually overstuffed for a short-form post.
+1. **Specific not vague**: Title names the actual subject. "Why GameStop Wants
+   to Buy eBay" PASSES. "An interesting take on retro" FAILS. Answer the
+   "what is this ABOUT" question concretely.
 
-4. **Accurate**: Title describes what's actually said in the clip text. NOT a
-   reframing or stretch.
+2. **Natural / not corny**: Sounds like a real podcast editor wrote it.
+   AVOID:
+   - Sentence fragments cut mid-phrase ("Yoshi and Kirby Got Too Easy — But Donke")
+   - Forced punchlines / marketing-speak ("The Truth About...", "Why X Will Shock You")
+   - Made-up jargon that isn't in the clip ("Pre-Scalping Trading Cards")
+   - Random capitalization ("XBOX is BETTER Than PS5 PRO")
+   - Awkward em-dash compounds that don't read cleanly
+   PREFER short declarative sentences or short questions, written how people
+   actually talk. "Nintendo Made Their Games Too Easy" is natural. "DK Tropical
+   Freeze: 2D Platforming PEAKED" is corny.
+
+3. **Concise**: 4-8 words ideal, 4-10 hard max. <4 is usually too vague.
+   >10 won't fit the overlay cleanly.
+
+4. **Not clickbait**: No "you won't believe", "this changes everything",
+   excessive ALL CAPS, fake questions, or promises the content doesn't deliver.
+
+5. **Accurate**: Describes what's actually said. NOT a reframing or stretch.
+   When in doubt, prefer the broader honest framing over a too-narrow one that
+   misrepresents the whole.
+
+If you REWRITE, the new title MUST follow ALL FIVE rules above. Don't fix
+clickbait by introducing corny phrasing. Don't fix vagueness by stuffing in
+proper nouns that aren't central.
+
+GOOD examples:
+  "Nintendo Should Make Harder Games Again"
+  "Why GameStop Wants to Buy eBay"
+  "Xbox Is Becoming a Brand, Not a Console"
+  "Ocarina of Time Still Needs a Remake"
+  "Switch 2 at $450 Is Actually Competitive"
+
+BAD examples (and why):
+  "Yoshi and Kirby Got Too Easy — But Donke" (cut mid-word, corny em-dash)
+  "GameStop Is Pre-Scalping Trading Cards" (made-up jargon "pre-scalping")
+  "The Truth About Retro Gaming Today" (clickbait-flavored, vague)
+  "Why XBOX Series X is BETTER Than PS5 PRO" (excessive caps, fake comparison)
+  "GameStop Is Reportedly Bidding to Acquir" (cut mid-word)
 
 DECISIONS:
-- All 4 dimensions PASS → APPROVE
-- 1 dimension borderline → APPROVE_WITH_NOTE (still ship, log warning)
+- All 5 dimensions PASS → APPROVE
+- 1 dimension borderline → APPROVE_WITH_NOTE
 - ≥1 dimension fails clearly → REWRITE (return a better title)
-- Cannot rewrite without lying → REJECT
+- Cannot rewrite without misrepresenting the content → REJECT
 
 Return STRICT JSON only:
 {{
   "scores": {{
     "specific": "good" | "borderline" | "fail",
+    "natural": "good" | "borderline" | "fail",
+    "concise": "good" | "borderline" | "fail",
     "not_clickbait": "good" | "borderline" | "fail",
-    "length": "good" | "borderline" | "fail",
     "accurate": "good" | "borderline" | "fail"
   }},
   "decision": "APPROVE" | "APPROVE_WITH_NOTE" | "REWRITE" | "REJECT",

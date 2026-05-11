@@ -388,11 +388,43 @@ def detect_scenes_and_crops(
             cascades = [frontal, profile, profile]
 
         # --- Pass 1: walk the clip at fixed stride, diff HSV histograms -----
+        # When a cut is detected between samples N-1 and N, bisect the gap to
+        # find the EXACT cut frame (down to single-frame precision, 33ms at 30fps).
+        # Without this refinement the cut boundary lands at the sample-N timestamp,
+        # so the new camera's content can play for up to STRIDE seconds (0.15s)
+        # with the OLD crop_x, producing the visible "half-second-off-center"
+        # lag the user reported on c1's first cut.
         stride = SCENE_SAMPLE_STRIDE_SEC
         n_samples = max(2, int(duration / stride) + 1)
         prev_hist = None
+        prev_t_rel = 0.0
         # cut_points holds clip-relative timestamps where a cut is detected
         cut_points: list[float] = [0.0]
+
+        def _refine_cut(t_lo: float, t_hi: float, hist_lo, hist_hi) -> float:
+            """Frame-by-frame walk between t_lo and t_hi (clip-relative seconds)
+            to find the exact frame where the histogram jumps. Returns the
+            timestamp of the FIRST frame whose histogram is closer to hist_hi
+            than to hist_lo — i.e., the post-cut frame."""
+            # Walk every ~33ms (single frame at 30fps). Cap at 8 frames to avoid
+            # unbounded looping; typical gap is 5 frames (0.15s / 30ms).
+            n_steps = min(8, max(1, int((t_hi - t_lo) * 30)))
+            best_t = t_hi  # default: cut is at t_hi if refinement fails
+            for k in range(1, n_steps + 1):
+                t = t_lo + (t_hi - t_lo) * (k / (n_steps + 1))
+                cap.set(cv2.CAP_PROP_POS_MSEC, (start_sec + t) * 1000.0)
+                ok, frame = cap.read()
+                if not ok or frame is None:
+                    continue
+                h = _hsv_hist(frame)
+                d_to_lo = cv2.compareHist(hist_lo, h, cv2.HISTCMP_BHATTACHARYYA)
+                d_to_hi = cv2.compareHist(hist_hi, h, cv2.HISTCMP_BHATTACHARYYA)
+                if d_to_hi < d_to_lo:
+                    # This frame is closer to post-cut content — cut happened before this t
+                    best_t = t
+                    break
+            return best_t
+
         for i in range(n_samples):
             t_rel = min(duration, i * stride)
             t_abs = start_sec + t_rel
@@ -404,8 +436,11 @@ def detect_scenes_and_crops(
             if prev_hist is not None:
                 d = cv2.compareHist(prev_hist, hist, cv2.HISTCMP_BHATTACHARYYA)
                 if d > cut_threshold:
-                    cut_points.append(t_rel)
+                    # Refine to find the exact post-cut frame within [prev_t_rel, t_rel]
+                    refined = _refine_cut(prev_t_rel, t_rel, prev_hist, hist)
+                    cut_points.append(refined)
             prev_hist = hist
+            prev_t_rel = t_rel
         cut_points.append(duration)
 
         # Build initial scene list from consecutive cut points
@@ -505,24 +540,98 @@ def detect_scenes_and_crops(
             cap.release()
 
 
+# Title overlay tunables (top-of-frame text shown for first N seconds)
+TITLE_OVERLAY_SECONDS = 5.0
+TITLE_OVERLAY_FONT_SIZE = 72
+TITLE_OVERLAY_MAX_CHARS_PER_LINE = 24  # forces wrap on 2 lines for typical titles
+TITLE_OVERLAY_Y_OFFSET = 160           # px from top of 1920-tall frame
+TITLE_OVERLAY_BOX_OPACITY = 0.55       # background box behind text for readability
+
+
+def _escape_drawtext(s: str) -> str:
+    """Escape special chars for ffmpeg drawtext filter."""
+    # Order matters: backslash first, then the rest
+    s = s.replace("\\", "\\\\")
+    s = s.replace(":", "\\:")
+    s = s.replace("'", "’")  # smart-quote substitution avoids quote-escape hell
+    s = s.replace("%", "\\%")
+    s = s.replace(",", "\\,")
+    return s
+
+
+def _wrap_title(s: str, max_chars: int = TITLE_OVERLAY_MAX_CHARS_PER_LINE) -> str:
+    """Word-wrap a title into 2-3 lines for the overlay, returning a string with
+    literal newlines (ffmpeg drawtext supports \\n as line break)."""
+    words = s.split()
+    lines: list[str] = []
+    cur = ""
+    for w in words:
+        candidate = (cur + " " + w).strip() if cur else w
+        if len(candidate) > max_chars and cur:
+            lines.append(cur)
+            cur = w
+        else:
+            cur = candidate
+    if cur:
+        lines.append(cur)
+    # Cap at 3 lines (truncate longest title fragment if it overflows)
+    if len(lines) > 3:
+        lines = lines[:3]
+        lines[-1] = lines[-1] + "…"
+    return "\n".join(lines)
+
+
+def _title_overlay_filter(title: str | None) -> str:
+    """Return the ffmpeg drawtext filter segment for the title overlay, or
+    an empty string if no title is provided. Designed to be inlined after
+    scale=1080:1920 so coordinates match the final frame size.
+    """
+    if not title or not title.strip():
+        return ""
+    wrapped = _wrap_title(title.strip())
+    safe = _escape_drawtext(wrapped)
+    # Bebas Neue font path matches the Dockerfile install location
+    font_path = "/usr/local/share/fonts/bebas-neue/BebasNeue-Regular.ttf"
+    return (
+        f",drawtext=fontfile='{font_path}'"
+        f":text='{safe}'"
+        f":fontcolor=white"
+        f":fontsize={TITLE_OVERLAY_FONT_SIZE}"
+        f":borderw=4:bordercolor=black"
+        f":x=(w-text_w)/2"
+        f":y={TITLE_OVERLAY_Y_OFFSET}"
+        f":line_spacing=8"
+        f":box=1:boxcolor=black@{TITLE_OVERLAY_BOX_OPACITY}:boxborderw=18"
+        f":enable='lte(t,{TITLE_OVERLAY_SECONDS})'"
+    )
+
+
 def _build_video_filter(scenes: list[tuple[float, float, int]], ass_path: Path,
-                        crop_w: int = CROP_W) -> list[str]:
+                        crop_w: int = CROP_W, title: str | None = None) -> list[str]:
     """Build the video-branch filter segments that produce the `[v0]` label
     (a 1080x1920 stream with captions burned in). Callers then append the
     end-card overlay and audio branches the same way regardless of scene
     count.
 
     Single-scene fast path (identical to pre-fix behavior):
-        [0:v]crop=...,scale=1080:1920,setsar=1,subtitles='...'[v0]
+        [0:v]crop=...,scale=1080:1920,setsar=1,drawtext=...,subtitles='...'[v0]
 
     Multi-scene path: split the video N ways, trim+crop each branch with its
     own offset, concat, then apply subtitles to the rebuilt 0-based timeline.
+
+    Title overlay (2026-05-11): if `title` is non-empty, a drawtext layer is
+    inserted AFTER scale and BEFORE subtitles. It shows the title at the top
+    of the frame for the first TITLE_OVERLAY_SECONDS so cold viewers know
+    the topic immediately even with audio off. The drawtext goes on the FINAL
+    concat'd stream (not per-scene) so the text is continuous across cuts.
     """
+    title_filter = _title_overlay_filter(title)
     n = len(scenes)
     if n <= 1:
         _s, _e, cx = scenes[0]
         return [
-            f"[0:v]crop={crop_w}:1080:{cx}:0,scale=1080:1920,setsar=1,"
+            f"[0:v]crop={crop_w}:1080:{cx}:0,scale=1080:1920,setsar=1"
+            f"{title_filter},"
             f"subtitles='{ass_path}'[v0]"
         ]
 
@@ -536,7 +645,8 @@ def _build_video_filter(scenes: list[tuple[float, float, int]], ass_path: Path,
         )
     concat_inputs = "".join(f"[s{i}]" for i in range(n))
     parts.append(
-        f"{concat_inputs}concat=n={n}:v=1:a=0,setsar=1,"
+        f"{concat_inputs}concat=n={n}:v=1:a=0,setsar=1"
+        f"{title_filter},"
         f"subtitles='{ass_path}'[v0]"
     )
     return parts
@@ -545,7 +655,8 @@ def _build_video_filter(scenes: list[tuple[float, float, int]], ass_path: Path,
 def _build_ffmpeg_cmd(source_video: Path, start: float, end: float, duration: float,
                       scenes: list[tuple[float, float, int]], ass_path: Path,
                       music: Path | None, has_music: bool, crop_w: int,
-                      out_path: Path, music_volume: float = 0.12) -> list[str]:
+                      out_path: Path, music_volume: float = 0.12,
+                      title: str | None = None) -> list[str]:
     """Build the full ffmpeg command for one render. Pure function — no side effects.
 
     Factored out of render_clip() so Gate 2 + Gate 3 rescue paths can rebuild
@@ -558,7 +669,7 @@ def _build_ffmpeg_cmd(source_video: Path, start: float, end: float, duration: fl
         casual=0.12, upbeat=0.14. Clamped to [0.05, 0.20] for safety.
     """
     music_volume = max(0.05, min(0.20, float(music_volume)))
-    filter_parts = _build_video_filter(scenes, ass_path, crop_w=crop_w)
+    filter_parts = _build_video_filter(scenes, ass_path, crop_w=crop_w, title=title)
     vout_label = "[v0]"
     if END_CARD.exists():
         filter_parts.append(
@@ -658,9 +769,12 @@ def render_clip(spec: dict, episode: str, transcripts_by_stem: dict[str, dict],
     # writes _audio_music_volume into the spec (0.08 intense / 0.10 storytelling /
     # 0.12 casual / 0.14 upbeat). Default 0.12 if not set (older specs).
     music_volume = float(spec.get("_audio_music_volume") or 0.12)
+    # Title overlay text for the first 5 seconds — pulled from spec.title.
+    # Helps cold viewers know the topic at a glance (audio-off scrolling).
+    title_text = spec.get("title", "")
     cmd = _build_ffmpeg_cmd(source_video, start, end, duration, scenes,
                             ass_path, music, has_music, crop_w, out_path,
-                            music_volume=music_volume)
+                            music_volume=music_volume, title=title_text)
 
     mood_label = spec.get("_audio_mood", "?")
     print(f"[RENDER] {clip_id}  {duration:.1f}s  music={music.name if music else 'none'}  "
@@ -714,6 +828,7 @@ def render_clip(spec: dict, episode: str, transcripts_by_stem: dict[str, dict],
         new_cmd = _build_ffmpeg_cmd(
             source_video, start, end, duration, new_scenes,
             ass_path, music, has_music, crop_w, out_path,
+            music_volume=music_volume, title=title_text,
         )
         proc = subprocess.run(new_cmd, capture_output=True, text=True)
         if proc.returncode != 0:
