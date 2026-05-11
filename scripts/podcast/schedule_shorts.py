@@ -314,7 +314,23 @@ def _gate4_batch_concurrent(items: list[tuple[Path, dict]],
 
 def schedule(episode: str, start_date: str, dry_run: bool = True,
              clips_plan_path: Path = CLIPS_PLAN_ALL,
-             strict_titles: bool = False, force: bool = False) -> int:
+             strict_titles: bool = False, force: bool = False,
+             approval_file: Path | None = None,
+             require_approval: bool = True) -> int:
+    """Upload rendered clips to Zernio on the standard 3/day schedule.
+
+    require_approval (default True, added 2026-05-11): if no approval_file is
+    provided AND the episode dir's `approved_clips.json` doesn't exist, REFUSE
+    to upload and tell the user to run preview_queue.py first. After 3 quality
+    crashes, no-preview-then-publish has burned us too many times.
+
+    approval_file: JSON list of clip IDs to upload. Clips not in the list are
+    skipped (the human-in-the-loop safety net). Set to None to fall back to
+    `<episode>/approved_clips.json`.
+
+    Pass --force-auto to bypass approval requirement (use only when 100%
+    confident in the gates and you've reviewed before).
+    """
     episode_clips_dir = CLIPS_DIR / _safe(episode)
     if not episode_clips_dir.exists():
         print(f"[FATAL] no clips dir: {episode_clips_dir}", file=sys.stderr)
@@ -324,6 +340,39 @@ def schedule(episode: str, start_date: str, dry_run: bool = True,
     if not mp4s:
         print(f"[FATAL] no .mp4 files in {episode_clips_dir}", file=sys.stderr)
         return 2
+
+    # --- Approval gate: only upload clips the human (or auto-approve) blessed ---
+    approved_ids: set[str] | None = None
+    if approval_file is None:
+        default_approval = episode_clips_dir / "approved_clips.json"
+        if default_approval.exists():
+            approval_file = default_approval
+    if approval_file is not None and approval_file.exists():
+        try:
+            approved_ids = set(json.loads(approval_file.read_text()))
+            print(f"[APPROVAL] {len(approved_ids)} clip(s) approved via {approval_file.name}")
+        except Exception as exc:
+            print(f"[FATAL] failed to read approval file {approval_file}: {exc}", file=sys.stderr)
+            return 2
+    elif require_approval:
+        print(f"[FATAL] no approval file found. Run preview first:", file=sys.stderr)
+        print(f"  python3 scripts/podcast/preview_queue.py --episode \"{episode}\"", file=sys.stderr)
+        print(f"  → opens HTML, you check ✓ per clip, export approved_clips.json", file=sys.stderr)
+        print(f"  → then re-run this script", file=sys.stderr)
+        print(f"\nOr use --auto-approve-from-gates to accept any Gate-4-APPROVE clip without preview.", file=sys.stderr)
+        print(f"Or use --no-require-approval to disable the safety check (NOT RECOMMENDED).", file=sys.stderr)
+        return 2
+
+    # Filter MP4s to only those in the approval list
+    if approved_ids is not None:
+        before = len(mp4s)
+        mp4s = [m for m in mp4s if m.stem in approved_ids]
+        n_skipped = before - len(mp4s)
+        if n_skipped:
+            print(f"[APPROVAL] {n_skipped} clip(s) not in approval list — skipping")
+        if not mp4s:
+            print(f"[FATAL] approval list filtered out every clip (nothing to upload)", file=sys.stderr)
+            return 2
 
     plan = json.loads(clips_plan_path.read_text()) if clips_plan_path.exists() else []
     plan_by_id = {p["clip_id"]: p for p in plan}
@@ -427,15 +476,24 @@ def schedule(episode: str, start_date: str, dry_run: bool = True,
                 print(f"[GATE4] REJECT {mp4.name}: {g4.get('reason', '?')}")
                 continue
             if decision == "FLAG_FOR_REVIEW":
-                # Borderline — Gate 4 hedged but didn't reject. Goal is "dozens
-                # per episode" so we SHIP these but emit Navi for awareness.
-                # The user can delete the single post if it turns out bad; missing
-                # the whole episode's content is worse.
+                # 2026-05-11 BEHAVIOR CHANGE: Gate 4 FLAGs no longer auto-ship.
+                #
+                # Old behavior (calibrated 2026-05-08): ship FLAGGED clips with a
+                # Navi alert. Result: 28% of May 5 clips were flagged with reasons
+                # like "weak cold open", "trails off", "title-content mismatch" —
+                # exactly what the user complained about — but they shipped anyway.
+                #
+                # New behavior: FLAGGED clips reach this point only if the user
+                # explicitly approved them in the preview queue. The default-
+                # approval JSON (written by preview_queue.py) excludes FLAGGED
+                # clips so they require an affirmative human ✓ before shipping.
+                #
+                # If we got here with a FLAGGED clip, it means the user reviewed
+                # and approved it — so ship with a low-priority audit log entry.
                 gate4_flagged += 1
-                log.append({"clip": mp4.name, "gate4": "FLAGGED_BUT_SHIPPING",
+                log.append({"clip": mp4.name, "gate4": "FLAGGED_BUT_USER_APPROVED",
                             "issues": g4.get("issues", [])})
-                print(f"[GATE4] FLAG-SHIP {mp4.name}: borderline, shipping with Navi alert")
-                # Continue past this if-block to the upload — we let it through.
+                print(f"[GATE4] FLAG-APPROVED {mp4.name}: user-approved despite Gate 4 flag")
             else:
                 print(f"[GATE4] APPROVE {mp4.name}")
 
@@ -492,14 +550,39 @@ def main() -> int:
                         help="Refuse to --execute if any title fails QA (length / words / blocklist)")
     parser.add_argument("--force", action="store_true",
                         help="Bypass dedupe (re-schedule clips even if already posted/queued)")
+    parser.add_argument("--approval-file",
+                        help="Path to JSON list of approved clip IDs. Falls back to "
+                             "<episode_dir>/approved_clips.json if not specified.")
+    parser.add_argument("--auto-approve-from-gates", action="store_true",
+                        help="Skip preview; auto-accept every Gate-4-APPROVE clip "
+                             "(runs preview_queue.py --auto-approve internally first).")
+    parser.add_argument("--no-require-approval", action="store_true",
+                        help="DANGEROUS: bypass the human-in-loop preview gate. "
+                             "Schedules every rendered clip regardless of approval. "
+                             "Use only when you're 100% confident in the gates.")
     g = parser.add_mutually_exclusive_group(required=True)
     g.add_argument("--dry-run", action="store_true")
     g.add_argument("--execute", action="store_true")
     args = parser.parse_args()
 
+    # --auto-approve-from-gates: run preview_queue.py with --auto-approve to
+    # write the approval file before scheduling.
+    if args.auto_approve_from_gates:
+        from preview_queue import generate_preview  # local import
+        print(f"[AUTO-APPROVE-FROM-GATES] generating approved_clips.json from Gate 4 results...")
+        ap = generate_preview(args.episode, args.start_date, auto_approve=True)
+        if not ap:
+            print(f"[FATAL] auto-approval failed", file=sys.stderr)
+            return 2
+        approval_file = ap
+    else:
+        approval_file = Path(args.approval_file) if args.approval_file else None
+
     return schedule(args.episode, args.start_date, dry_run=args.dry_run,
                     clips_plan_path=Path(args.clips_plan),
-                    strict_titles=args.strict_titles, force=args.force)
+                    strict_titles=args.strict_titles, force=args.force,
+                    approval_file=approval_file,
+                    require_approval=not args.no_require_approval)
 
 
 if __name__ == "__main__":

@@ -50,7 +50,7 @@ except ImportError:
     emit_navi_task = None  # graceful degrade if requests is missing
 
 STAGES = ["sources", "transcribe", "auto_segment", "thumbnails", "metadata",
-          "yt_upload", "pick_clips", "render_clips", "schedule"]
+          "yt_upload", "pick_clips", "render_clips", "preview", "schedule"]
 
 ET = ZoneInfo("America/New_York")
 
@@ -336,6 +336,60 @@ def stage_render_clips(args, state) -> int:
                  "--batch", str(all_path), "--episode", args.episode], args.dry_run)
 
 
+def stage_preview(args, state) -> int:
+    """Generate the human-in-the-loop preview HTML page.
+
+    Default safety net (added 2026-05-11): after every render run, list all
+    rendered clips + their gate decisions in a clickable HTML page. The user
+    checks ✓ per clip to approve. The schedule stage then only uploads
+    approved clips.
+
+    --auto-approve flag (pass to pipeline.py) skips this — accepts every
+    Gate-4-APPROVE clip without preview. Use only when trust established.
+    """
+    episode_clips_dir = CLIPS_DIR / _safe(args.episode)
+    if not episode_clips_dir.exists() or not any(episode_clips_dir.glob("*.mp4")):
+        if args.dry_run:
+            print(f"  [dry-run] would generate preview for {episode_clips_dir}")
+            return 0
+        print(f"  [skip] no rendered clips in {episode_clips_dir}", file=sys.stderr)
+        return 0  # not fatal — schedule will catch this
+
+    cmd = ["python3", str(ROOT / "scripts" / "podcast" / "preview_queue.py"),
+           "--episode", args.episode]
+    if args.shorts_start_date:
+        cmd.extend(["--start-date", args.shorts_start_date])
+    if args.auto_approve:
+        cmd.append("--auto-approve")
+    rc = _run(cmd, args.dry_run)
+
+    # Emit Navi task with link to the preview HTML (when not auto-approving)
+    if rc == 0 and not args.dry_run and not args.auto_approve and emit_navi_task is not None:
+        preview_path = episode_clips_dir / "preview_queue.html"
+        if preview_path.exists():
+            try:
+                n_clips = len(list(episode_clips_dir.glob("*.mp4")))
+                emit_navi_task(
+                    title=f"Preview ready: {args.episode} ({n_clips} clip(s))",
+                    description=(
+                        f"Episode shorts rendered + gate-validated. Review before publish.\n\n"
+                        f"Open this HTML on your laptop:\n"
+                        f"  {preview_path}\n\n"
+                        f"Or via NAS SMB:\n"
+                        f"  /Volumes/NAS/8-Bit Legacy/podcast/clips/{_safe(args.episode)}/preview_queue.html\n\n"
+                        f"Each clip has Gate 4 reasoning + a video player. Check ✓ to approve.\n"
+                        f"When done, click 'Export approved clip IDs'. Save the file as\n"
+                        f"approved_clips.json in the same dir, then run schedule_shorts.\n\n"
+                        f"After this preview routine is trusted, the pipeline can skip preview\n"
+                        f"with --auto-approve (accepts every Gate 4 APPROVE clip automatically)."
+                    ),
+                    priority="high",
+                )
+            except Exception as exc:
+                print(f"  [preview-navi] emit failed: {exc}")
+    return rc
+
+
 def stage_schedule(args, state) -> int:
     if not args.shorts_start_date:
         print("  [skip] no --shorts-start-date")
@@ -348,8 +402,13 @@ def stage_schedule(args, state) -> int:
         print(f"  [fatal] no clips in {episode_clips_dir}", file=sys.stderr)
         return 2
     mode = "--dry-run" if args.dry_run else "--execute"
-    return _run(["python3", str(ROOT / "scripts" / "podcast" / "schedule_shorts.py"),
-                 "--episode", args.episode, "--start-date", args.shorts_start_date, mode], False)
+    cmd = ["python3", str(ROOT / "scripts" / "podcast" / "schedule_shorts.py"),
+           "--episode", args.episode, "--start-date", args.shorts_start_date, mode]
+    # If --auto-approve was set on the pipeline, also pass it down to schedule
+    # so the approval gate doesn't block the run.
+    if args.auto_approve:
+        cmd.append("--auto-approve-from-gates")
+    return _run(cmd, False)
 
 
 STAGE_FNS = {
@@ -361,6 +420,7 @@ STAGE_FNS = {
     "yt_upload": stage_yt_upload,
     "pick_clips": stage_pick_clips,
     "render_clips": stage_render_clips,
+    "preview": stage_preview,
     "schedule": stage_schedule,
 }
 
@@ -382,6 +442,12 @@ def main() -> int:
                              "against bad output — failures auto-bail with a Navi alert for review.")
     parser.add_argument("--force-auto-segment", action="store_true",
                         help="Run auto_segment even if manual topic cuts or prior _auto_ files exist")
+    parser.add_argument("--auto-approve", action="store_true",
+                        help="DANGEROUS UNTIL TRUST IS ESTABLISHED. Skip the human-in-loop "
+                             "preview gate; automatically accept every Gate-4-APPROVE clip "
+                             "(Gate-4-FLAG_FOR_REVIEW clips are still excluded). Use ONLY after "
+                             "you've reviewed 2-3 consecutive episodes' preview pages and the "
+                             "approval defaults match your judgment.")
     args = parser.parse_args()
 
     state = _load_state(args.episode)

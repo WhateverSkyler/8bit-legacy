@@ -35,6 +35,12 @@ COPY scripts/ /app/scripts/
 # Installed under /usr/local/share/fonts so it's picked up by _find_bebas_font().
 COPY assets/fonts/BebasNeue-Regular.ttf /usr/local/share/fonts/bebas-neue/BebasNeue-Regular.ttf
 
+# YuNet face-detection ONNX model (227KB) — used by scripts/podcast/_face_detect.py
+# for centering shorts on the active speaker. Replaces the Haar cascades that had
+# a 33% Gate-3 rejection rate due to false-positive detections (lamps, picture
+# frames, etc.) and missed profile/angled poses.
+COPY deploy/_models/face_detection_yunet_2023mar.onnx /app/data/podcast/_models/face_detection_yunet_2023mar.onnx
+
 # Intermediate artifacts (transcripts, rendered clips pre-archive, etc.) live inside the container
 # at /app/data. The NAS drop/archive volumes are mounted separately at /media.
 RUN mkdir -p /app/data/podcast /app/data/social-media /app/data/logs
