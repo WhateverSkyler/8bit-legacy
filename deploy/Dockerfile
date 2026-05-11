@@ -52,12 +52,19 @@ RUN mkdir -p /app/data/podcast /app/data/social-media /app/data/logs
 # write its model refs at runtime — otherwise transcribe.py fails silently with perm errors.
 RUN groupadd --gid 950 pipeline \
     && useradd --uid 950 --gid 950 --home /app --shell /usr/sbin/nologin pipeline \
-    && mkdir -p /app/.cache /app/.local \
+    && mkdir -p /app/.cache /app/.local /app/.cache/nltk_data /app/.cache/torch /app/.cache/huggingface \
     && chown -R 950:950 /app/data /app/.cache /app/.local
 
+# whisperX needs writable cache locations; default fall-throughs are root-owned
+# system paths that uid 950 can't write. Without these env vars, alignment fails
+# silently with: "Permission denied: '/app/nltk_data'" or '/root/.cache/...'.
 ENV SCRIPTS_ROOT=/app/scripts \
     MEDIA_ROOT=/media \
-    PYTHONPATH=/app/scripts
+    PYTHONPATH=/app/scripts \
+    NLTK_DATA=/app/.cache/nltk_data \
+    TORCH_HOME=/app/.cache/torch \
+    HF_HOME=/app/.cache/huggingface \
+    XDG_CACHE_HOME=/app/.cache
 
 USER 950:950
 
