@@ -35,6 +35,11 @@ COPY scripts/ /app/scripts/
 # Installed under /usr/local/share/fonts so it's picked up by _find_bebas_font().
 COPY assets/fonts/BebasNeue-Regular.ttf /usr/local/share/fonts/bebas-neue/BebasNeue-Regular.ttf
 
+# Brand end-card (1080x1920) — overlaid on the last 4s of every rendered short
+# by render_clip.py. Path mirrors repo layout so the existing END_CARD constant
+# (ROOT / "assets/brand/end-card-9x16.png") resolves at runtime.
+COPY assets/brand/end-card-9x16.png /app/assets/brand/end-card-9x16.png
+
 # YuNet face-detection ONNX model (227KB) — used by scripts/podcast/_face_detect.py
 # for centering shorts on the active speaker. Replaces the Haar cascades that had
 # a 33% Gate-3 rejection rate due to false-positive detections (lamps, picture

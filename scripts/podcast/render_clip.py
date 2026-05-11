@@ -558,9 +558,56 @@ INTRO_FADE_DURATION = 0.4
 
 
 def _wrap_title(s: str, max_chars: int = TITLE_OVERLAY_MAX_CHARS_PER_LINE) -> list[str]:
-    """Word-wrap a title into a list of lines (no joining — caller handles file
-    or filter output). Caps at 3 lines, truncating with … if longer."""
+    """Wrap a title into 1-3 lines, optimizing for visual BALANCE (line-length
+    parity) rather than greedy fill.
+
+    Why: greedy left-to-right wrap routinely produced orphan-word trailers like
+    "GameStop Is Trying to" / "Buy eBay" or "Pokemon Games Are Too" / "Easy
+    Now" — the second line is awkwardly short and the first ends on a dangling
+    preposition. Balanced split picks the break that minimizes |len(line1) -
+    len(line2)|, which both reads better and looks more poster-like.
+
+    Algorithm:
+      1. If single line fits within max_chars, no wrap.
+      2. Try every 2-line split point; pick the one with smallest length
+         imbalance, allowing each line to stretch up to max_chars + slack
+         (4 chars) so balance can win over hard-cap.
+      3. If no 2-line split fits even with slack, fall back to greedy 3-line
+         wrap. Cap at 3 lines, truncating the last with "…" if longer.
+    """
+    s = s.strip()
+    if not s:
+        return []
     words = s.split()
+
+    if len(s) <= max_chars:
+        return [s]
+
+    n = len(words)
+    slack = 4  # let lines stretch slightly past max_chars to win balance
+    best_split = None
+    best_imbalance = float("inf")
+
+    for split_idx in range(1, n):
+        line1 = " ".join(words[:split_idx])
+        line2 = " ".join(words[split_idx:])
+        if len(line1) > max_chars + slack or len(line2) > max_chars + slack:
+            continue
+        imbalance = abs(len(line1) - len(line2))
+        # Prefer balanced split. Tiebreak: prefer split BEFORE shorter words
+        # (avoids dangling "to/in/the" on line 1) — score-favors splits where
+        # line1 doesn't end on a 1-2 char word.
+        last_word_line1 = words[split_idx - 1]
+        if len(last_word_line1) <= 2:
+            imbalance += 3  # mild penalty for orphan-preposition trail
+        if imbalance < best_imbalance:
+            best_imbalance = imbalance
+            best_split = split_idx
+
+    if best_split is not None:
+        return [" ".join(words[:best_split]), " ".join(words[best_split:])]
+
+    # Long title — fall back to greedy 3-line.
     lines: list[str] = []
     cur = ""
     for w in words:
@@ -734,11 +781,17 @@ def _build_ffmpeg_cmd(source_video: Path, start: float, end: float, duration: fl
                                        episode_dir=episode_dir, clip_id=clip_id)
     vout_label = "[v0]"
     if END_CARD.exists():
+        # End-card covers the last END_CARD_DURATION seconds with a quick
+        # fade-in. 3s is the YouTube Shorts standard for branded outros —
+        # long enough for the viewer to register the handle/CTA, short
+        # enough not to eat too much dialogue.
+        end_card_duration = 3.0
+        end_card_start = max(0.0, duration - end_card_duration)
         filter_parts.append(
-            f"[2:v]scale=1080:1920,format=rgba,fade=t=in:st={max(0, duration-4):.2f}:d=0.5:alpha=1[ec]"
+            f"[2:v]scale=1080:1920,format=rgba,fade=t=in:st={end_card_start:.2f}:d=0.4:alpha=1[ec]"
         )
         filter_parts.append(
-            f"[v0][ec]overlay=0:0:enable='gte(t,{max(0, duration-4):.2f})'[vout]"
+            f"[v0][ec]overlay=0:0:enable='gte(t,{end_card_start:.2f})'[vout]"
         )
         vout_label = "[vout]"
 
