@@ -36,7 +36,9 @@ fi
 # nested-quoting nightmare that the previous version hit.
 cat > /tmp/test-inner.sh <<'INNER'
 #!/bin/bash
-set -e
+# NOTE: NO `set -e`. render_clip.py exits non-zero when ANY clip is rejected
+# at Gate 2/3 — those rejections are expected and shouldn't kill the run.
+# We want preview_queue.py to still generate the HTML for whatever survived.
 cd /app
 FULL_TRANSCRIPT="/app/data/podcast/transcripts/__STEM___1080p.json"
 EPISODE="__EPISODE__"
@@ -45,14 +47,19 @@ if [ ! -f "$FULL_TRANSCRIPT" ]; then
   ls /app/data/podcast/transcripts/
   exit 1
 fi
-echo "--- clearing old clips_plan/*.json so we only get FULL picks ---"
+echo "--- clearing old clips_plan/*.json + old clips/Episode_May_5_2026/*.mp4 so we only get FRESH picks ---"
 rm -f /app/data/podcast/clips_plan/*.json
+# Wipe prior rendered clips for this episode so preview_queue only sees the new render
+EPISODE_SAFE=$(echo "$EPISODE" | tr ' ' '_')
+rm -f "/app/data/podcast/clips/${EPISODE_SAFE}/"*.mp4 "/app/data/podcast/clips/${EPISODE_SAFE}/"*.ass 2>/dev/null
+rm -rf "/app/data/podcast/clips/${EPISODE_SAFE}/_kf" "/app/data/podcast/clips/${EPISODE_SAFE}/preview" 2>/dev/null
+mkdir -p "/app/data/podcast/clips/${EPISODE_SAFE}/_rejected"
 echo "--- pick_clips: FROM FULL EPISODE ONLY, chunked 30-min windows ---"
 python3 scripts/podcast/pick_clips.py "$FULL_TRANSCRIPT" --chunk-minutes 30 --target-count 30
 echo "--- copying picks to _all.json so render_clip.py finds them ---"
 cp "/app/data/podcast/clips_plan/__STEM___1080p.json" /app/data/podcast/clips_plan/_all.json
-echo "--- render_clips ---"
-python3 scripts/podcast/render_clip.py --batch /app/data/podcast/clips_plan/_all.json --episode "$EPISODE"
+echo "--- render_clips (rc ignored — Gate-2/3 rejects are expected) ---"
+python3 scripts/podcast/render_clip.py --batch /app/data/podcast/clips_plan/_all.json --episode "$EPISODE" || true
 echo "--- preview_queue ---"
 START_DATE=$(date -d "+1 day" +%Y-%m-%d 2>/dev/null || date -v+1d +%Y-%m-%d)
 python3 scripts/podcast/preview_queue.py --episode "$EPISODE" --start-date "$START_DATE"
