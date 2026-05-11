@@ -1,32 +1,24 @@
 #!/usr/bin/env bash
 # Run the shorts pipeline on a specific episode WITHOUT publishing.
 #
-# Spins up a one-shot docker container with the 8bit-pipeline image but
-# overrides the entrypoint so drop_watcher does NOT start. Runs:
-#   1. realign_transcript.py — fixes whisperX-missing transcripts (caption sync)
-#   2. pick_clips → render → preview HTML generation
+# Spins up one-shot docker containers (NOT the long-running drop_watcher)
+# to do: realign transcripts → pick from FULL EPISODE only with chunked
+# 30-min windows → render via YuNet → generate preview HTML.
 #
-# After completion, pulls the preview HTML + all rendered MP4s back to /tmp
-# on the Mac so the user can review locally before approving anything to ship.
+# Pulls the preview HTML + all rendered MP4s back to /tmp on the Mac so
+# the user can review locally before approving anything to ship.
 #
 # Usage:
 #   ./deploy/test-on-episode.sh "Episode May 5 2026"
-#   ./deploy/test-on-episode.sh "Episode May 5 2026" /path/to/source/full.mp4
-#
-# After preview, to ship the approved clips:
-#   ./deploy/schedule-from-preview.sh "Episode May 5 2026" 2026-05-12
+#   ./deploy/test-on-episode.sh "Episode May 5 2026" "8-Bit Podcast May 5 2026 FULL FINAL V2"
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-EPISODE="${1:?usage: $0 \"Episode May 5 2026\" \"<full-video-stem>\"}"
+EPISODE="${1:?usage: $0 \"Episode May 5 2026\" [\"<full-video-stem>\"]}"
 EPISODE_SAFE="$(echo "$EPISODE" | tr ' ' '_')"
-# The transcript stem (without _1080p.json suffix). Default matches May 5.
-# This is the FULL EPISODE transcript — we pick from it via chunked 30-min
-# windows so all good content (including content NOT in any auto-segmented
-# topic video) gets considered.
 FULL_TRANSCRIPT_STEM="${2:-8-Bit Podcast May 5 2026 FULL FINAL V2}"
 
 TRUENAS_IP="${TRUENAS_IP:-192.168.4.2}"
@@ -38,10 +30,42 @@ if [[ -z "$TRUENAS_API_KEY" ]]; then
   exit 1
 fi
 
-echo "==> Building test runner script"
-cat > /tmp/test-on-episode-runner.sh <<RUNNER
+# ===== Build the inner script that runs INSIDE the container =====
+# Single-quoted heredoc: NO outer-shell variable expansion happens. We bake
+# values in via sed substitution after generating it. This avoids the
+# nested-quoting nightmare that the previous version hit.
+cat > /tmp/test-inner.sh <<'INNER'
 #!/bin/bash
 set -e
+cd /app
+FULL_TRANSCRIPT="/app/data/podcast/transcripts/__STEM___1080p.json"
+EPISODE="__EPISODE__"
+if [ ! -f "$FULL_TRANSCRIPT" ]; then
+  echo "FATAL: full transcript not found: $FULL_TRANSCRIPT"
+  ls /app/data/podcast/transcripts/
+  exit 1
+fi
+echo "--- clearing old clips_plan/*.json so we only get FULL picks ---"
+rm -f /app/data/podcast/clips_plan/*.json
+echo "--- pick_clips: FROM FULL EPISODE ONLY, chunked 30-min windows ---"
+python3 scripts/podcast/pick_clips.py "$FULL_TRANSCRIPT" --chunk-minutes 30 --target-count 30
+echo "--- copying picks to _all.json so render_clip.py finds them ---"
+cp "/app/data/podcast/clips_plan/__STEM___1080p.json" /app/data/podcast/clips_plan/_all.json
+echo "--- render_clips ---"
+python3 scripts/podcast/render_clip.py --batch /app/data/podcast/clips_plan/_all.json --episode "$EPISODE"
+echo "--- preview_queue ---"
+START_DATE=$(date -d "+1 day" +%Y-%m-%d 2>/dev/null || date -v+1d +%Y-%m-%d)
+python3 scripts/podcast/preview_queue.py --episode "$EPISODE" --start-date "$START_DATE"
+INNER
+
+# Substitute placeholders with sed (handles spaces/special chars safely)
+sed -i.bak "s|__STEM__|${FULL_TRANSCRIPT_STEM}|g; s|__EPISODE__|${EPISODE}|g" /tmp/test-inner.sh
+rm -f /tmp/test-inner.sh.bak
+chmod +x /tmp/test-inner.sh
+
+# ===== Build the outer wrapper that runs as ROOT on TrueNAS =====
+cat > /tmp/test-outer.sh <<OUTER
+#!/bin/bash
 {
   echo "===== EPISODE: $EPISODE ====="
   echo "===== \$(date) ====="
@@ -51,7 +75,7 @@ set -e
   docker stop 8bit-pipeline 2>/dev/null || true
   sleep 2
 
-  echo "==> [2/4] Re-align May 5 transcripts via whisperX (refines word timing to ±50ms)"
+  echo "==> [2/4] Re-align transcripts via whisperX (refines word timing to ±50ms)"
   docker run --rm --name 8bit-test-realign \\
     -v /mnt/pool/apps/8bit-pipeline/data:/app/data \\
     -v /mnt/pool/apps/8bit-pipeline/config:/app/config \\
@@ -63,40 +87,18 @@ set -e
     /app/scripts/podcast/realign_transcript.py --batch
 
   echo
-  echo "==> [3/4] Pipeline: pick_clips (chunked, FROM FULL ONLY) → render → preview (NO schedule)"
-  # We pick from the FULL EPISODE transcript ONLY (not the auto-segmented topic
-  # videos), in 30-minute chunked windows. This catches good content that
-  # didn't make it into any auto-segmented topic. We do each stage explicitly
-  # so the schedule stage (which would publish) never runs.
+  echo "==> [3/4] pick_clips → render → preview (NO schedule)"
+  # Inner script lives at /tmp/test-inner.sh, mounted into container as /tmp/runner.sh
   docker run --rm --name 8bit-test-pipeline \\
     -v /mnt/pool/apps/8bit-pipeline/data:/app/data \\
     -v /mnt/pool/apps/8bit-pipeline/config:/app/config \\
     -v "/mnt/pool/NAS/Media/8-Bit Legacy/podcast:/media/podcast" \\
+    -v /tmp/test-inner.sh:/tmp/runner.sh:ro \\
     --env-file /mnt/pool/apps/8bit-pipeline/.env \\
     --user 950:950 \\
     --entrypoint bash \\
     8bit-pipeline:latest \\
-    -c "
-      set -e
-      cd /app
-      FULL_TRANSCRIPT='/app/data/podcast/transcripts/${FULL_TRANSCRIPT_STEM}_1080p.json'
-      if [ ! -f \"\$FULL_TRANSCRIPT\" ]; then
-        echo \"FATAL: full transcript not found: \$FULL_TRANSCRIPT\"
-        ls /app/data/podcast/transcripts/
-        exit 1
-      fi
-      echo '--- clearing old clips_plan/_all.json so we only get FULL picks ---'
-      rm -f /app/data/podcast/clips_plan/*.json
-      echo '--- pick_clips: FROM FULL EPISODE ONLY, chunked 30-min windows ---'
-      python3 scripts/podcast/pick_clips.py \"\$FULL_TRANSCRIPT\" --chunk-minutes 30 --target-count 30
-      echo '--- copying picks to _all.json so render_clip.py finds them ---'
-      cp /app/data/podcast/clips_plan/${FULL_TRANSCRIPT_STEM}_1080p.json /app/data/podcast/clips_plan/_all.json
-      echo '--- render_clips ---'
-      python3 scripts/podcast/render_clip.py --batch /app/data/podcast/clips_plan/_all.json --episode \"$EPISODE\"
-      echo '--- preview_queue ---'
-      START_DATE=\$(date -d '+1 day' +%Y-%m-%d 2>/dev/null || date -v+1d +%Y-%m-%d)
-      python3 scripts/podcast/preview_queue.py --episode \"$EPISODE\" --start-date \$START_DATE
-    "
+    /tmp/runner.sh
 
   echo
   echo "==> [4/4] Results summary"
@@ -105,20 +107,21 @@ set -e
   echo "===== TEST DONE ====="
 } > /tmp/test-on-episode-runner.out 2>&1
 echo TEST_RUNNER_DONE >> /tmp/test-on-episode-runner.out
-RUNNER
-chmod +x /tmp/test-on-episode-runner.sh
+OUTER
+chmod +x /tmp/test-outer.sh
 
-scp -i "$SSH_KEY" -q /tmp/test-on-episode-runner.sh "truenas_admin@${TRUENAS_IP}:/tmp/"
+# Ship both scripts to TrueNAS
+scp -i "$SSH_KEY" -q /tmp/test-inner.sh /tmp/test-outer.sh "truenas_admin@${TRUENAS_IP}:/tmp/"
 
-echo "==> Kicking off test via TrueNAS cronjob (rebuild + realign + render + preview)"
+echo "==> Kicking off test via TrueNAS cronjob"
 RESP=$(curl -s -X POST "http://${TRUENAS_IP}/api/v2.0/cronjob" \
   -H "Authorization: Bearer ${TRUENAS_API_KEY}" -H "Content-Type: application/json" \
-  -d "{\"user\":\"root\",\"command\":\"bash /tmp/test-on-episode-runner.sh\",\"description\":\"test ${EPISODE}\",\"schedule\":{\"minute\":\"0\",\"hour\":\"0\",\"dom\":\"1\",\"month\":\"1\",\"dow\":\"0\"},\"enabled\":false}")
+  -d "{\"user\":\"root\",\"command\":\"bash /tmp/test-outer.sh\",\"description\":\"test ${EPISODE}\",\"schedule\":{\"minute\":\"0\",\"hour\":\"0\",\"dom\":\"1\",\"month\":\"1\",\"dow\":\"0\"},\"enabled\":false}")
 JOB_ID=$(echo "$RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
 curl -s -X POST "http://${TRUENAS_IP}/api/v2.0/cronjob/run" \
   -H "Authorization: Bearer ${TRUENAS_API_KEY}" -H "Content-Type: application/json" -d "{\"id\": $JOB_ID}" > /dev/null
 
-echo "==> Polling test output (up to 60 min — realign is ~5 min/transcript, render is ~30s/clip)"
+echo "==> Polling test output (up to 60 min)"
 LAST_LINE=""
 for i in $(seq 1 720); do
   sleep 5
