@@ -588,20 +588,35 @@ def _wrap_title(s: str, max_chars: int = TITLE_OVERLAY_MAX_CHARS_PER_LINE) -> li
     best_split = None
     best_imbalance = float("inf")
 
+    # Function words we don't want trailing line 1 — they belong with the
+    # noun they introduce, so a "to / Buy eBay" break reads worse than
+    # "Trying / to Buy eBay" even though it's more balanced in length.
+    FUNCTION_WORDS = {
+        "a", "an", "the",                          # articles
+        "to", "of", "in", "on", "at", "by",        # short prepositions
+        "for", "from", "with", "into", "onto",     # longer prepositions
+        "and", "or", "but", "as", "if", "than",    # conjunctions
+        "is", "are", "was", "be", "been",          # auxiliaries
+    }
+
     for split_idx in range(1, n):
         line1 = " ".join(words[:split_idx])
         line2 = " ".join(words[split_idx:])
         if len(line1) > max_chars + slack or len(line2) > max_chars + slack:
             continue
-        imbalance = abs(len(line1) - len(line2))
-        # Prefer balanced split. Tiebreak: prefer split BEFORE shorter words
-        # (avoids dangling "to/in/the" on line 1) — score-favors splits where
-        # line1 doesn't end on a 1-2 char word.
-        last_word_line1 = words[split_idx - 1]
-        if len(last_word_line1) <= 2:
-            imbalance += 3  # mild penalty for orphan-preposition trail
-        if imbalance < best_imbalance:
-            best_imbalance = imbalance
+        score = abs(len(line1) - len(line2))
+        # Penalty 1: line 1 ends on a function word that should lead line 2.
+        # Strong penalty (+8) because semantic mis-break reads worse than
+        # mild length imbalance.
+        last_word_line1 = words[split_idx - 1].lower().rstrip(",.!?;:")
+        if last_word_line1 in FUNCTION_WORDS:
+            score += 8
+        # Penalty 2: line 1 ends on any 1-2 char token (catches numbers,
+        # symbols, anything else that looks like a leftover).
+        if len(last_word_line1) <= 2 and last_word_line1 not in FUNCTION_WORDS:
+            score += 3
+        if score < best_imbalance:
+            best_imbalance = score
             best_split = split_idx
 
     if best_split is not None:
@@ -796,11 +811,32 @@ def _build_ffmpeg_cmd(source_video: Path, start: float, end: float, duration: fl
         vout_label = "[vout]"
 
     if has_music:
-        # Music bed mixed quieter (2026-04-23: 0.15→0.12 baseline).
-        # 2026-05-08: now adaptive per clip mood (0.08 intense → 0.14 upbeat),
+        # Music bed adaptive per clip mood (intense=0.08 → upbeat=0.14),
         # set by pick_clips._post_pick_enrichment via AUDIO_MIX_MOOD_V1.
-        filter_parts.append("[0:a]volume=1.0[dialog]")
-        filter_parts.append(f"[1:a]volume={music_volume:.3f},aloop=loop=-1:size=2e9[music]")
+        #
+        # 2026-05-12: added sidechain ducking. Music dips ~10dB when dialog
+        # is loud and returns smoothly between phrases. Much more pro-sounding
+        # than the prior flat-mix approach where music either drowned dialog
+        # or sat too low to add presence.
+        #
+        # Filter chain:
+        #   [0:a] dialog       -> asplit: one copy to sidechain key, one to mix
+        #   [1:a] music bed    -> volume scaled, looped to clip length
+        #   music + dialog-key -> sidechaincompress (10dB attenuation, fast
+        #                         attack, slow release for natural ducking)
+        #   ducked music + dialog -> amix
+        filter_parts.append("[0:a]asplit=2[dialog][dialog_key]")
+        filter_parts.append(f"[1:a]volume={music_volume:.3f},aloop=loop=-1:size=2e9[music_raw]")
+        # sidechaincompress params:
+        #   threshold=0.05  ~ -26dB — kicks in when dialog has any speech energy
+        #   ratio=8         strong compression on the music when triggered
+        #   attack=5        5ms — duck quickly so consonants don't get masked
+        #   release=400     400ms — let music come back gently between phrases
+        #   makeup=1        no makeup gain (we already set music volume)
+        filter_parts.append(
+            "[music_raw][dialog_key]sidechaincompress="
+            "threshold=0.05:ratio=8:attack=5:release=400:makeup=1[music]"
+        )
         filter_parts.append("[dialog][music]amix=duration=shortest:dropout_transition=3[aout]")
         aout_label = "[aout]"
     else:
