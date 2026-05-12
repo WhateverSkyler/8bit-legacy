@@ -854,7 +854,13 @@ def _build_ffmpeg_cmd(source_video: Path, start: float, end: float, duration: fl
         if not has_music:
             # if no music, end_card becomes input [1], not [2]
             filter_complex = filter_complex.replace("[2:v]", "[1:v]")
-        cmd += ["-i", str(END_CARD)]
+        # -loop 1 is CRITICAL: without it, ffmpeg presents the PNG as a
+        # single-frame stream that only exists at t≈0. The overlay's
+        # `enable='gte(t,duration-3)'` is then never true while the stream
+        # is alive, so the overlay silently no-ops and the end-card never
+        # appears. (This is the bug that masked the end-card on 2026-05-11.)
+        # -t bounds the looped image so it doesn't outlast the output.
+        cmd += ["-loop", "1", "-t", f"{duration:.3f}", "-i", str(END_CARD)]
 
     cmd += [
         "-filter_complex", filter_complex,
