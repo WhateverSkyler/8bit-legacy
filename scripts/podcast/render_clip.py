@@ -401,37 +401,34 @@ def detect_scenes_and_crops(
         cut_points: list[float] = [0.0]
 
         def _refine_cut(t_lo: float, t_hi: float, hist_lo, hist_hi) -> float:
-            """Sequential frame walk to pinpoint the EXACT pts of the first
-            new-camera frame in (t_lo, t_hi].
+            """Sequential frame walk to pinpoint the cut. Returns clip-relative
+            seconds of the scene boundary.
 
             Why this replaces the prior random-seek bisect:
               `cap.set(POS_MSEC)` + `cap.read()` seeks to the nearest keyframe
               and decodes forward — the returned frame may be 1-2 frames OFF
-              from the requested timestamp. The user repeatedly saw a single-
-              frame slip at scene boundaries despite multiple "snap back 1
-              frame" attempts because the detector itself was already off by
-              ~1 frame in the LATE direction. Sequential decode after a single
+              from the requested timestamp. Sequential decode after a single
               initial seek gives the EXACT pts of each consecutive frame via
-              `cap.get(POS_MSEC)`, so we detect the inter-frame transition
-              with frame-perfect precision.
+              `cap.get(POS_MSEC)`.
 
-            Algorithm:
-              1. Seek slightly BEFORE t_lo (by 2 frames) so the first frame
-                 we read is guaranteed to be old-camera content.
-              2. Read frames sequentially. After each read, query the real
-                 pts of the just-decoded frame.
-              3. For each consecutive pair, compute Bhattacharyya distance.
-                 First pair where distance > INTER_THRESHOLD = cut between
-                 them. The CURRENT frame is the first new-camera frame;
-                 return its pts directly. No snap-back needed.
+            Detection: TWO signals OR'd together so we don't miss soft-cuts
+            where two cameras have similar overall color:
+              (a) inter-frame Bhattacharyya > 0.10 — frame-to-frame jump
+              (b) frame's hist closer to hist_hi than hist_lo by > 0.05 —
+                  the frame is clearly post-cut content
 
-            Returns clip-relative seconds. Caller uses this as scene N+1's
-            start (ffmpeg trim start= INCLUDES the frame at exactly start).
+            Both signals trigger on the first new-camera frame. We return
+            that frame's pts, then SNAP BACK 2 frames as a safety belt:
+            even if our detector is 0-2 frames late, the new camera's
+            actual first frame is guaranteed to render with the new crop.
+            The 2-frame cost (67ms at 30fps) on the previous scene is
+            imperceptible compared to a visible mis-centered new frame.
             """
-            INTER_THRESHOLD = 0.20  # significant frame-to-frame jump = cut
-            # Seek a couple frames before the window so first read is
-            # guaranteed old-camera. Clamped to >= 0.
-            pre_pad = 2.0 * src_frame_dur
+            INTER_THRESHOLD = 0.10
+            HIST_LEAD = 0.05
+            SNAP_BACK_FRAMES = 2
+
+            pre_pad = 3.0 * src_frame_dur
             seek_t = max(0.0, t_lo - pre_pad)
             cap.set(cv2.CAP_PROP_POS_MSEC, (start_sec + seek_t) * 1000.0)
             prev_h = None
@@ -441,32 +438,35 @@ def detect_scenes_and_crops(
                 ok, frame = cap.read()
                 if not ok or frame is None:
                     break
-                # Exact PTS of the frame we just read (relative to source start,
-                # so subtract start_sec to make it clip-relative).
                 pts_clip = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0 - start_sec
-                # Stop if we've walked past the search window
                 if pts_clip > t_hi + src_frame_dur:
                     break
                 h = _hsv_hist(frame)
+                # Signal (a): inter-frame Bhattacharyya jump
+                triggered = False
                 if prev_h is not None:
                     inter = cv2.compareHist(prev_h, h, cv2.HISTCMP_BHATTACHARYYA)
                     if inter > INTER_THRESHOLD:
-                        # The cut happened between prev and current. The
-                        # CURRENT frame is the first new-camera frame.
-                        # ffmpeg trim start=pts includes the frame at pts,
-                        # so this gives the new camera correct framing on
-                        # its first frame with no snap-back needed.
-                        detected = pts_clip
-                        break
+                        triggered = True
+                # Signal (b): frame is clearly post-cut content vs hist_lo
+                if not triggered and pts_clip > t_lo - 1e-3:
+                    d_lo = cv2.compareHist(hist_lo, h, cv2.HISTCMP_BHATTACHARYYA)
+                    d_hi = cv2.compareHist(hist_hi, h, cv2.HISTCMP_BHATTACHARYYA)
+                    if d_lo - d_hi > HIST_LEAD:
+                        triggered = True
+                if triggered:
+                    detected = pts_clip
+                    break
                 prev_h = h
-            # Fallback: if inter-frame walk didn't find a clear cut, use
-            # the t_hi sample's hist comparison as a last resort. Better
-            # than nothing; this is rare in practice.
             if detected is None:
-                # Default: scene boundary at t_hi, less the seek-imprecision
-                # buffer so the new camera definitely gets the new crop.
+                # Last-resort fallback
                 detected = max(t_lo, t_hi - src_frame_dur)
-            return detected
+            # Safety snap-back. Even with the new sensitive detection, the
+            # user reports persistent 1-frame slips across multiple rounds.
+            # 2-frame snap-back guarantees the new camera's actual first
+            # frame renders with the new crop_x. Cost: previous scene loses
+            # 67ms (2 frames at 30fps) — invisible at scrolling speed.
+            return max(t_lo, detected - SNAP_BACK_FRAMES * src_frame_dur)
 
         for i in range(n_samples):
             t_rel = min(duration, i * stride)
