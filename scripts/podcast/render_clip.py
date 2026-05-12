@@ -85,11 +85,18 @@ BHATTA_CUT_THRESHOLD = 0.35
 # brief scenes inherit the upcoming camera's face position so the new speaker
 # is centered the moment they appear on-screen.
 MIN_SCENE_DURATION_SEC = 0.25
-# Safety rail: if scene detection returns more scenes than this for a short,
-# something is wrong with the content (compressed artifacts, rapid-fire cuts,
-# etc.). Fall back to fixed center crop rather than produce a filter graph
-# with 50+ trim branches.
-MAX_SCENES = 15
+# Safety rail: cap on sub-segments emitted. Before round 6 this capped scene
+# count at 15 because each scene was a heavy split+trim+concat branch. The
+# 2026-05-12 per-clip face-tracker emits many more, smaller sub-segments (one
+# per ~0.5s), so the cap is much higher. ffmpeg handles 100+ trim branches
+# fine; the limit is just to catch a degenerate case.
+MAX_SCENES = 200
+
+# Per-clip face tracking (round 6) — granularity at which we resample
+# face_x within each detected hard-cut scene. Shorter = tighter following
+# at the cost of more filter chain segments. 0.5s strikes a balance:
+# typical clip = 30-55s → 60-110 sub-segments.
+SUB_SEGMENT_SEC = 0.5
 
 
 def _ass_time(sec: float) -> str:
@@ -526,57 +533,126 @@ def detect_scenes_and_crops(
             print(f"  [SCENES] {len(merged)} scenes > cap {MAX_SCENES} → 1 scene, center crop")
             return fallback
 
-        # --- Pass 2: detect face_x per scene, then assign crop_x with look-ahead --
-        # Two-pass design (2026-05-07): pass 1 collects raw face_x for each scene;
-        # pass 2 fills None entries by looking AHEAD to the next detected face,
-        # not BACK to the previous one. Looking back was the centering bug —
-        # after a hard cut to a new speaker, brief detection failure on the
-        # incoming scene would inherit the previous speaker's crop, leaving the
-        # new speaker visibly off-frame until the next sample succeeded.
-        face_xs: list[int | None] = []
-        for s, e in merged:
-            face_xs.append(_face_center_for_range(
-                cap, cascades, start_sec + s, start_sec + e,
-            ))
-        any_face = any(fx is not None for fx in face_xs)
-        if not any_face:
-            print(f"  [SCENES] {len(merged)} scenes, 0 faces → 1 scene, center crop")
-            return fallback
-        # Last-resort fallback: if every later scene also failed, use the most
-        # recent successful crop_x. Keeps stable shots stable when face detection
-        # is briefly noisy mid-scene rather than crossing a real cut.
-        result: list[tuple[float, float, int]] = []
+        # --- Pass 2: PER-CLIP FACE TRACKING (round 6, 2026-05-12) -----------
+        # Replaces the previous "one crop_x per scene" approach. That approach
+        # had a fundamental limitation: when the speaker MOVES within a scene
+        # (e.g., leans left then back), the single median crop_x misframes them
+        # at the extremes. It also broke when pass-1 detected phantom "cuts"
+        # from same-camera histogram variance (lighting/motion) and applied a
+        # different crop to each half of what was visually one continuous shot.
+        # User saw exactly this at 36.3s of c2: scene boundary at 36.36 had
+        # same camera but crop shifted right by ~150px, producing a visible
+        # jump even though no real cut happened.
+        #
+        # Fix: sample face_x every SUB_SEGMENT_SEC (0.5s) across each scene.
+        # Each sample emits its own sub-segment with its own crop_x. The crop
+        # follows the face continuously across the clip. HARD cuts still
+        # produce instant crop changes (the new scene's first sub-segment
+        # uses the new camera's face_x); SOFT same-camera variance no longer
+        # produces visible jumps because consecutive sub-segments have very
+        # similar face_x.
+        sub_segments: list[tuple[float, float, int]] = []
+        any_face_seen = False
         last_good_crop_x: int | None = None
-        for i, ((s, e), fx) in enumerate(zip(merged, face_xs)):
-            if fx is not None:
-                cx = fx - crop_w // 2
-                cx = max(0, min(source_w - crop_w, cx))
-                last_good_crop_x = cx
+        for s, e in merged:
+            scene_dur = e - s
+            # Number of sub-samples within this scene (at least 1).
+            n_subs = max(1, int(round(scene_dur / SUB_SEGMENT_SEC)))
+            actual_sub_dur = scene_dur / n_subs
+            scene_face_xs: list[int | None] = []
+            for i in range(n_subs):
+                sub_s = s + i * actual_sub_dur
+                sub_e = s + (i + 1) * actual_sub_dur if i < n_subs - 1 else e
+                # Sample face_x at the MIDPOINT of this sub-segment, with 3
+                # samples for noise reduction (vs the 8 used for whole-scene
+                # sampling — we're now sampling much more densely so each
+                # sample doesn't need as many internal probes).
+                face_x = _face_center_for_range(
+                    cap, cascades, start_sec + sub_s, start_sec + sub_e,
+                    samples=3,
+                )
+                scene_face_xs.append(face_x)
+            # Fill in missing face_xs within this scene via look-ahead then
+            # look-back. Look-ahead first matches the prior behavior — after
+            # a hard cut, the new scene's first sub-segment should adopt the
+            # next-detected face position, not carry over the previous shot's.
+            for j in range(n_subs):
+                if scene_face_xs[j] is not None:
+                    continue
+                ahead = next((scene_face_xs[k] for k in range(j + 1, n_subs)
+                              if scene_face_xs[k] is not None), None)
+                back = next((scene_face_xs[k] for k in range(j - 1, -1, -1)
+                             if scene_face_xs[k] is not None), None)
+                scene_face_xs[j] = ahead if ahead is not None else back
+            # If THIS scene has no face detections anywhere, look outside
+            # the scene for the most recent good crop.
+            if all(fx is None for fx in scene_face_xs):
+                # Carry forward from last good, or center if nothing yet.
+                fill = last_good_crop_x if last_good_crop_x is not None else CENTER_CROP_X
+                # Convert to crop_x (last_good_crop_x is already crop_x; the
+                # carry-forward face center would need conversion, but we're
+                # using last_good_crop_x directly here).
+                scene_face_xs = [None] * n_subs
+                fill_crop = fill
             else:
-                # Look ahead for the next detected face_x.
-                next_fx = next((face_xs[j] for j in range(i + 1, len(face_xs))
-                                if face_xs[j] is not None), None)
-                if next_fx is not None:
-                    cx = next_fx - crop_w // 2
-                    cx = max(0, min(source_w - crop_w, cx))
-                elif last_good_crop_x is not None:
-                    cx = last_good_crop_x
-                else:
-                    cx = CENTER_CROP_X
-            result.append((s, e, cx))
+                fill_crop = None
+            # Smooth within scene: simple moving average of size 3 to dampen
+            # face-detection noise. We don't smooth across scenes — hard cuts
+            # SHOULD produce instant crop changes.
+            smoothed: list[int] = []
+            for j in range(n_subs):
+                if scene_face_xs[j] is None:
+                    smoothed.append(fill_crop)
+                    continue
+                # Average with neighbors (within scene)
+                window = []
+                for k in range(max(0, j - 1), min(n_subs, j + 2)):
+                    if scene_face_xs[k] is not None:
+                        window.append(scene_face_xs[k])
+                avg = sum(window) // len(window)
+                cx = avg - crop_w // 2
+                cx = max(0, min(source_w - crop_w, cx))
+                smoothed.append(cx)
+                last_good_crop_x = cx
+                any_face_seen = True
+            # Emit sub-segments
+            for i in range(n_subs):
+                sub_s = s + i * actual_sub_dur
+                sub_e = s + (i + 1) * actual_sub_dur if i < n_subs - 1 else e
+                sub_segments.append((sub_s, sub_e, smoothed[i]))
 
-        # Optimization: if every scene lands on the same crop_x, collapse to
-        # the fast single-scene path (identical output, simpler filter graph).
-        uniq_x = {x for _s, _e, x in result}
+        if not any_face_seen:
+            print(f"  [SCENES] no faces in clip → 1 segment, center crop")
+            return fallback
+
+        # Collapse adjacent sub-segments with identical crop_x to reduce
+        # filter graph size. Doesn't change output but speeds up render.
+        collapsed: list[tuple[float, float, int]] = []
+        for (s, e, x) in sub_segments:
+            if collapsed and collapsed[-1][2] == x and abs(collapsed[-1][1] - s) < 1e-3:
+                ps, _pe, px = collapsed[-1]
+                collapsed[-1] = (ps, e, px)
+            else:
+                collapsed.append((s, e, x))
+
+        if len(collapsed) > MAX_SCENES:
+            print(f"  [SCENES] {len(collapsed)} sub-segments > cap {MAX_SCENES} → 1 segment, center crop")
+            return fallback
+
+        # Optimization: if every sub-segment has the same crop_x, collapse to one.
+        uniq_x = {x for _s, _e, x in collapsed}
         if len(uniq_x) == 1:
-            only_x = result[0][2]
+            only_x = collapsed[0][2]
             delta = abs(only_x - CENTER_CROP_X)
-            print(f"  [SCENES] {len(result)} scenes, all crop_x={only_x} (Δ{delta} from center) → collapsed to 1")
+            print(f"  [SCENES] {len(collapsed)} sub-segments, all crop_x={only_x} (Δ{delta} from center) → collapsed to 1")
             return [(0.0, duration, only_x)]
 
-        summary = ", ".join(f"({s:.2f}-{e:.2f}, cx={x})" for s, e, x in result)
-        print(f"  [SCENES] {len(result)} scenes → {summary}")
-        return result
+        # Logging: print compact summary instead of every sub-segment
+        x_min = min(x for _s, _e, x in collapsed)
+        x_max = max(x for _s, _e, x in collapsed)
+        print(f"  [SCENES] {len(merged)} hard-cut scenes → {len(collapsed)} sub-segments "
+              f"(crop_x range: {x_min}-{x_max}, Δ{x_max - x_min})")
+        return collapsed
 
     except Exception as exc:
         print(f"  [SCENES] detection failed: {exc} → 1 scene, center crop")
