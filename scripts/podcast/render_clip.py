@@ -75,7 +75,14 @@ FACE_SAMPLES_PER_SCENE = 5
 # latency 0.15s, ~3x compute on detection (still <1s wall on a 60s clip).
 SCENE_SAMPLE_STRIDE_SEC = 0.15
 # Bhattacharyya distance above which consecutive frames are flagged as a cut.
-BHATTA_CUT_THRESHOLD = 0.35
+# Raised 0.35 → 0.50 (2026-05-12): the lower threshold produced phantom
+# "cuts" at points where the histogram spiked from same-camera variance
+# (lighting flicker, hand passing, prop motion, mild zoom). User saw exactly
+# this at 36.3s of c2: pass-1 declared a cut, the sub-segmenter respected
+# it as instant, and the crop_x shifted ~150px even though the underlying
+# camera was the same continuous shot. 0.50 only fires on dramatic shifts
+# typical of an actual camera switch.
+BHATTA_CUT_THRESHOLD = 0.50
 # Scenes shorter than this get merged into the NEXT scene (not previous).
 # Lowered 0.6 → 0.25 + flipped merge direction (2026-05-07). Old behavior was
 # the second compounding bug behind the visible centering delay: when a brief
@@ -596,17 +603,20 @@ def detect_scenes_and_crops(
                 fill_crop = fill
             else:
                 fill_crop = None
-            # Smooth within scene: simple moving average of size 3 to dampen
-            # face-detection noise. We don't smooth across scenes — hard cuts
-            # SHOULD produce instant crop changes.
+            # Smooth within scene: moving average of size 5 (was 3) to dampen
+            # face-detection noise. Larger window = smoother tracking, fewer
+            # visible micro-jumps when the face detector wiggles between
+            # nearby positions. We don't smooth across scene boundaries here —
+            # a separate cross-boundary pass below handles that case where the
+            # face_x is similar across a hard cut.
+            WIN = 2  # +/- 2 = window of 5
             smoothed: list[int] = []
             for j in range(n_subs):
                 if scene_face_xs[j] is None:
                     smoothed.append(fill_crop)
                     continue
-                # Average with neighbors (within scene)
                 window = []
-                for k in range(max(0, j - 1), min(n_subs, j + 2)):
+                for k in range(max(0, j - WIN), min(n_subs, j + WIN + 1)):
                     if scene_face_xs[k] is not None:
                         window.append(scene_face_xs[k])
                 avg = sum(window) // len(window)
@@ -624,6 +634,22 @@ def detect_scenes_and_crops(
         if not any_face_seen:
             print(f"  [SCENES] no faces in clip → 1 segment, center crop")
             return fallback
+
+        # CROSS-BOUNDARY SMOOTHING (round 7 defense in depth):
+        # If two adjacent sub-segments came from DIFFERENT pass-1 hard-cut
+        # scenes but their crop_x values are close (< 80px apart), that
+        # probably means pass-1 detected a phantom cut from same-camera
+        # variance. Smooth them by averaging — eliminates the residual jump
+        # at false-positive cut boundaries while preserving real cuts (where
+        # the crop_x values differ by hundreds of pixels).
+        CROSS_BOUNDARY_PX = 80
+        for i in range(1, len(sub_segments)):
+            ps, pe, px = sub_segments[i - 1]
+            cs, ce, cx_ = sub_segments[i]
+            if abs(px - cx_) < CROSS_BOUNDARY_PX:
+                avg = (px + cx_) // 2
+                sub_segments[i - 1] = (ps, pe, avg)
+                sub_segments[i] = (cs, ce, avg)
 
         # Collapse adjacent sub-segments with identical crop_x to reduce
         # filter graph size. Doesn't change output but speeds up render.
