@@ -35,10 +35,16 @@ COPY scripts/ /app/scripts/
 # Installed under /usr/local/share/fonts so it's picked up by _find_bebas_font().
 COPY assets/fonts/BebasNeue-Regular.ttf /usr/local/share/fonts/bebas-neue/BebasNeue-Regular.ttf
 
-# Brand end-card (1080x1920) — overlaid on the last 4s of every rendered short
+# Brand end-card (1080x1920) — overlaid on the last 3s of every rendered short
 # by render_clip.py. Path mirrors repo layout so the existing END_CARD constant
 # (ROOT / "assets/brand/end-card-9x16.png") resolves at runtime.
 COPY assets/brand/end-card-9x16.png /app/assets/brand/end-card-9x16.png
+
+# Game-cover image stash used by scripts/podcast/build_end_card.py at
+# end-card generation time. Not currently referenced at render time, but
+# shipped in the image so a future rebuild_end_card.py invocation inside
+# the container can produce a fresh end-card without re-downloading.
+COPY assets/game-covers/ /app/assets/game-covers/
 
 # YuNet face-detection ONNX model (227KB) — used by scripts/podcast/_face_detect.py
 # for centering shorts on the active speaker. Replaces the Haar cascades that had

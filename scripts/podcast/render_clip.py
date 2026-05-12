@@ -405,7 +405,17 @@ def detect_scenes_and_crops(
             """Frame-by-frame walk between t_lo and t_hi (clip-relative seconds)
             to find the exact frame where the histogram jumps. Returns the
             timestamp of the FIRST frame whose histogram is closer to hist_hi
-            than to hist_lo — i.e., the post-cut frame."""
+            than to hist_lo — i.e., the post-cut frame.
+
+            2026-05-12 — snap result back by 1 frame (1/30s). The bisect already
+            operates at frame-level precision, but a single frame can still slip
+            through the boundary: ffmpeg's trim end is exclusive, so a cut
+            reported at t=36.45 means the frame at t=36.4333 (1 frame earlier)
+            still gets the OLD scene's crop_x. User saw exactly this at 36-37s
+            of c2. Pulling back 1 frame is conservative: the previous scene
+            loses its very last frame (invisible at 30fps) but the new camera's
+            first frame is guaranteed to render with the correct centering.
+            """
             # Walk every ~33ms (single frame at 30fps). Cap at 8 frames to avoid
             # unbounded looping; typical gap is 5 frames (0.15s / 30ms).
             n_steps = min(8, max(1, int((t_hi - t_lo) * 30)))
@@ -423,7 +433,9 @@ def detect_scenes_and_crops(
                     # This frame is closer to post-cut content — cut happened before this t
                     best_t = t
                     break
-            return best_t
+            # Conservative snap-back by 1 frame so the new scene's crop_x is
+            # already in effect on the very first frame of the new camera.
+            return max(t_lo, best_t - (1.0 / 30.0))
 
         for i in range(n_samples):
             t_rel = min(duration, i * stride)
@@ -553,9 +565,6 @@ TITLE_OVERLAY_LINE_SPACING = 18
 # for ffmpeg's drawtext fontcolor= argument. The 0x prefix is added at use site.
 BRAND_ORANGE_HEX = "ff9526"
 
-# Intro fade-from-black: short polish so the clip doesn't pop in cold.
-INTRO_FADE_DURATION = 0.4
-
 
 def _wrap_title(s: str, max_chars: int = TITLE_OVERLAY_MAX_CHARS_PER_LINE) -> list[str]:
     """Wrap a title into 1-3 lines, optimizing for visual BALANCE (line-length
@@ -643,22 +652,20 @@ def _wrap_title(s: str, max_chars: int = TITLE_OVERLAY_MAX_CHARS_PER_LINE) -> li
 def _title_overlay_filter(title: str | None, episode_dir: Path, clip_id: str) -> str:
     """Return the ffmpeg drawtext filter segment for the title overlay.
 
-    ONE drawtext per line per layer. The previous attempt used a single
-    drawtext with textfile= containing a `\\n` newline — ffmpeg's drawtext
-    breaks the line as expected BUT also renders the U+000A character as
-    a missing-glyph box (because Bebas Neue has no glyph for it). The
-    artifact appeared at the end of line 1 in every multi-line title.
+    Round 3 redesign (2026-05-12): drop the orange text outline (looked
+    dated), drop the heavy text-shadow doubling. Add:
+      - Translucent dark backdrop block behind the text (soft, low alpha)
+      - Brand-orange accent bar BELOW the title that grows from center
+        as the title fades in
+      - Cleaner main text: white with a thin black border for legibility
 
-    Per-line rendering means: NO newlines anywhere. Each line is its own
-    sidecar .txt file, drawn at its own y-coordinate, with its own shadow +
-    main pair. Cost is 2N drawtext filters for N lines (typical N=2-3).
+    Per-line rendering retained (one drawtext per line per layer) to keep
+    the X-in-box fix from the prior round.
 
-      layer 1 (shadow):  black @0.6, offset (+5, +5) — drop-shadow read
-      layer 2 (main):    white, brand-orange outline, animated alpha
-
-    Animation: fades in over FADE_IN seconds, holds, fades out over
-    FADE_OUT seconds before disappearing at SECONDS. Both layers share
-    the same alpha curve.
+    Filter chain order:
+      [backdrop drawbox]  → soft black rectangle, low alpha, behind text
+      [drawtext per line] → white text + thin black border, fades in
+      [accent drawbox]    → brand-orange bar below, animated width
     """
     if not title or not title.strip():
         return ""
@@ -669,12 +676,12 @@ def _title_overlay_filter(title: str | None, episode_dir: Path, clip_id: str) ->
 
     font_path = "/usr/local/share/fonts/bebas-neue/BebasNeue-Regular.ttf"
 
-    # Alpha curve: fade in 0→FADE_IN, hold, fade out (SECONDS-FADE_OUT)→SECONDS.
-    # Backslash-comma needed because ',' inside drawtext expressions otherwise
-    # terminates the filter argument.
+    # Alpha curve for the TEXT — fade in 0→FADE_IN, hold, fade out.
+    # Backslash-comma needed because ',' inside drawtext expressions
+    # otherwise terminates the filter argument.
     fade_in_end = TITLE_OVERLAY_FADE_IN
     fade_out_start = TITLE_OVERLAY_SECONDS - TITLE_OVERLAY_FADE_OUT
-    alpha_expr = (
+    text_alpha_expr = (
         f"if(lt(t\\,{fade_in_end:.2f})\\,t/{fade_in_end:.2f}\\,"
         f"if(gt(t\\,{fade_out_start:.2f})\\,"
         f"({TITLE_OVERLAY_SECONDS:.2f}-t)/{TITLE_OVERLAY_FADE_OUT:.2f}\\,"
@@ -682,37 +689,93 @@ def _title_overlay_filter(title: str | None, episode_dir: Path, clip_id: str) ->
     )
 
     line_height = TITLE_OVERLAY_FONT_SIZE + TITLE_OVERLAY_LINE_SPACING
+    n_lines = len(lines)
+    # Estimated text block bounds — used to size the backdrop block.
+    # Title block: from y_main_line0 to y_main_last + font_size.
+    block_top = TITLE_OVERLAY_Y_OFFSET - 24
+    block_bottom = TITLE_OVERLAY_Y_OFFSET + (n_lines - 1) * line_height + TITLE_OVERLAY_FONT_SIZE + 36
+    # Accent bar sits below the text block
+    accent_y = block_bottom + 22
+    accent_height = 8
+
     parts: list[str] = []
+
+    # === Backdrop block ============================================
+    # A translucent black rectangle behind the text. Uses drawbox with
+    # @alpha. Spans full width so the design feels intentional rather
+    # than a tight box that crops the text awkwardly.
+    # Backdrop alpha matches the text alpha curve so it fades in/out
+    # together — we use the same alpha_expr but scaled to lower max.
+    backdrop_alpha_expr = (
+        f"if(lt(t\\,{fade_in_end:.2f})\\,(t/{fade_in_end:.2f})*0.35\\,"
+        f"if(gt(t\\,{fade_out_start:.2f})\\,"
+        f"(({TITLE_OVERLAY_SECONDS:.2f}-t)/{TITLE_OVERLAY_FADE_OUT:.2f})*0.35\\,"
+        f"0.35))"
+    )
+    backdrop_h = block_bottom - block_top
+    parts.append(
+        f",drawbox=x=0:y={block_top}:w=1080:h={backdrop_h}"
+        f":color=black@0.001:t=fill"
+        f":enable='lte(t\\,{TITLE_OVERLAY_SECONDS})'"
+    )
+    # The above drawbox with color=black@0.001 is a no-op (placeholder);
+    # ffmpeg's drawbox doesn't support an animated alpha expression directly.
+    # Instead we emit a SECOND drawbox with a static alpha that's gated by
+    # enable= for the visible window. Trade-off: backdrop pops on/off rather
+    # than fading. With short FADE_IN/OUT the pop is mostly hidden behind
+    # the text's smoother fade. Accept the trade-off — drawbox doesn't have
+    # the alpha= eval that drawtext does.
+    parts[-1] = (
+        f",drawbox=x=0:y={block_top}:w=1080:h={backdrop_h}"
+        f":color=0x000000@0.35:t=fill"
+        f":enable='between(t\\,{fade_in_end:.2f}\\,{fade_out_start:.2f})'"
+    )
+
+    # === Title text per line =======================================
     for i, line in enumerate(lines):
-        # Write each line to its own sidecar so textfile= reads pure text.
         title_txt = episode_dir / f"{clip_id}.title.{i}.txt"
         title_txt.write_text(line)
 
         y_main = TITLE_OVERLAY_Y_OFFSET + i * line_height
-        y_shadow = y_main + 5
-
         common = (
             f"fontfile='{font_path}'"
             f":textfile='{title_txt}'"
             f":fontsize={TITLE_OVERLAY_FONT_SIZE}"
             f":enable='lte(t\\,{TITLE_OVERLAY_SECONDS})'"
-            f":alpha='{alpha_expr}'"
+            f":alpha='{text_alpha_expr}'"
         )
-        # Shadow first so it draws behind the main layer.
-        parts.append(
-            f",drawtext={common}"
-            f":fontcolor=black@0.6"
-            f":x=(w-text_w)/2+5"
-            f":y={y_shadow}"
-        )
-        # Main: white fill + brand-orange outline for the brand pop.
+        # White text with thin black border. No orange outline this time —
+        # the brand pop goes on the accent bar instead.
         parts.append(
             f",drawtext={common}"
             f":fontcolor=white"
-            f":borderw=4:bordercolor=0x{BRAND_ORANGE_HEX}"
+            f":borderw=3:bordercolor=black@0.85"
             f":x=(w-text_w)/2"
             f":y={y_main}"
         )
+
+    # === Brand-orange accent bar ===================================
+    # Animated width: grows from center 0 → target over FADE_IN seconds,
+    # holds, shrinks again on fade-out. Implemented as a drawbox with
+    # x/w expressions tied to t.
+    accent_target_w = 480
+    # ffmpeg drawbox expressions: w can use t. width grows linearly during
+    # fade_in window, holds, then shrinks during fade_out.
+    accent_w_expr = (
+        f"if(lt(t\\,{fade_in_end:.2f})\\,"
+        f"(t/{fade_in_end:.2f})*{accent_target_w}\\,"
+        f"if(gt(t\\,{fade_out_start:.2f})\\,"
+        f"(({TITLE_OVERLAY_SECONDS:.2f}-t)/{TITLE_OVERLAY_FADE_OUT:.2f})*{accent_target_w}\\,"
+        f"{accent_target_w}))"
+    )
+    accent_x_expr = f"(1080-({accent_w_expr}))/2"
+    parts.append(
+        f",drawbox=x='{accent_x_expr}':y={accent_y}"
+        f":w='{accent_w_expr}':h={accent_height}"
+        f":color=0x{BRAND_ORANGE_HEX}@1.0:t=fill"
+        f":enable='lte(t\\,{TITLE_OVERLAY_SECONDS})'"
+    )
+
     return "".join(parts)
 
 
@@ -742,13 +805,11 @@ def _build_video_filter(scenes: list[tuple[float, float, int]], ass_path: Path,
     title_filter = _title_overlay_filter(title, episode_dir, clip_id) if (
         title and episode_dir is not None and clip_id is not None
     ) else ""
-    intro_fade = f",fade=t=in:st=0:d={INTRO_FADE_DURATION:.2f}:color=black"
     n = len(scenes)
     if n <= 1:
         _s, _e, cx = scenes[0]
         return [
             f"[0:v]crop={crop_w}:1080:{cx}:0,scale=1080:1920,setsar=1"
-            f"{intro_fade}"
             f"{title_filter},"
             f"subtitles='{ass_path}'[v0]"
         ]
@@ -764,7 +825,6 @@ def _build_video_filter(scenes: list[tuple[float, float, int]], ass_path: Path,
     concat_inputs = "".join(f"[s{i}]" for i in range(n))
     parts.append(
         f"{concat_inputs}concat=n={n}:v=1:a=0,setsar=1"
-        f"{intro_fade}"
         f"{title_filter},"
         f"subtitles='{ass_path}'[v0]"
     )

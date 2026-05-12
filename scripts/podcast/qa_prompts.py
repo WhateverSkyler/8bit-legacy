@@ -338,6 +338,32 @@ Score on 5 dimensions:
    When in doubt, prefer the broader honest framing over a too-narrow one that
    misrepresents the whole.
 
+   STRICT GROUNDING RULE: every CONTENT verb and noun in the title must
+   appear in the extracted clip text — verbatim or as a clear, immediate
+   paraphrase that a reasonable listener would agree captures the same
+   point. If the title introduces a CONCEPT the speaker didn't actually
+   discuss, score `accurate` as FAIL.
+
+   Examples of grounded vs ungrounded titles for the SAME clip
+   (speaker said "the puzzles aren't engaging and the world feels empty"):
+     ✓ "Tears of the Kingdom Isn't Engaging"       — paraphrases "aren't engaging"
+     ✓ "Tears of the Kingdom Feels Empty"          — direct quote
+     ✗ "Tears of the Kingdom Is Too Easy to Break" — speaker never said "break" or
+                                                     anything about breaking the game
+     ✗ "Tears of the Kingdom Is Broken"            — invents a concept the speaker
+                                                     didn't claim
+   The ✗ titles introduce a "broken / breaking" frame that isn't in the
+   transcript. Even though they "sound like a hot take," they're inaccurate
+   and must REJECT (don't REWRITE — there's nothing in the source to
+   support a corrected version, just remove this title from contention).
+
+   Common offenders to watch for:
+   - Metaphorical extensions ("ruins / breaks / kills / destroys / saves") that
+     aren't actually in the clip
+   - Hot-take framing the speaker didn't actually voice
+   - Numerical claims (years, prices, percentages) not stated in the clip
+   - Comparisons ("better than X", "worse than Y") the speaker didn't make
+
 If you REWRITE, the new title MUST follow ALL FIVE rules above. Don't fix
 clickbait by introducing corny phrasing. Don't fix vagueness by stuffing in
 proper nouns that aren't central.
@@ -361,6 +387,9 @@ DECISIONS:
 - 1 dimension borderline → APPROVE_WITH_NOTE
 - ≥1 dimension fails clearly → REWRITE (return a better title)
 - Cannot rewrite without misrepresenting the content → REJECT
+- `accurate` scored FAIL because the title introduces an ungrounded concept
+  → REJECT (do NOT REWRITE — the original title's premise isn't in the
+  clip, so there's no honest rewrite available)
 
 Return STRICT JSON only:
 {{
