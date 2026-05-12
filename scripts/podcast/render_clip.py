@@ -364,6 +364,14 @@ def detect_scenes_and_crops(
             print("  [SCENES] cv2 could not open source → 1 scene, center crop")
             return fallback
 
+        # Detect the source's native frame rate. Used for sequential-walk
+        # cut refinement so we never assume 30fps when the source might be
+        # 24/25/60. Fallback to 30 if cv2 returns junk.
+        src_fps = cap.get(cv2.CAP_PROP_FPS)
+        if not (1.0 < src_fps <= 240.0):
+            src_fps = 30.0
+        src_frame_dur = 1.0 / src_fps
+
         # Multi-cascade chain: frontal first, then profile (twice — once on
         # the original gray, once on horizontally-flipped gray to catch the
         # opposite profile direction since OpenCV's profileface XML only
@@ -378,64 +386,87 @@ def detect_scenes_and_crops(
             print("  [SCENES] frontal haar cascade failed to load → 1 scene, center crop")
             return fallback
         profile = cv2.CascadeClassifier(profile_path)
-        # Profile cascade is best-effort; if it fails to load, keep going with
-        # frontal-only rather than abandoning detection entirely.
         cascades = [frontal]
         if not profile.empty():
-            # Order: frontal, flipped-profile (left-facing), profile (right-facing).
-            # The flipped variant is index 1 — _face_center_for_range mirrors
-            # the search image at that index to detect left-facing profiles.
             cascades = [frontal, profile, profile]
 
         # --- Pass 1: walk the clip at fixed stride, diff HSV histograms -----
-        # When a cut is detected between samples N-1 and N, bisect the gap to
-        # find the EXACT cut frame (down to single-frame precision, 33ms at 30fps).
-        # Without this refinement the cut boundary lands at the sample-N timestamp,
-        # so the new camera's content can play for up to STRIDE seconds (0.15s)
-        # with the OLD crop_x, producing the visible "half-second-off-center"
-        # lag the user reported on c1's first cut.
+        # When a cut is detected between samples N-1 and N, refine via a
+        # SEQUENTIAL frame-by-frame decode of the gap to find the EXACT PTS
+        # of the first new-camera frame.
         stride = SCENE_SAMPLE_STRIDE_SEC
         n_samples = max(2, int(duration / stride) + 1)
         prev_hist = None
         prev_t_rel = 0.0
-        # cut_points holds clip-relative timestamps where a cut is detected
         cut_points: list[float] = [0.0]
 
         def _refine_cut(t_lo: float, t_hi: float, hist_lo, hist_hi) -> float:
-            """Frame-by-frame walk between t_lo and t_hi (clip-relative seconds)
-            to find the exact frame where the histogram jumps. Returns the
-            timestamp of the FIRST frame whose histogram is closer to hist_hi
-            than to hist_lo — i.e., the post-cut frame.
+            """Sequential frame walk to pinpoint the EXACT pts of the first
+            new-camera frame in (t_lo, t_hi].
 
-            2026-05-12 — snap result back by 1 frame (1/30s). The bisect already
-            operates at frame-level precision, but a single frame can still slip
-            through the boundary: ffmpeg's trim end is exclusive, so a cut
-            reported at t=36.45 means the frame at t=36.4333 (1 frame earlier)
-            still gets the OLD scene's crop_x. User saw exactly this at 36-37s
-            of c2. Pulling back 1 frame is conservative: the previous scene
-            loses its very last frame (invisible at 30fps) but the new camera's
-            first frame is guaranteed to render with the correct centering.
+            Why this replaces the prior random-seek bisect:
+              `cap.set(POS_MSEC)` + `cap.read()` seeks to the nearest keyframe
+              and decodes forward — the returned frame may be 1-2 frames OFF
+              from the requested timestamp. The user repeatedly saw a single-
+              frame slip at scene boundaries despite multiple "snap back 1
+              frame" attempts because the detector itself was already off by
+              ~1 frame in the LATE direction. Sequential decode after a single
+              initial seek gives the EXACT pts of each consecutive frame via
+              `cap.get(POS_MSEC)`, so we detect the inter-frame transition
+              with frame-perfect precision.
+
+            Algorithm:
+              1. Seek slightly BEFORE t_lo (by 2 frames) so the first frame
+                 we read is guaranteed to be old-camera content.
+              2. Read frames sequentially. After each read, query the real
+                 pts of the just-decoded frame.
+              3. For each consecutive pair, compute Bhattacharyya distance.
+                 First pair where distance > INTER_THRESHOLD = cut between
+                 them. The CURRENT frame is the first new-camera frame;
+                 return its pts directly. No snap-back needed.
+
+            Returns clip-relative seconds. Caller uses this as scene N+1's
+            start (ffmpeg trim start= INCLUDES the frame at exactly start).
             """
-            # Walk every ~33ms (single frame at 30fps). Cap at 8 frames to avoid
-            # unbounded looping; typical gap is 5 frames (0.15s / 30ms).
-            n_steps = min(8, max(1, int((t_hi - t_lo) * 30)))
-            best_t = t_hi  # default: cut is at t_hi if refinement fails
-            for k in range(1, n_steps + 1):
-                t = t_lo + (t_hi - t_lo) * (k / (n_steps + 1))
-                cap.set(cv2.CAP_PROP_POS_MSEC, (start_sec + t) * 1000.0)
+            INTER_THRESHOLD = 0.20  # significant frame-to-frame jump = cut
+            # Seek a couple frames before the window so first read is
+            # guaranteed old-camera. Clamped to >= 0.
+            pre_pad = 2.0 * src_frame_dur
+            seek_t = max(0.0, t_lo - pre_pad)
+            cap.set(cv2.CAP_PROP_POS_MSEC, (start_sec + seek_t) * 1000.0)
+            prev_h = None
+            max_frames = int((t_hi - t_lo + pre_pad * 2) * src_fps) + 6
+            detected: float | None = None
+            for _ in range(max_frames):
                 ok, frame = cap.read()
                 if not ok or frame is None:
-                    continue
-                h = _hsv_hist(frame)
-                d_to_lo = cv2.compareHist(hist_lo, h, cv2.HISTCMP_BHATTACHARYYA)
-                d_to_hi = cv2.compareHist(hist_hi, h, cv2.HISTCMP_BHATTACHARYYA)
-                if d_to_hi < d_to_lo:
-                    # This frame is closer to post-cut content — cut happened before this t
-                    best_t = t
                     break
-            # Conservative snap-back by 1 frame so the new scene's crop_x is
-            # already in effect on the very first frame of the new camera.
-            return max(t_lo, best_t - (1.0 / 30.0))
+                # Exact PTS of the frame we just read (relative to source start,
+                # so subtract start_sec to make it clip-relative).
+                pts_clip = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0 - start_sec
+                # Stop if we've walked past the search window
+                if pts_clip > t_hi + src_frame_dur:
+                    break
+                h = _hsv_hist(frame)
+                if prev_h is not None:
+                    inter = cv2.compareHist(prev_h, h, cv2.HISTCMP_BHATTACHARYYA)
+                    if inter > INTER_THRESHOLD:
+                        # The cut happened between prev and current. The
+                        # CURRENT frame is the first new-camera frame.
+                        # ffmpeg trim start=pts includes the frame at pts,
+                        # so this gives the new camera correct framing on
+                        # its first frame with no snap-back needed.
+                        detected = pts_clip
+                        break
+                prev_h = h
+            # Fallback: if inter-frame walk didn't find a clear cut, use
+            # the t_hi sample's hist comparison as a last resort. Better
+            # than nothing; this is rare in practice.
+            if detected is None:
+                # Default: scene boundary at t_hi, less the seek-imprecision
+                # buffer so the new camera definitely gets the new crop.
+                detected = max(t_lo, t_hi - src_frame_dur)
+            return detected
 
         for i in range(n_samples):
             t_rel = min(duration, i * stride)
@@ -448,9 +479,12 @@ def detect_scenes_and_crops(
             if prev_hist is not None:
                 d = cv2.compareHist(prev_hist, hist, cv2.HISTCMP_BHATTACHARYYA)
                 if d > cut_threshold:
-                    # Refine to find the exact post-cut frame within [prev_t_rel, t_rel]
                     refined = _refine_cut(prev_t_rel, t_rel, prev_hist, hist)
                     cut_points.append(refined)
+                    # CRITICAL: after _refine_cut walks frames sequentially,
+                    # the cap position is somewhere inside the bisect window.
+                    # The next pass-1 iteration will cap.set(POS_MSEC, ...)
+                    # again so position resets — no manual restore needed.
             prev_hist = hist
             prev_t_rel = t_rel
         cut_points.append(duration)
@@ -652,20 +686,20 @@ def _wrap_title(s: str, max_chars: int = TITLE_OVERLAY_MAX_CHARS_PER_LINE) -> li
 def _title_overlay_filter(title: str | None, episode_dir: Path, clip_id: str) -> str:
     """Return the ffmpeg drawtext filter segment for the title overlay.
 
-    Round 3 redesign (2026-05-12): drop the orange text outline (looked
-    dated), drop the heavy text-shadow doubling. Add:
-      - Translucent dark backdrop block behind the text (soft, low alpha)
-      - Brand-orange accent bar BELOW the title that grows from center
-        as the title fades in
-      - Cleaner main text: white with a thin black border for legibility
+    Round 4 redesign (2026-05-12): drop the orange accent bar (user feedback
+    "the orange line below it needs to go"). Tighten the backdrop to fit the
+    actual text width with padding instead of spanning the full 1080-pixel
+    width — the prior design left huge dead space on either side and looked
+    amateur. Measure text widths via PIL using the same Bebas Neue font that
+    ffmpeg will render, so the box hugs the text precisely.
 
-    Per-line rendering retained (one drawtext per line per layer) to keep
-    the X-in-box fix from the prior round.
+    Layers (per frame, t in fade window):
+      1. Fitted dark backdrop rectangle (1 drawbox)
+      2. White text per line with thin black border (N drawtext)
 
-    Filter chain order:
-      [backdrop drawbox]  → soft black rectangle, low alpha, behind text
-      [drawtext per line] → white text + thin black border, fades in
-      [accent drawbox]    → brand-orange bar below, animated width
+    NO grow animation on the backdrop — ffmpeg drawbox doesn't evaluate
+    w/h expressions per-frame. Backdrop pops in/out at fade boundaries.
+    Text fades in/out smoothly via drawtext alpha=.
     """
     if not title or not title.strip():
         return ""
@@ -674,7 +708,27 @@ def _title_overlay_filter(title: str | None, episode_dir: Path, clip_id: str) ->
     if not lines:
         return ""
 
-    font_path = "/usr/local/share/fonts/bebas-neue/BebasNeue-Regular.ttf"
+    # Locate the font file. In the deployed container it's at
+    # /usr/local/share/fonts/...; locally for tests it's in assets/fonts/.
+    # We need PIL to measure widths AND ffmpeg to render, so use whichever
+    # path exists.
+    deployed_font = Path("/usr/local/share/fonts/bebas-neue/BebasNeue-Regular.ttf")
+    local_font = ROOT / "assets" / "fonts" / "BebasNeue-Regular.ttf"
+    font_path = str(deployed_font) if deployed_font.exists() else str(local_font)
+
+    # Measure each line's pixel width at the render font size so the
+    # backdrop hugs the text instead of dead-spacing it.
+    try:
+        from PIL import ImageFont
+        pil_font = ImageFont.truetype(font_path, TITLE_OVERLAY_FONT_SIZE)
+        line_widths = []
+        for line in lines:
+            bbox = pil_font.getbbox(line)
+            line_widths.append(bbox[2] - bbox[0])
+        max_text_w = max(line_widths) if line_widths else 600
+    except Exception:
+        # Fallback: estimate at ~0.45 * font_size per uppercase char
+        max_text_w = int(max(len(line) for line in lines) * 0.45 * TITLE_OVERLAY_FONT_SIZE)
 
     # Alpha curve for the TEXT — fade in 0→FADE_IN, hold, fade out.
     # Backslash-comma needed because ',' inside drawtext expressions
@@ -690,44 +744,30 @@ def _title_overlay_filter(title: str | None, episode_dir: Path, clip_id: str) ->
 
     line_height = TITLE_OVERLAY_FONT_SIZE + TITLE_OVERLAY_LINE_SPACING
     n_lines = len(lines)
-    # Estimated text block bounds — used to size the backdrop block.
-    # Title block: from y_main_line0 to y_main_last + font_size.
-    block_top = TITLE_OVERLAY_Y_OFFSET - 24
-    block_bottom = TITLE_OVERLAY_Y_OFFSET + (n_lines - 1) * line_height + TITLE_OVERLAY_FONT_SIZE + 36
-    # Accent bar sits below the text block
-    accent_y = block_bottom + 22
-    accent_height = 8
+    # Tight backdrop bounds: text-width + symmetric padding on each side.
+    # Vertical padding gives breathing room top/bottom.
+    h_pad = 70
+    v_pad_top = 32
+    v_pad_bottom = 40
+    backdrop_w = max_text_w + h_pad * 2
+    # Clamp so we never exceed the canvas
+    backdrop_w = min(backdrop_w, 1080 - 40)
+    backdrop_x = (1080 - backdrop_w) // 2
+    block_top = TITLE_OVERLAY_Y_OFFSET - v_pad_top
+    block_bottom = (TITLE_OVERLAY_Y_OFFSET + (n_lines - 1) * line_height
+                    + TITLE_OVERLAY_FONT_SIZE + v_pad_bottom)
+    backdrop_h = block_bottom - block_top
 
     parts: list[str] = []
 
-    # === Backdrop block ============================================
-    # A translucent black rectangle behind the text. Uses drawbox with
-    # @alpha. Spans full width so the design feels intentional rather
-    # than a tight box that crops the text awkwardly.
-    # Backdrop alpha matches the text alpha curve so it fades in/out
-    # together — we use the same alpha_expr but scaled to lower max.
-    backdrop_alpha_expr = (
-        f"if(lt(t\\,{fade_in_end:.2f})\\,(t/{fade_in_end:.2f})*0.35\\,"
-        f"if(gt(t\\,{fade_out_start:.2f})\\,"
-        f"(({TITLE_OVERLAY_SECONDS:.2f}-t)/{TITLE_OVERLAY_FADE_OUT:.2f})*0.35\\,"
-        f"0.35))"
-    )
-    backdrop_h = block_bottom - block_top
+    # === Backdrop (single drawbox, tight to text) ==================
+    # alpha 0.65 — more solid than the prior 0.35 so the title reads as a
+    # designed "card" rather than a faint wash. Black for contrast on any
+    # underlying frame.
     parts.append(
-        f",drawbox=x=0:y={block_top}:w=1080:h={backdrop_h}"
-        f":color=black@0.001:t=fill"
-        f":enable='lte(t\\,{TITLE_OVERLAY_SECONDS})'"
-    )
-    # The above drawbox with color=black@0.001 is a no-op (placeholder);
-    # ffmpeg's drawbox doesn't support an animated alpha expression directly.
-    # Instead we emit a SECOND drawbox with a static alpha that's gated by
-    # enable= for the visible window. Trade-off: backdrop pops on/off rather
-    # than fading. With short FADE_IN/OUT the pop is mostly hidden behind
-    # the text's smoother fade. Accept the trade-off — drawbox doesn't have
-    # the alpha= eval that drawtext does.
-    parts[-1] = (
-        f",drawbox=x=0:y={block_top}:w=1080:h={backdrop_h}"
-        f":color=0x000000@0.35:t=fill"
+        f",drawbox=x={backdrop_x}:y={block_top}"
+        f":w={backdrop_w}:h={backdrop_h}"
+        f":color=0x000000@0.65:t=fill"
         f":enable='between(t\\,{fade_in_end:.2f}\\,{fade_out_start:.2f})'"
     )
 
@@ -744,31 +784,16 @@ def _title_overlay_filter(title: str | None, episode_dir: Path, clip_id: str) ->
             f":enable='lte(t\\,{TITLE_OVERLAY_SECONDS})'"
             f":alpha='{text_alpha_expr}'"
         )
-        # White text with thin black border. No orange outline this time —
-        # the brand pop goes on the accent bar instead.
+        # White text with slightly thicker border for weight + readability.
+        # Border 4px on the dark backdrop gives the text more presence than
+        # the prior 3px.
         parts.append(
             f",drawtext={common}"
             f":fontcolor=white"
-            f":borderw=3:bordercolor=black@0.85"
+            f":borderw=4:bordercolor=black@0.85"
             f":x=(w-text_w)/2"
             f":y={y_main}"
         )
-
-    # === Brand-orange accent bar ===================================
-    # Tried an animated grow-from-center but ffmpeg drawbox doesn't
-    # evaluate w/h expressions per-frame the way drawtext's alpha does —
-    # the if()/lt() expression was parsed once with t=0 and produced
-    # width=0, so the bar never appeared. Falling back to a fixed-width
-    # bar gated by `enable=` so it appears at fade_in_end and disappears
-    # at fade_out_start. Loses the grow polish but is reliable.
-    accent_w = 480
-    accent_x = (1080 - accent_w) // 2
-    parts.append(
-        f",drawbox=x={accent_x}:y={accent_y}"
-        f":w={accent_w}:h={accent_height}"
-        f":color=0x{BRAND_ORANGE_HEX}@1.0:t=fill"
-        f":enable='between(t\\,{fade_in_end:.2f}\\,{fade_out_start:.2f})'"
-    )
 
     return "".join(parts)
 
