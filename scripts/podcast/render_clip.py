@@ -755,25 +755,19 @@ def _title_overlay_filter(title: str | None, episode_dir: Path, clip_id: str) ->
         )
 
     # === Brand-orange accent bar ===================================
-    # Animated width: grows from center 0 → target over FADE_IN seconds,
-    # holds, shrinks again on fade-out. Implemented as a drawbox with
-    # x/w expressions tied to t.
-    accent_target_w = 480
-    # ffmpeg drawbox expressions: w can use t. width grows linearly during
-    # fade_in window, holds, then shrinks during fade_out.
-    accent_w_expr = (
-        f"if(lt(t\\,{fade_in_end:.2f})\\,"
-        f"(t/{fade_in_end:.2f})*{accent_target_w}\\,"
-        f"if(gt(t\\,{fade_out_start:.2f})\\,"
-        f"(({TITLE_OVERLAY_SECONDS:.2f}-t)/{TITLE_OVERLAY_FADE_OUT:.2f})*{accent_target_w}\\,"
-        f"{accent_target_w}))"
-    )
-    accent_x_expr = f"(1080-({accent_w_expr}))/2"
+    # Tried an animated grow-from-center but ffmpeg drawbox doesn't
+    # evaluate w/h expressions per-frame the way drawtext's alpha does —
+    # the if()/lt() expression was parsed once with t=0 and produced
+    # width=0, so the bar never appeared. Falling back to a fixed-width
+    # bar gated by `enable=` so it appears at fade_in_end and disappears
+    # at fade_out_start. Loses the grow polish but is reliable.
+    accent_w = 480
+    accent_x = (1080 - accent_w) // 2
     parts.append(
-        f",drawbox=x='{accent_x_expr}':y={accent_y}"
-        f":w='{accent_w_expr}':h={accent_height}"
+        f",drawbox=x={accent_x}:y={accent_y}"
+        f":w={accent_w}:h={accent_height}"
         f":color=0x{BRAND_ORANGE_HEX}@1.0:t=fill"
-        f":enable='lte(t\\,{TITLE_OVERLAY_SECONDS})'"
+        f":enable='between(t\\,{fade_in_end:.2f}\\,{fade_out_start:.2f})'"
     )
 
     return "".join(parts)
