@@ -866,11 +866,19 @@ def _title_overlay_filter(title: str | None, episode_dir: Path, clip_id: str) ->
     # alpha 0.65 — more solid than the prior 0.35 so the title reads as a
     # designed "card" rather than a faint wash. Black for contrast on any
     # underlying frame.
+    #
+    # NOTE on enable= window: backdrop is visible for the ENTIRE title
+    # window (0 → TITLE_OVERLAY_SECONDS), not just the "hold" interval
+    # between fades. Previously the backdrop popped on at fade_in_end
+    # and off at fade_out_start, producing a jarring rectangle-appears /
+    # rectangle-disappears effect. Keeping it on through the whole
+    # window means the text fades in/out smoothly over a stable
+    # backdrop — much more polished.
     parts.append(
         f",drawbox=x={backdrop_x}:y={block_top}"
         f":w={backdrop_w}:h={backdrop_h}"
         f":color=0x000000@0.65:t=fill"
-        f":enable='between(t\\,{fade_in_end:.2f}\\,{fade_out_start:.2f})'"
+        f":enable='lte(t\\,{TITLE_OVERLAY_SECONDS})'"
     )
 
     # === Title text per line =======================================
