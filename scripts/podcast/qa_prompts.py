@@ -125,6 +125,60 @@ Return STRICT JSON ONLY (no prose, no markdown fences, start with `{{` end with 
 
 
 # =====================================================================
+# CLIP-END COMPLETION CHECK (text only, post-snap, pre-Gate-1)
+# =====================================================================
+# Catches premature endings — clip cuts off mid-discussion before the
+# topic naturally concludes. Mirror of the cold-opener gate but on the
+# end. Claude sees the LAST sentence + 5 candidate continuation
+# sentences and decides whether to keep the current end or extend.
+
+END_COMPLETION_TEST_V1 = """You are deciding whether a short-form clip's ENDING gives a satisfying conclusion to the discussion (TikTok/Reels viewer, no follow-up context).
+
+The clip's CURRENT LAST sentence (what the viewer would hear right before the clip ends):
+
+\"\"\"
+{last_sentence}
+\"\"\"
+
+You may EXTEND the clip end to include one of these later candidate sentences if doing so completes the topic better. Each candidate is numbered. #0 is the current last sentence (= same as above). All candidates are real sentence-precise endings — picking any one snaps the clip end to that exact sentence boundary.
+
+CANDIDATE ENDINGS (numbered):
+{candidates_block}
+
+EVALUATE the CURRENT ending (#0):
+
+1. **Does the discussion feel CONCLUDED?** Has the speaker landed the point, made the take, or wrapped a thought? Or does it cut off mid-thought?
+2. **Would extending to a later sentence make the clip MORE satisfying?** Sometimes a clip ends one sentence too early — the punchline or conclusion is in the very next sentence.
+
+PASS examples (current ending IS satisfying):
+  - "...and that's why GameStop will never get my money again."  ← conclusive stance
+  - "It's literally infinite money."  ← punchy landing
+  - "I'd rather just play the original."  ← clear ending take
+
+EXTEND examples (current ending cuts off mid-thought):
+  - "...so I think it's just kind of."  ← incomplete, trails off
+  - "...and that's why I think they're going to."  ← cuts mid-sentence
+  - "...because at the end of the day,"  ← setup with no payoff
+
+DECISIONS:
+
+- **PASS**: current ending (#0) is satisfying. Don't extend.
+
+- **EXTEND**: current ending is premature. Set `chosen_index` to the smallest index >0 whose sentence completes the thought naturally. Prefer the EARLIEST candidate that gives a satisfying landing — don't extend further than necessary.
+
+- **REJECT**: every candidate is also bad (the speaker rambled into a tangent or never lands the point). Use sparingly — most picks should be PASS or EXTEND, not REJECT.
+
+Return STRICT JSON ONLY (no prose, no markdown fences, start with `{{` end with `}}`):
+{{
+  "discussion_concluded": true | false,
+  "recommendation": "PASS" | "EXTEND" | "REJECT",
+  "chosen_index": null | <integer index from the candidate list, only set if EXTEND>,
+  "reason": "one short sentence explaining the call"
+}}
+"""
+
+
+# =====================================================================
 # GATE 1 — Narrative coherence re-validation (text only)
 # =====================================================================
 

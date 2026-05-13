@@ -558,27 +558,34 @@ def detect_scenes_and_crops(
                                        crop_w=crop_w, source_w=source_w, alpha=0.3)
 
         # ----------------------------------------------------------------
-        # 5. COLLAPSE TRAJECTORY INTO SCENES (consecutive identical crop_x)
+        # 5. ALIGN SCENES TO CUT PTS (NOT sample times) — round 12 fix
         # ----------------------------------------------------------------
-        # For each sample (t, crop_x), if the crop_x is "close" to the
-        # previous sample's, extend the previous scene; otherwise start
-        # a new scene. Use a small px tolerance so micro-EMA-changes
-        # collapse to one scene.
-        TOLERANCE_PX = 4
-        scenes: list[list] = []  # list of [start, end, crop_x_running_sum, count]
-        for i, (t, cx) in enumerate(smoothed):
-            next_t = smoothed[i + 1][0] if i + 1 < len(smoothed) else duration
-            if scenes and abs(cx - (scenes[-1][2] // scenes[-1][3])) <= TOLERANCE_PX \
-                    and t - scenes[-1][1] < 0.5:
-                scenes[-1][1] = next_t
-                scenes[-1][2] += cx
-                scenes[-1][3] += 1
-            else:
-                scenes.append([t, next_t, cx, 1])
-
-        collapsed: list[tuple[float, float, int]] = [
-            (round(s[0], 3), round(s[1], 3), int(s[2] // s[3])) for s in scenes
-        ]
+        # The previous version used SAMPLE times as scene boundaries. With
+        # face sampling at 6fps, the boundary could be up to 0.167s (≈5
+        # frames at 30fps source) AFTER the actual cut. Frames between the
+        # real cut and the next sample inherited the OLD scene's crop —
+        # exactly what the user keeps reporting as "1 frame off when
+        # switching speakers." Fix: scene boundaries are now the EXACT cut
+        # PTS values from ffmpeg + face_jump detection. Within each run,
+        # take the MEDIAN of smoothed samples for stability.
+        all_boundaries = sorted([0.0] + deduped_cuts + [duration])
+        collapsed: list[tuple[float, float, int]] = []
+        for i in range(len(all_boundaries) - 1):
+            run_start = all_boundaries[i]
+            run_end = all_boundaries[i + 1]
+            if run_end - run_start < MIN_SCENE_DURATION_SEC:
+                continue
+            run_samples = [cx for t, cx in smoothed if run_start <= t < run_end]
+            if not run_samples:
+                # Fallback: nearest sample to the run's midpoint
+                if smoothed:
+                    nearest = min(smoothed, key=lambda s: abs(s[0] - (run_start + run_end) / 2))
+                    run_samples = [nearest[1]]
+                else:
+                    run_samples = [CENTER_CROP_X]
+            run_samples_sorted = sorted(run_samples)
+            median_cx = run_samples_sorted[len(run_samples_sorted) // 2]
+            collapsed.append((round(run_start, 3), round(run_end, 3), int(median_cx)))
 
         if not collapsed:
             return fallback
@@ -594,7 +601,7 @@ def detect_scenes_and_crops(
             return fallback
 
         print(f"  [SCENES] {len(deduped_cuts)} cuts ({len(ffmpeg_cuts)} ffmpeg + "
-              f"{len(face_jump_cuts)} face-jump), trajectory → {len(collapsed)} scenes")
+              f"{len(face_jump_cuts)} face-jump) → {len(collapsed)} scenes (PTS-aligned)")
         return collapsed
 
     except Exception as exc:

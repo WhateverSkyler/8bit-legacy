@@ -1169,6 +1169,29 @@ def _cold_opener_gate(picks: list[dict], segments: list[dict],
     # alternative starts Claude can pick from.
     MAX_CANDIDATES = 7   # sentence #0 (current) + 6 alternatives
     MIN_CANDIDATE_LEN = 4  # skip tiny "um" / "yeah" filler sentences
+    # Round 12: filler-word filter. Sentences whose CONTENT WORDS are
+    # >70% from this set are reactive/agreement filler and never make
+    # good cold-viewer openers. Skip them so they don't take a candidate
+    # slot or get picked as an opener.
+    FILLER_WORDS = {
+        "yeah", "yep", "yes", "no", "nope", "ok", "okay",
+        "um", "uh", "uhh", "uhm", "hmm", "mm", "mmm", "huh",
+        "like", "so", "well", "right", "exactly", "totally",
+        "absolutely", "anyway", "i", "you", "we", "they",
+        "the", "a", "an", "and", "but", "or", "of", "to",
+        "is", "was", "are", "were", "be", "been",
+        "know", "mean", "think", "guess", "feel",
+        "basically", "literally", "actually",
+        "what", "that", "this", "it", "its",
+    }
+
+    def _is_filler_sentence(text: str) -> bool:
+        words = re.findall(r"[A-Za-z']+", text.lower())
+        if not words or len(words) < 2:
+            return True  # too short to be a real sentence
+        non_filler = sum(1 for w in words if w not in FILLER_WORDS)
+        # If <30% of words are content (non-filler), it's filler
+        return (non_filler / len(words)) < 0.30
 
     work: list[tuple[dict, str | None, str, list[dict]]] = []
     for pick in picks:
@@ -1187,11 +1210,19 @@ def _cold_opener_gate(picks: list[dict], segments: list[dict],
             work.append((pick, None, "?", []))
             continue
 
-        # Collect candidates: current sentence (#0) + next non-trivial sentences
+        # Collect candidates: current sentence (#0) + next non-filler sentences.
+        # Skip sentences that are predominantly filler so they don't take a
+        # slot AND so Claude doesn't accidentally pick them as the opener.
+        # IMPORTANT: include the FIRST sentence at sent_idx unconditionally
+        # as #0 (current state) so Claude can decide PASS/ADJUST relative to
+        # the actual current opener.
         candidates: list[dict] = []
-        for s in sentences[sent_idx:]:
+        for j, s in enumerate(sentences[sent_idx:]):
             text = s.get("text", "").strip()
             if len(text) < MIN_CANDIDATE_LEN:
+                continue
+            if j > 0 and _is_filler_sentence(text):
+                # Filter filler from alternatives. Always keep #0 (current).
                 continue
             candidates.append(s)
             if len(candidates) >= MAX_CANDIDATES:
@@ -1305,6 +1336,179 @@ def _cold_opener_gate(picks: list[dict], segments: list[dict],
     n_rej = len(picks) - len(surviving)
     print(f"  [cold-opener] {len(picks)} picks → {len(surviving)} kept "
           f"({n_adjusted} adjusted, {n_rej} rejected)")
+    return surviving
+
+
+# ============================================================================
+# END-COMPLETION GATE (round 12 — 2026-05-13)
+# ============================================================================
+# Symmetric to the cold-opener gate but for clip ENDS. Catches premature
+# endings where the discussion cuts off mid-thought. Each pick gets a
+# numbered list of candidate ENDING sentences (current + 5 next sentences)
+# and Claude either PASSES or EXTENDS to a later sentence that lands the
+# discussion better.
+def _end_completion_gate(picks: list[dict], segments: list[dict],
+                         transcript: dict | None = None) -> list[dict]:
+    """Filter or extend picks based on whether the ending feels conclusive.
+    Concurrent batch (asyncio.gather), Sonnet model. Same shape as the
+    cold-opener gate.
+    """
+    if not picks:
+        return picks
+    try:
+        from _qa_helpers import call_claude_text_async, log_gate_decision, SONNET_MODEL
+        from qa_prompts import END_COMPLETION_TEST_V1
+    except ImportError as exc:
+        print(f"  [end-check] qa helpers unavailable ({exc}) — skipping gate")
+        return picks
+
+    import asyncio
+
+    episode_stem = picks[0].get("source_stem", "unknown")
+    sentences = _extract_sentences(transcript or {"segments": segments})
+
+    MAX_CANDIDATES = 6  # current end (#0) + 5 next-sentence extensions
+    MIN_CANDIDATE_LEN = 4
+    FILLER_WORDS = {
+        "yeah", "yep", "yes", "no", "ok", "okay", "um", "uh", "uhh",
+        "hmm", "mm", "mmm", "huh", "like", "so", "well", "right",
+        "exactly", "totally", "absolutely", "anyway",
+        "i", "you", "we", "they", "the", "a", "an", "and", "but", "or",
+        "is", "was", "are", "were", "be", "been",
+        "know", "mean", "think", "guess", "feel",
+        "basically", "literally", "actually",
+        "what", "that", "this", "it", "its",
+    }
+
+    def _is_filler(text: str) -> bool:
+        words = re.findall(r"[A-Za-z']+", text.lower())
+        if not words or len(words) < 2:
+            return True
+        non_filler = sum(1 for w in words if w not in FILLER_WORDS)
+        return (non_filler / len(words)) < 0.30
+
+    work: list[tuple[dict, str | None, str, list[dict]]] = []
+    for pick in picks:
+        try:
+            end = float(pick.get("end_sec", 0))
+            start = float(pick.get("start_sec", 0))
+        except (TypeError, ValueError):
+            work.append((pick, None, "?", []))
+            continue
+        # Find the LAST sentence whose end is at-or-before the current end
+        # (this is the current "last sentence" of the clip).
+        cur_end_idx = None
+        for i, s in enumerate(sentences):
+            if s["end"] <= end + 0.5:
+                cur_end_idx = i
+            else:
+                break
+        if cur_end_idx is None:
+            work.append((pick, None, "?", []))
+            continue
+
+        # Build candidates: current last sentence + up to 5 future sentences
+        # that aren't filler. Cap each candidate's potential extension so
+        # the clip doesn't blow past DURATION_CEILING_SEC.
+        candidates: list[dict] = []
+        for j, s in enumerate(sentences[cur_end_idx:]):
+            text = s.get("text", "").strip()
+            if len(text) < MIN_CANDIDATE_LEN:
+                continue
+            if j > 0 and _is_filler(text):
+                continue
+            # Don't allow extension past duration ceiling
+            if s["end"] - start > DURATION_CEILING_SEC + 0.5:
+                break
+            candidates.append(s)
+            if len(candidates) >= MAX_CANDIDATES:
+                break
+
+        if len(candidates) < 2:
+            # Only the current ending available; PASS through without
+            # bothering Claude
+            work.append((pick, None, "?", candidates))
+            continue
+
+        last_sentence = candidates[0]["text"].strip()
+        candidates_block = "\n".join(
+            f"  #{i}: \"{c['text'].strip()}\" (end={c['end']:.2f}s)"
+            for i, c in enumerate(candidates)
+        )
+        prompt = END_COMPLETION_TEST_V1.format(
+            last_sentence=last_sentence[:600],
+            candidates_block=candidates_block[:3000],
+        )
+        clip_id = pick.get("clip_id") or pick.get("title", "?")[:60]
+        work.append((pick, prompt, clip_id, candidates))
+
+    async def _gather_all() -> list:
+        tasks = []
+        for _p, prompt, _c, _cands in work:
+            if prompt is None:
+                tasks.append(asyncio.sleep(0, result=None))
+            else:
+                tasks.append(call_claude_text_async(prompt, model=SONNET_MODEL, max_tokens=300))
+        return await asyncio.gather(*tasks, return_exceptions=True)
+
+    n_with_prompt = sum(1 for _, p, _, _ in work if p)
+    if n_with_prompt == 0:
+        return picks
+    print(f"  [end-check] running {n_with_prompt} picks concurrently...")
+    import time as _time
+    t0 = _time.time()
+    verdicts = asyncio.run(_gather_all())
+    print(f"  [end-check] completed in {_time.time() - t0:.1f}s")
+
+    surviving: list[dict] = []
+    n_extended = 0
+    for (pick, prompt, clip_id, candidates), verdict in zip(work, verdicts):
+        if prompt is None or not candidates:
+            surviving.append(pick)
+            continue
+        if isinstance(verdict, Exception) or not verdict or not isinstance(verdict, dict):
+            surviving.append(pick)
+            continue
+        rec = (verdict.get("recommendation") or "").upper()
+        reason = verdict.get("reason", "?")
+
+        log_gate_decision(episode_stem, "end_check", clip_id, verdict, extra={
+            "title": pick.get("title", "?"),
+            "end_sec": pick.get("end_sec", 0),
+            "n_candidates": len(candidates),
+        })
+
+        if rec == "EXTEND":
+            try:
+                idx = int(verdict.get("chosen_index"))
+            except (TypeError, ValueError):
+                idx = None
+            if idx is None or idx <= 0 or idx >= len(candidates):
+                surviving.append(pick)
+                continue
+            chosen = candidates[idx]
+            old_end = float(pick.get("end_sec", 0))
+            new_end = chosen["end"] + 0.40  # breath pad
+            new_dur = new_end - float(pick.get("start_sec", 0))
+            if new_dur > DURATION_CEILING_SEC:
+                # Refuse extensions that would blow the duration cap
+                surviving.append(pick)
+                continue
+            print(f"  [end-check] EXTEND: {pick.get('title','?')[:50]} "
+                  f"end {old_end:.1f}s → {new_end:.2f}s ({reason[:60]})")
+            pick = {**pick,
+                    "end_sec": round(new_end, 2),
+                    "duration_sec": round(new_dur, 2),
+                    "_end_extended": True}
+            n_extended += 1
+            surviving.append(pick)
+            continue
+
+        # PASS or REJECT (we keep on REJECT — the existing pick is at least
+        # sentence-precise; better than dropping the clip entirely)
+        surviving.append(pick)
+
+    print(f"  [end-check] {len(picks)} picks → {n_extended} extended")
     return surviving
 
 
@@ -1554,10 +1758,13 @@ def pick_clips_from_transcript(
     # COLD-VIEWER OPENER GATE (round 11 — 2026-05-13)
     # Sentence-grain. Each pick gets a numbered list of nearby sentence
     # candidates. Claude returns PASS / ADJUST (chosen_index) / REJECT.
-    # Sentence boundaries are deterministic (punctuation + gap signals),
-    # so any chosen index produces a sentence-precise start with zero
-    # mid-sentence cuts.
     validated = _cold_opener_gate(validated, segments, transcript=tx)
+
+    # END-COMPLETION GATE (round 12 — 2026-05-13)
+    # Symmetric to cold-opener but for clip END. Catches premature endings
+    # where the discussion cuts off mid-thought; EXTENDS to a later
+    # sentence that lands the discussion when needed.
+    validated = _end_completion_gate(validated, segments, transcript=tx)
 
     # Drop near-duplicates (retain highest-scoring representative of each cluster)
     deduped = _de_overlap(validated)
