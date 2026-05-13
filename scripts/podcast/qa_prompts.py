@@ -79,38 +79,53 @@ Return STRICT JSON only:
 # from later context. This gate sees ONLY the first 5 seconds, no
 # title, no hook, nothing else — same as a real viewer who just paused.
 
-COLD_OPENER_TEST_V1 = """You are a TikTok/Reels viewer. You just scrolled to a short clip and watched the FIRST 5 SECONDS only. You have NO prior context, no title, no hook — only the literal words below.
+COLD_OPENER_TEST_V1 = """You are deciding whether a short-form clip's opener works for a cold viewer (TikTok/Reels scroll, no prior context).
 
-FIRST 5 SECONDS:
+CURRENT CLIP START at {current_start_sec:.2f}s. The first 5 seconds the viewer would hear:
+
+FIRST 5 SECONDS (current opener):
 \"\"\"
 {opener_text}
 \"\"\"
 
-Answer two yes/no questions:
+CONTEXT — the 20 seconds of transcript SURROUNDING the current start, with absolute timestamps, so you can suggest a better start if needed:
 
-1. **Does the speaker introduce a clear topic?** Can you, with zero prior knowledge, tell what subject is being discussed?
-   - YES: "Pokemon cards used to be fun for kids" — names the subject (Pokemon cards / kids)
-   - YES: "GameStop just doubled how many cards you can buy" — clear subject (GameStop card policy)
-   - NO:  "Yeah I totally agree, and that's why" — purely reactive, no subject
-   - NO:  "Anyway, like I was saying about it" — references prior context
+\"\"\"
+{context_window}
+\"\"\"
 
+EVALUATE THE CURRENT OPENER:
+
+1. **Does the speaker introduce a clear topic?** Can a cold viewer, with zero prior knowledge, tell what subject is being discussed?
 2. **Does the opening grammatically make sense as the START of someone talking?**
-   Sentences that begin with "of", "to", "and", "but", "the", "for", "with", "in", "on", "or", "yeah", "right", "exactly", "anyway", "so", or any continuation/agreement word almost NEVER make sense as a stand-alone START. Same with sentences leaning on an unintroduced pronoun (he/she/they/it/that).
-   - YES: "Tears of the Kingdom feels empty to me" — full thought, starts on the subject
-   - YES: "I'd rather support a local game store" — clear self-introduction of stance
-   - NO:  "Of like, kind of pre-scalping the cards" — starts on a preposition, clearly mid-thought
-   - NO:  "On the road a lot, I wasn't a big fan of it" — "On the road a lot" is mid-sentence continuation
-   - NO:  "He was saying that they were going to" — pronouns with no antecedent
+   Continuation words ("of", "to", "and", "but", "the", "for", "with", "in", "on", "or", "yeah", "right", "exactly", "anyway", "so") almost never start a stand-alone clip. Same with unintroduced pronouns (he/she/they/it/that).
 
-If BOTH answers are yes → recommend PASS. If either is no → recommend REJECT.
+EXAMPLES (current opener → judgment):
+  - "Pokemon cards used to be fun for kids" → PASS (subject + complete thought)
+  - "I'd rather support a local game store" → PASS (clear stance)
+  - "Of like, kind of pre-scalping the cards" → BAD (starts on preposition)
+  - "Yeah I totally agree, and that's why" → BAD (reactive, no subject)
+  - "He was saying that they were going to" → BAD (unintroduced pronouns)
+  - "On the road a lot, I wasn't a big fan of it" → BAD (mid-sentence)
 
-Be strict. If you have to mentally fill in context to understand the opening, it's REJECT. A real cold viewer scrolling TikTok would scroll past in 1-2 seconds and never come back.
+DECISIONS:
+
+- **PASS**: current opener is clean — both questions yes.
+
+- **ADJUST**: current opener is bad BUT a clean opening exists within the surrounding 20s window. Use `suggested_start_sec` to point to the absolute timestamp where a CLEAN, complete-thought sentence begins. Pick the start time of the FIRST whole sentence in the window that:
+    (a) introduces a clear subject (no unintroduced pronouns),
+    (b) doesn't start on a continuation/filler word,
+    (c) is on-topic with what the clip is about.
+  Always prefer ADJUST over REJECT when any clean sentence exists within the window.
+
+- **REJECT**: only when there is NO clean opening sentence anywhere in the 20s window — the entire region is mid-conversation fragments.
 
 Return STRICT JSON ONLY (no prose, no markdown fences, start with `{{` end with `}}`):
 {{
   "topic_clear": true | false,
   "grammatical_start": true | false,
-  "recommendation": "PASS" | "REJECT",
+  "recommendation": "PASS" | "ADJUST" | "REJECT",
+  "suggested_start_sec": null | <absolute timestamp in seconds, from the context window>,
   "reason": "one short sentence explaining the call"
 }}
 """

@@ -971,7 +971,29 @@ def _cold_opener_gate(picks: list[dict], segments: list[dict]) -> list[dict]:
 
     episode_stem = picks[0].get("source_stem", "unknown")
 
-    # Build per-pick prompts. Extract ONLY the first 5s of opener text.
+    def _context_window(start_sec: float, window_pre: float = 12.0,
+                        window_post: float = 12.0) -> str:
+        """Build a context window of transcript text around the current
+        clip start, with absolute-timestamped segment lines so Claude
+        can suggest a better start time grounded in real transcript pts.
+        """
+        lo = max(0.0, start_sec - window_pre)
+        hi = start_sec + window_post
+        lines: list[str] = []
+        for seg in segments:
+            s_start = seg.get("start", 0.0)
+            s_end = seg.get("end", 0.0)
+            if s_end < lo:
+                continue
+            if s_start > hi:
+                break
+            marker = " ← CURRENT START" if abs(s_start - start_sec) < 0.5 else ""
+            lines.append(f"[{s_start:.2f}s]{marker} {seg.get('text','').strip()}")
+        return "\n".join(lines)
+
+    # Build per-pick prompts. Each prompt includes the current 5s opener
+    # AND a ±12s context window so Claude can suggest a better start_sec
+    # when the current one is bad.
     work: list[tuple[dict, str | None, str]] = []
     for pick in picks:
         try:
@@ -985,10 +1007,14 @@ def _cold_opener_gate(picks: list[dict], segments: list[dict]) -> list[dict]:
             continue
         opener_text = _opener_text_in_seconds(segments[start_idx:], start, n_seconds=5.0)
         if not opener_text or len(opener_text.strip()) < 8:
-            # Empty opener — likely a transcript miss, default to pass
             work.append((pick, None, "?"))
             continue
-        prompt = COLD_OPENER_TEST_V1.format(opener_text=opener_text.strip()[:1500])
+        context_window = _context_window(start, window_pre=12.0, window_post=12.0)
+        prompt = COLD_OPENER_TEST_V1.format(
+            opener_text=opener_text.strip()[:1500],
+            current_start_sec=start,
+            context_window=context_window[:3000],
+        )
         clip_id = pick.get("clip_id") or pick.get("title", "?")[:60]
         work.append((pick, prompt, clip_id))
 
@@ -1014,6 +1040,7 @@ def _cold_opener_gate(picks: list[dict], segments: list[dict]) -> list[dict]:
     print(f"  [cold-opener] {n_with_prompt} concurrent calls completed in {elapsed:.1f}s")
 
     surviving: list[dict] = []
+    n_adjusted = 0
     for (pick, prompt, clip_id), verdict in zip(work, verdicts):
         if prompt is None:
             surviving.append(pick)
@@ -1028,19 +1055,76 @@ def _cold_opener_gate(picks: list[dict], segments: list[dict]) -> list[dict]:
         rec = (verdict.get("recommendation") or "").upper()
         reason = verdict.get("reason", "?")
 
-        # Log every cold-opener decision for retrospective audit
         log_gate_decision(episode_stem, "cold_opener", clip_id, verdict, extra={
             "title": pick.get("title", "?"),
             "start_sec": pick.get("start_sec", 0),
         })
 
-        if rec == "REJECT":
-            print(f"  [cold-opener] REJECT: {pick.get('title','?')[:50]} — {reason}")
+        if rec == "PASS":
+            surviving.append(pick)
             continue
-        surviving.append(pick)
+
+        if rec == "ADJUST":
+            # Snap to the suggested start. Then snap to nearest WORD boundary
+            # so we don't begin mid-syllable.
+            try:
+                suggested = float(verdict.get("suggested_start_sec"))
+            except (TypeError, ValueError):
+                suggested = None
+            if suggested is None or suggested < 0:
+                print(f"  [cold-opener] REJECT (ADJUST without valid suggestion): {pick.get('title','?')[:50]}")
+                continue
+            old_start = float(pick.get("start_sec", 0))
+            old_end = float(pick.get("end_sec", 0))
+            old_duration = old_end - old_start
+            # Find the segment containing the suggested start
+            seg_idx = _find_segment_containing(suggested, segments)
+            if seg_idx is None:
+                print(f"  [cold-opener] REJECT (suggested {suggested:.2f}s not in any segment): {pick.get('title','?')[:50]}")
+                continue
+            target_seg = segments[seg_idx]
+            # Snap to the START of the first word at or after suggested
+            new_start = target_seg.get("start", suggested)
+            words = target_seg.get("words") or []
+            for w in words:
+                if w.get("start", 0) >= suggested - 0.1:
+                    new_start = w.get("start", new_start)
+                    break
+            # Recompute end_sec to preserve original duration (capped at duration ceiling)
+            new_duration = min(old_duration, DURATION_CEILING_SEC)
+            new_end = new_start + new_duration
+            # Snap new_end to the end of the last whole word that fits
+            end_idx = _find_segment_containing(new_end, segments)
+            if end_idx is not None:
+                end_seg = segments[end_idx]
+                last_word_end = end_seg.get("start", new_end)
+                for w in (end_seg.get("words") or []):
+                    if w.get("end", 0) <= new_end + 0.05:
+                        last_word_end = w.get("end", last_word_end)
+                    else:
+                        break
+                new_end = last_word_end + 0.40  # breath pad
+            # Validate the adjusted duration
+            if new_end - new_start < DURATION_FLOOR_SEC:
+                print(f"  [cold-opener] REJECT (adjusted clip too short): {pick.get('title','?')[:50]}")
+                continue
+            print(f"  [cold-opener] ADJUST: {pick.get('title','?')[:50]} "
+                  f"{old_start:.1f}s → {new_start:.2f}s ({reason})")
+            pick = {**pick,
+                    "start_sec": round(new_start, 2),
+                    "end_sec": round(new_end, 2),
+                    "duration_sec": round(new_end - new_start, 2),
+                    "_cold_opener_adjusted": True}
+            n_adjusted += 1
+            surviving.append(pick)
+            continue
+
+        # REJECT
+        print(f"  [cold-opener] REJECT: {pick.get('title','?')[:50]} — {reason}")
 
     n_rej = len(picks) - len(surviving)
-    print(f"  [cold-opener] {len(picks)} picks → {len(surviving)} kept, {n_rej} rejected for bad opener")
+    print(f"  [cold-opener] {len(picks)} picks → {len(surviving)} kept "
+          f"({n_adjusted} adjusted, {n_rej} rejected)")
     return surviving
 
 
@@ -1282,19 +1366,13 @@ def pick_clips_from_transcript(
         else:
             rejected.append({**raw, "validation": f"rejected: {reason}"})
 
-    # COLD-VIEWER OPENER GATE (round 10 — 2026-05-13)
-    # After rule-based snap+validation, fire a concurrent Claude batch that
-    # judges ONLY the first 5 seconds of each pick (no title, no context).
-    # Catches mid-sentence openers that the rule-based checks let through.
-    #
-    # 2026-05-13: TEMPORARILY DISABLED for yield calibration. Cold-opener
-    # was rejecting 100% of picks because the source recordings have very
-    # few naturally clean cold-viewer openings. Need to either tighten
-    # upstream rescue logic OR loosen the gate before re-enabling.
-    # Set ENABLE_COLD_OPENER_GATE = True once calibrated.
-    ENABLE_COLD_OPENER_GATE = False
-    if ENABLE_COLD_OPENER_GATE:
-        validated = _cold_opener_gate(validated, segments)
+    # COLD-VIEWER OPENER GATE (round 10b — 2026-05-13)
+    # Sends only the first 5s of each pick to Claude WITH a ±12s context
+    # window. Claude returns PASS / ADJUST (suggesting a better start_sec)
+    # / REJECT. The ADJUST path FIXES bad openers instead of dropping them,
+    # which is what the user asked for ("if a video starts in the middle
+    # of a sentence why not just back it up to start at the right time").
+    validated = _cold_opener_gate(validated, segments)
 
     # Drop near-duplicates (retain highest-scoring representative of each cluster)
     deduped = _de_overlap(validated)
