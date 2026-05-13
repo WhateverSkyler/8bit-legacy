@@ -71,6 +71,52 @@ Return STRICT JSON only:
 
 
 # =====================================================================
+# COLD-VIEWER OPENER TEST (text only, post-pick, pre-Gate-1)
+# =====================================================================
+# Catches the most common failure mode: clip starts mid-sentence or with
+# a continuation word so a cold-scroll viewer has no idea what's being
+# discussed. Gate 1 sees the WHOLE clip and can rationalize bad openings
+# from later context. This gate sees ONLY the first 5 seconds, no
+# title, no hook, nothing else — same as a real viewer who just paused.
+
+COLD_OPENER_TEST_V1 = """You are a TikTok/Reels viewer. You just scrolled to a short clip and watched the FIRST 5 SECONDS only. You have NO prior context, no title, no hook — only the literal words below.
+
+FIRST 5 SECONDS:
+\"\"\"
+{opener_text}
+\"\"\"
+
+Answer two yes/no questions:
+
+1. **Does the speaker introduce a clear topic?** Can you, with zero prior knowledge, tell what subject is being discussed?
+   - YES: "Pokemon cards used to be fun for kids" — names the subject (Pokemon cards / kids)
+   - YES: "GameStop just doubled how many cards you can buy" — clear subject (GameStop card policy)
+   - NO:  "Yeah I totally agree, and that's why" — purely reactive, no subject
+   - NO:  "Anyway, like I was saying about it" — references prior context
+
+2. **Does the opening grammatically make sense as the START of someone talking?**
+   Sentences that begin with "of", "to", "and", "but", "the", "for", "with", "in", "on", "or", "yeah", "right", "exactly", "anyway", "so", or any continuation/agreement word almost NEVER make sense as a stand-alone START. Same with sentences leaning on an unintroduced pronoun (he/she/they/it/that).
+   - YES: "Tears of the Kingdom feels empty to me" — full thought, starts on the subject
+   - YES: "I'd rather support a local game store" — clear self-introduction of stance
+   - NO:  "Of like, kind of pre-scalping the cards" — starts on a preposition, clearly mid-thought
+   - NO:  "On the road a lot, I wasn't a big fan of it" — "On the road a lot" is mid-sentence continuation
+   - NO:  "He was saying that they were going to" — pronouns with no antecedent
+
+If BOTH answers are yes → recommend PASS. If either is no → recommend REJECT.
+
+Be strict. If you have to mentally fill in context to understand the opening, it's REJECT. A real cold viewer scrolling TikTok would scroll past in 1-2 seconds and never come back.
+
+Return STRICT JSON ONLY (no prose, no markdown fences, start with `{{` end with `}}`):
+{{
+  "topic_clear": true | false,
+  "grammatical_start": true | false,
+  "recommendation": "PASS" | "REJECT",
+  "reason": "one short sentence explaining the call"
+}}
+"""
+
+
+# =====================================================================
 # GATE 1 — Narrative coherence re-validation (text only)
 # =====================================================================
 

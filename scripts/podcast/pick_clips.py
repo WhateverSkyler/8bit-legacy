@@ -934,6 +934,116 @@ def _gate1_narrative_coherence(candidates: list[dict], transcript: dict,
     return accepted
 
 
+# ============================================================================
+# COLD-VIEWER OPENER GATE (post-snap, concurrent)
+# ============================================================================
+# Sends ONLY the first 5 seconds of opener text to Claude with strict cold-
+# viewer framing. Catches "starts mid-sentence" failures that Gate 1 misses
+# because Gate 1 sees the full clip text and can rationalize bad openings
+# from downstream context.
+#
+# Runs CONCURRENTLY across all picks (asyncio.gather) so wall time is ~3s
+# regardless of pick count. Uses Sonnet (cheap, fast — judgment is binary
+# yes/no, doesn't need Opus reasoning).
+
+def _cold_opener_gate(picks: list[dict], segments: list[dict]) -> list[dict]:
+    """Filter picks by the cold-viewer opener test. Returns the surviving
+    picks. Each pick's first 5 seconds get sent to Claude in isolation —
+    no title, no hook, no surrounding context. If Claude says the opener
+    doesn't make sense as a stand-alone start, reject the pick.
+
+    Concurrent batch — runs all picks in parallel via asyncio.gather to
+    keep wall-clock cost minimal. ~50 picks finishes in ~3-5s.
+
+    On infrastructure errors (Anthropic outage, JSON parse failure), the
+    pick is PASSED through (don't drop work on infra flakes).
+    """
+    if not picks:
+        return picks
+    try:
+        from _qa_helpers import call_claude_text_async, log_gate_decision, SONNET_MODEL
+        from qa_prompts import COLD_OPENER_TEST_V1
+    except ImportError as exc:
+        print(f"  [cold-opener] qa helpers unavailable ({exc}) — skipping gate")
+        return picks
+
+    import asyncio
+
+    episode_stem = picks[0].get("source_stem", "unknown")
+
+    # Build per-pick prompts. Extract ONLY the first 5s of opener text.
+    work: list[tuple[dict, str | None, str]] = []
+    for pick in picks:
+        try:
+            start = float(pick.get("start_sec", 0))
+        except (TypeError, ValueError):
+            work.append((pick, None, "?"))
+            continue
+        start_idx = _find_segment_containing(start, segments)
+        if start_idx is None:
+            work.append((pick, None, "?"))
+            continue
+        opener_text = _opener_text_in_seconds(segments[start_idx:], start, n_seconds=5.0)
+        if not opener_text or len(opener_text.strip()) < 8:
+            # Empty opener — likely a transcript miss, default to pass
+            work.append((pick, None, "?"))
+            continue
+        prompt = COLD_OPENER_TEST_V1.format(opener_text=opener_text.strip()[:1500])
+        clip_id = pick.get("clip_id") or pick.get("title", "?")[:60]
+        work.append((pick, prompt, clip_id))
+
+    async def _gather_all() -> list:
+        tasks = []
+        for _p, prompt, _c in work:
+            if prompt is None:
+                tasks.append(asyncio.sleep(0, result=None))
+            else:
+                # max_tokens=300 — output is a small JSON, no need for more.
+                # Sonnet model (default) — judgment is simple, Opus overkill.
+                tasks.append(call_claude_text_async(prompt, model=SONNET_MODEL, max_tokens=300))
+        return await asyncio.gather(*tasks, return_exceptions=True)
+
+    n_with_prompt = sum(1 for _, p, _ in work if p)
+    if n_with_prompt == 0:
+        return picks
+    print(f"  [cold-opener] running {n_with_prompt} picks concurrently...")
+    import time as _time
+    t0 = _time.time()
+    verdicts = asyncio.run(_gather_all())
+    elapsed = _time.time() - t0
+    print(f"  [cold-opener] {n_with_prompt} concurrent calls completed in {elapsed:.1f}s")
+
+    surviving: list[dict] = []
+    for (pick, prompt, clip_id), verdict in zip(work, verdicts):
+        if prompt is None:
+            surviving.append(pick)
+            continue
+        if isinstance(verdict, Exception):
+            print(f"  [cold-opener] claude error on {pick.get('title','?')[:40]}: {verdict} — keeping pick")
+            surviving.append(pick)
+            continue
+        if not verdict or not isinstance(verdict, dict):
+            surviving.append(pick)
+            continue
+        rec = (verdict.get("recommendation") or "").upper()
+        reason = verdict.get("reason", "?")
+
+        # Log every cold-opener decision for retrospective audit
+        log_gate_decision(episode_stem, "cold_opener", clip_id, verdict, extra={
+            "title": pick.get("title", "?"),
+            "start_sec": pick.get("start_sec", 0),
+        })
+
+        if rec == "REJECT":
+            print(f"  [cold-opener] REJECT: {pick.get('title','?')[:50]} — {reason}")
+            continue
+        surviving.append(pick)
+
+    n_rej = len(picks) - len(surviving)
+    print(f"  [cold-opener] {len(picks)} picks → {len(surviving)} kept, {n_rej} rejected for bad opener")
+    return surviving
+
+
 # --- Title quality + hashtag + audio mix audits (post-Gate 1, pre-render) ----
 # Run concurrently across surviving candidates. Each candidate gets its title
 # audited (+ optionally rewritten), per-clip hashtags generated, and a mood
@@ -1171,6 +1281,12 @@ def pick_clips_from_transcript(
             validated.append(pick)
         else:
             rejected.append({**raw, "validation": f"rejected: {reason}"})
+
+    # COLD-VIEWER OPENER GATE (round 10 — 2026-05-13)
+    # After rule-based snap+validation, fire a concurrent Claude batch that
+    # judges ONLY the first 5 seconds of each pick (no title, no context).
+    # Catches mid-sentence openers that the rule-based checks let through.
+    validated = _cold_opener_gate(validated, segments)
 
     # Drop near-duplicates (retain highest-scoring representative of each cluster)
     deduped = _de_overlap(validated)

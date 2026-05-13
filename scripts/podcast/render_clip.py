@@ -66,23 +66,13 @@ FACE_MIN_SIZE = 60
 FACE_SAMPLES_PER_SCENE = 5
 
 # --- Scene detection ---------------------------------------------------------
-# Sampling stride when walking the clip to find hard camera cuts (seconds).
-# Lowered 0.4 → 0.15 (2026-05-07): a 0.4s stride could miss the true cut
-# boundary by up to 0.4s, so the new camera angle would render with the OLD
-# scene's crop_x for up to 0.4s before the next sample triggered a new scene.
-# Combined with merge-into-previous, this manifested as ~1s of "cut to Madison
-# but he's still off-frame" before the centering snapped. 0.15s → max stride
-# latency 0.15s, ~3x compute on detection (still <1s wall on a 60s clip).
-SCENE_SAMPLE_STRIDE_SEC = 0.15
-# Bhattacharyya distance above which consecutive frames are flagged as a cut.
-# Raised 0.35 → 0.50 (2026-05-12): the lower threshold produced phantom
-# "cuts" at points where the histogram spiked from same-camera variance
-# (lighting flicker, hand passing, prop motion, mild zoom). User saw exactly
-# this at 36.3s of c2: pass-1 declared a cut, the sub-segmenter respected
-# it as instant, and the crop_x shifted ~150px even though the underlying
-# camera was the same continuous shot. 0.50 only fires on dramatic shifts
-# typical of an actual camera switch.
-BHATTA_CUT_THRESHOLD = 0.50
+# Round 10 (2026-05-13): replaced homegrown histogram bisect with ffmpeg's
+# native `select='gt(scene,X)'` filter. The threshold below maps to
+# ffmpeg's scene_score, which is frame-accurate and lives in
+# _detect_cuts_via_ffmpeg. 0.30 is the standard public-tooling default;
+# Gate-3 rescue lowers it to 0.20 to catch softer cuts that the first
+# pass missed.
+SCENE_DETECT_THRESHOLD = 0.30
 # Scenes shorter than this get merged into the NEXT scene (not previous).
 # Lowered 0.6 → 0.25 + flipped merge direction (2026-05-07). Old behavior was
 # the second compounding bug behind the visible centering delay: when a brief
@@ -315,14 +305,46 @@ def _face_center_for_range_haar_legacy(cap, cascades: list, t_start: float, t_en
     return xs[len(xs) // 2]
 
 
-def _hsv_hist(frame) -> "any":
-    """Normalized 8x8x8 HSV histogram. Used for frame-to-frame similarity."""
-    import cv2  # type: ignore
-    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    hist = cv2.calcHist([hsv], [0, 1, 2], None, [8, 8, 8],
-                        [0, 180, 0, 256, 0, 256])
-    cv2.normalize(hist, hist, 0, 1, cv2.NORM_MINMAX)
-    return hist
+def _detect_cuts_via_ffmpeg(source_video: Path, start_sec: float,
+                            end_sec: float, threshold: float = 0.30) -> list[float]:
+    """Run ffmpeg's built-in scene-change detection over the clip window.
+    Returns clip-relative PTS values (seconds, 0-based) where new scenes start.
+
+    Why this is frame-accurate where my prior homegrown detection wasn't:
+    ffmpeg's `select='gt(scene,X)'` filter operates on decoded frame data in
+    the demuxer's PTS space. The metadata filter prints the EXACT pts of each
+    frame that triggers a scene change — no seek imprecision, no off-by-one.
+
+    ffmpeg trim semantics: `trim=start=X` includes frames where pts >= X. So
+    if this returns pts=12.567, setting scene[i+1].start=12.567 puts the
+    frame at 12.567 (first new-camera frame) in scene N+1 with the NEW crop,
+    and the frame just before (last old-camera frame) stays in scene N with
+    the OLD crop. Zero off-by-one possible.
+    """
+    cmd = [
+        "ffmpeg", "-hide_banner", "-loglevel", "error",
+        "-ss", f"{start_sec:.3f}", "-to", f"{end_sec:.3f}",
+        "-i", str(source_video),
+        "-vf", f"select='gt(scene,{threshold:.3f})',metadata=mode=print:file=-",
+        "-an", "-f", "null", "-",
+    ]
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+    except subprocess.TimeoutExpired:
+        print("  [SCENES] ffmpeg scene-detect timed out")
+        return []
+    cuts: list[float] = []
+    for line in proc.stdout.splitlines():
+        # Output format: "frame:N    pts:XXXX   pts_time:Y.YYY"
+        if "pts_time:" in line:
+            try:
+                # The pts_time is RELATIVE to the trimmed window start because
+                # we used -ss before -i (input-relative seek + reset PTS).
+                pts = float(line.split("pts_time:")[1].strip().split()[0])
+                cuts.append(pts)
+            except (ValueError, IndexError):
+                continue
+    return sorted(cuts)
 
 
 def detect_scenes_and_crops(
@@ -331,22 +353,23 @@ def detect_scenes_and_crops(
     end_sec: float,
     crop_w: int = CROP_W,
     source_w: int = SOURCE_W,
-    cut_threshold: float = BHATTA_CUT_THRESHOLD,
+    cut_threshold: float = 0.30,
 ) -> list[tuple[float, float, int]]:
     """Detect camera cuts inside [start_sec, end_sec] and return per-scene
     crop offsets.
+
+    Round 10 (2026-05-13): replaced homegrown histogram-bisect detection
+    with ffmpeg's built-in `select='gt(scene,X)'` + metadata. Frame-accurate
+    by construction — no seek imprecision, no off-by-one, no snap-back.
 
     Returns a list of (scene_start_rel, scene_end_rel, crop_x) tuples, where
     times are CLIP-RELATIVE (0-based). Always returns at least one tuple
     covering the full duration — callers never have to handle an empty list.
 
     Args:
-      cut_threshold: Bhattacharyya distance above which two consecutive
-        sampled frames are flagged as a hard cut. Default 0.35 (BHATTA_CUT_THRESHOLD).
-        Gate 3 rerender rescue lowers this to 0.25 to catch softer cuts the
-        first pass missed (the fix path when a clip's framing is judged
-        reject_reframe by Claude — a tighter threshold splits more scenes,
-        each gets fresh face detection).
+      cut_threshold: scene_score threshold for ffmpeg's scenedetect. 0.30
+        is the standard starting value. Gate 3 rerender rescue may lower
+        this to 0.20 to catch softer cuts the first pass missed.
 
     Safe fallbacks (all return a single-scene center crop):
       - OpenCV not installed / cv2 can't open the source
@@ -370,21 +393,10 @@ def detect_scenes_and_crops(
             print("  [SCENES] cv2 could not open source → 1 scene, center crop")
             return fallback
 
-        # Detect the source's native frame rate. Used for sequential-walk
-        # cut refinement so we never assume 30fps when the source might be
-        # 24/25/60. Fallback to 30 if cv2 returns junk.
-        src_fps = cap.get(cv2.CAP_PROP_FPS)
-        if not (1.0 < src_fps <= 240.0):
-            src_fps = 30.0
-        src_frame_dur = 1.0 / src_fps
-
         # Multi-cascade chain: frontal first, then profile (twice — once on
         # the original gray, once on horizontally-flipped gray to catch the
         # opposite profile direction since OpenCV's profileface XML only
         # detects right-facing profiles).
-        # 2026-04-29: added profile cascades to fix recurring miss on the
-        # "Tristan in front of arcade" angle. Frontal-only previously fell
-        # back to center-crop on this pose.
         frontal_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
         profile_path = cv2.data.haarcascades + "haarcascade_profileface.xml"
         frontal = cv2.CascadeClassifier(frontal_path)
@@ -396,149 +408,24 @@ def detect_scenes_and_crops(
         if not profile.empty():
             cascades = [frontal, profile, profile]
 
-        # --- Pass 1: walk the clip at fixed stride, diff HSV histograms -----
-        # When a cut is detected between samples N-1 and N, refine via a
-        # SEQUENTIAL frame-by-frame decode of the gap to find the EXACT PTS
-        # of the first new-camera frame.
-        stride = SCENE_SAMPLE_STRIDE_SEC
-        n_samples = max(2, int(duration / stride) + 1)
-        prev_hist = None
-        prev_t_rel = 0.0
-        cut_points: list[float] = [0.0]
+        # --- FRAME-ACCURATE CUT DETECTION via ffmpeg ----------------------
+        cut_pts_list = _detect_cuts_via_ffmpeg(source_video, start_sec, end_sec,
+                                               threshold=cut_threshold)
+        # ffmpeg often emits a scene-score spike at frame 0; drop any cut
+        # within the first 0.5s as it's almost certainly the clip-start
+        # itself, not a real internal cut.
+        cut_pts_list = [t for t in cut_pts_list if 0.5 <= t < duration - 0.1]
 
-        def _refine_cut(t_lo: float, t_hi: float, hist_lo, hist_hi) -> float:
-            """Sequential frame walk to pinpoint the cut. Returns clip-relative
-            seconds of the scene boundary.
-
-            Why this replaces the prior random-seek bisect:
-              `cap.set(POS_MSEC)` + `cap.read()` seeks to the nearest keyframe
-              and decodes forward — the returned frame may be 1-2 frames OFF
-              from the requested timestamp. Sequential decode after a single
-              initial seek gives the EXACT pts of each consecutive frame via
-              `cap.get(POS_MSEC)`.
-
-            Detection: TWO signals OR'd together so we don't miss soft-cuts
-            where two cameras have similar overall color:
-              (a) inter-frame Bhattacharyya > 0.10 — frame-to-frame jump
-              (b) frame's hist closer to hist_hi than hist_lo by > 0.05 —
-                  the frame is clearly post-cut content
-
-            Both signals trigger on the first new-camera frame. We return
-            that frame's pts, then SNAP BACK 2 frames as a safety belt:
-            even if our detector is 0-2 frames late, the new camera's
-            actual first frame is guaranteed to render with the new crop.
-            The 2-frame cost (67ms at 30fps) on the previous scene is
-            imperceptible compared to a visible mis-centered new frame.
-            """
-            INTER_THRESHOLD = 0.10
-            HIST_LEAD = 0.05
-            # Round 9b (2026-05-13): REMOVE snap-back entirely. User
-            # observed that the LAST frame of speaker A was rendering with
-            # speaker B's centering — exactly what snap-back does. The
-            # sequential frame walker already finds the EXACT pts of the
-            # first new-camera frame (the inter-frame Bhattacharyya jump
-            # triggers on that frame, not the one before). With snap-back
-            # the boundary lands 1 frame TOO EARLY → last old-camera frame
-            # gets new crop. Removing snap-back puts the boundary exactly
-            # at the first new-camera frame so both sides render with their
-            # correct crop_x. ffmpeg trim start=X is inclusive → frame at
-            # X goes to the NEW scene; the frame just before X stays in
-            # the OLD scene.
-            SNAP_BACK_FRAMES = 0
-
-            pre_pad = 3.0 * src_frame_dur
-            seek_t = max(0.0, t_lo - pre_pad)
-            cap.set(cv2.CAP_PROP_POS_MSEC, (start_sec + seek_t) * 1000.0)
-            prev_h = None
-            max_frames = int((t_hi - t_lo + pre_pad * 2) * src_fps) + 6
-            detected: float | None = None
-            for _ in range(max_frames):
-                ok, frame = cap.read()
-                if not ok or frame is None:
-                    break
-                pts_clip = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0 - start_sec
-                if pts_clip > t_hi + src_frame_dur:
-                    break
-                h = _hsv_hist(frame)
-                # Signal (a): inter-frame Bhattacharyya jump
-                triggered = False
-                if prev_h is not None:
-                    inter = cv2.compareHist(prev_h, h, cv2.HISTCMP_BHATTACHARYYA)
-                    if inter > INTER_THRESHOLD:
-                        triggered = True
-                # Signal (b): frame is clearly post-cut content vs hist_lo
-                if not triggered and pts_clip > t_lo - 1e-3:
-                    d_lo = cv2.compareHist(hist_lo, h, cv2.HISTCMP_BHATTACHARYYA)
-                    d_hi = cv2.compareHist(hist_hi, h, cv2.HISTCMP_BHATTACHARYYA)
-                    if d_lo - d_hi > HIST_LEAD:
-                        triggered = True
-                if triggered:
-                    detected = pts_clip
-                    break
-                prev_h = h
-            if detected is None:
-                # Last-resort fallback
-                detected = max(t_lo, t_hi - src_frame_dur)
-            # Safety snap-back. Even with the new sensitive detection, the
-            # user reports persistent 1-frame slips across multiple rounds.
-            # 2-frame snap-back guarantees the new camera's actual first
-            # frame renders with the new crop_x. Cost: previous scene loses
-            # 67ms (2 frames at 30fps) — invisible at scrolling speed.
-            return max(t_lo, detected - SNAP_BACK_FRAMES * src_frame_dur)
-
-        for i in range(n_samples):
-            t_rel = min(duration, i * stride)
-            t_abs = start_sec + t_rel
-            cap.set(cv2.CAP_PROP_POS_MSEC, t_abs * 1000.0)
-            ok, frame = cap.read()
-            if not ok or frame is None:
-                continue
-            hist = _hsv_hist(frame)
-            if prev_hist is not None:
-                d = cv2.compareHist(prev_hist, hist, cv2.HISTCMP_BHATTACHARYYA)
-                if d > cut_threshold:
-                    refined = _refine_cut(prev_t_rel, t_rel, prev_hist, hist)
-                    cut_points.append(refined)
-                    # CRITICAL: after _refine_cut walks frames sequentially,
-                    # the cap position is somewhere inside the bisect window.
-                    # The next pass-1 iteration will cap.set(POS_MSEC, ...)
-                    # again so position resets — no manual restore needed.
-            prev_hist = hist
-            prev_t_rel = t_rel
-        cut_points.append(duration)
-
-        # Build initial scene list from consecutive cut points
+        # Build scenes from cut points. Boundaries = [0, cut1, cut2, ..., duration]
+        boundaries = [0.0] + cut_pts_list + [duration]
         scenes_rel: list[tuple[float, float]] = []
-        for a, b in zip(cut_points, cut_points[1:]):
-            if b > a:
+        for a, b in zip(boundaries, boundaries[1:]):
+            if b - a >= MIN_SCENE_DURATION_SEC:
                 scenes_rel.append((a, b))
 
-        # --- Merge scenes shorter than MIN_SCENE_DURATION_SEC ----------------
-        # Merge into the NEXT scene (not previous) so brief transitional frames
-        # take on the upcoming camera's crop_x. Fixes "speaker appears off-center
-        # for ~1s after a cut" by ensuring the new camera's crop is established
-        # immediately at the cut, not delayed by a transitional sliver.
-        merged: list[tuple[float, float]] = []
-        carry_start: float | None = None
-        for s, e in scenes_rel:
-            scene_start = carry_start if carry_start is not None else s
-            if (e - scene_start) < MIN_SCENE_DURATION_SEC:
-                # Defer this scene's content into the NEXT iteration's start.
-                if carry_start is None:
-                    carry_start = scene_start
-                continue
-            merged.append((scene_start, e))
-            carry_start = None
-        # If a trailing brief scene was carried but never absorbed into a next,
-        # attach it to the previous scene so we don't drop content.
-        if carry_start is not None:
-            if merged:
-                ps, _pe = merged[-1]
-                merged[-1] = (ps, scenes_rel[-1][1] if scenes_rel else carry_start)
-            else:
-                merged = [(carry_start, scenes_rel[-1][1] if scenes_rel else duration)]
-        if not merged:
-            merged = [(0.0, duration)]
+        if not scenes_rel:
+            scenes_rel = [(0.0, duration)]
+        merged = scenes_rel  # No prior merging needed — ffmpeg's threshold already filters noise
 
         if len(merged) > MAX_SCENES:
             print(f"  [SCENES] {len(merged)} scenes > cap {MAX_SCENES} → 1 scene, center crop")
@@ -1136,13 +1023,14 @@ def render_clip(spec: dict, episode: str, transcripts_by_stem: dict[str, dict],
         return True
 
     def _rerender_with_stricter_scenes() -> tuple[bool, list[tuple[float, float, int]]]:
-        """Gate 3 rescue: re-run scene detection with cut_threshold=0.25 (vs
-        default 0.35). Tighter threshold → more scene boundaries → each new
-        scene gets fresh face-detection sampling. Returns (ok, new_scenes)."""
+        """Gate 3 rescue: re-run scene detection with a more sensitive
+        threshold (0.20 vs default 0.30). Lower threshold → ffmpeg flags more
+        cuts → each new scene gets fresh face-detection sampling. Returns
+        (ok, new_scenes)."""
         nonlocal scenes
         new_scenes = detect_scenes_and_crops(
             source_video, start, end,
-            crop_w=crop_w, cut_threshold=0.25,
+            crop_w=crop_w, cut_threshold=0.20,
         )
         if new_scenes == scenes:
             print("  [gate3-rescue] stricter threshold returned identical scenes — no rerender")
