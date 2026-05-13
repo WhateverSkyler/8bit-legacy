@@ -959,9 +959,7 @@ def _cold_opener_gate(picks: list[dict], segments: list[dict]) -> list[dict]:
     pick is PASSED through (don't drop work on infra flakes).
     """
     if not picks:
-        print(f"  [cold-opener] called with empty picks list — skip")
         return picks
-    print(f"  [cold-opener] entering gate with {len(picks)} picks")
     try:
         from _qa_helpers import call_claude_text_async, log_gate_decision, SONNET_MODEL
         from qa_prompts import COLD_OPENER_TEST_V1
@@ -1007,10 +1005,6 @@ def _cold_opener_gate(picks: list[dict], segments: list[dict]) -> list[dict]:
 
     n_with_prompt = sum(1 for _, p, _ in work if p)
     if n_with_prompt == 0:
-        # Debug: dump why each pick failed to produce a prompt
-        print(f"  [cold-opener] WARN: all {len(picks)} picks produced no prompt — gate skipped")
-        for pick, prompt, _cid in work[:5]:
-            print(f"     · start={pick.get('start_sec')} title='{pick.get('title','?')[:40]}'")
         return picks
     print(f"  [cold-opener] running {n_with_prompt} picks concurrently...")
     import time as _time
