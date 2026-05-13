@@ -81,51 +81,44 @@ Return STRICT JSON only:
 
 COLD_OPENER_TEST_V1 = """You are deciding whether a short-form clip's opener works for a cold viewer (TikTok/Reels scroll, no prior context).
 
-CURRENT CLIP START at {current_start_sec:.2f}s. The first 5 seconds the viewer would hear:
-
-FIRST 5 SECONDS (current opener):
-\"\"\"
-{opener_text}
-\"\"\"
-
-CONTEXT — the 20 seconds of transcript SURROUNDING the current start, with absolute timestamps, so you can suggest a better start if needed:
+The clip's FIRST sentence (what a cold viewer would hear in the opening seconds):
 
 \"\"\"
-{context_window}
+{first_sentence}
 \"\"\"
 
-EVALUATE THE CURRENT OPENER:
+If that opener is bad, you may pick a DIFFERENT sentence from this nearby list to be the new clip start. Each candidate is numbered. Sentence #0 is the current first sentence (same as above). All candidates are sentence-precise — picking any one gives a clean sentence-boundary start.
 
-1. **Does the speaker introduce a clear topic?** Can a cold viewer, with zero prior knowledge, tell what subject is being discussed?
+CANDIDATE SENTENCES (numbered):
+{candidates_block}
+
+EVALUATE the CURRENT first sentence (#0):
+
+1. **Does the speaker introduce a clear topic?** With zero prior knowledge, can a cold viewer tell what subject is being discussed?
 2. **Does the opening grammatically make sense as the START of someone talking?**
-   Continuation words ("of", "to", "and", "but", "the", "for", "with", "in", "on", "or", "yeah", "right", "exactly", "anyway", "so") almost never start a stand-alone clip. Same with unintroduced pronouns (he/she/they/it/that).
+   Continuation words ("of", "to", "and", "but", "the", "for", "with", "in", "on", "or", "yeah", "right", "exactly", "anyway", "so", "um", "like") almost never start a stand-alone clip. Same with unintroduced pronouns (he/she/they/it/that).
 
-EXAMPLES (current opener → judgment):
+EXAMPLES (opener → judgment):
   - "Pokemon cards used to be fun for kids" → PASS (subject + complete thought)
   - "I'd rather support a local game store" → PASS (clear stance)
   - "Of like, kind of pre-scalping the cards" → BAD (starts on preposition)
   - "Yeah I totally agree, and that's why" → BAD (reactive, no subject)
   - "He was saying that they were going to" → BAD (unintroduced pronouns)
-  - "On the road a lot, I wasn't a big fan of it" → BAD (mid-sentence)
 
 DECISIONS:
 
-- **PASS**: current opener is clean — both questions yes.
+- **PASS**: current first sentence (#0) is clean — both questions yes.
 
-- **ADJUST**: current opener is bad BUT a clean opening exists within the surrounding 20s window. Use `suggested_start_sec` to point to the absolute timestamp where a CLEAN, complete-thought sentence begins. Pick the start time of the FIRST whole sentence in the window that:
-    (a) introduces a clear subject (no unintroduced pronouns),
-    (b) doesn't start on a continuation/filler word,
-    (c) is on-topic with what the clip is about.
-  Always prefer ADJUST over REJECT when any clean sentence exists within the window.
+- **ADJUST**: current first sentence is bad BUT one of the OTHER numbered candidates would work as a clean opener. Set `chosen_index` to the smallest index >0 that introduces a clear subject AND grammatically starts a thought. Prefer earlier indices (closer to current start) when multiple candidates would work, so the clip stays on-topic.
 
-- **REJECT**: only when there is NO clean opening sentence anywhere in the 20s window — the entire region is mid-conversation fragments.
+- **REJECT**: every candidate in the list is also a bad opener (all mid-conversation fragments, all start on continuation words). Only use this when truly nothing in the window is salvageable.
 
 Return STRICT JSON ONLY (no prose, no markdown fences, start with `{{` end with `}}`):
 {{
   "topic_clear": true | false,
   "grammatical_start": true | false,
   "recommendation": "PASS" | "ADJUST" | "REJECT",
-  "suggested_start_sec": null | <absolute timestamp in seconds, from the context window>,
+  "chosen_index": null | <integer index from the candidate list, only set if ADJUST>,
   "reason": "one short sentence explaining the call"
 }}
 """

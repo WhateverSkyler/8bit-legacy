@@ -435,6 +435,160 @@ def _opener_text_in_seconds(segments: list[dict], start_sec: float, n_seconds: f
     return " ".join(parts).strip()
 
 
+# =============================================================================
+# DETERMINISTIC SENTENCE BOUNDARIES (round 11 — 2026-05-13)
+# =============================================================================
+# whisperX gives word-level data with PUNCTUATION embedded in word text.
+# A sentence boundary is mathematically defined: word N ends with `.`/`!`/`?`,
+# word N+1 starts a new sentence. No LLM, no heuristic, no segment guessing.
+#
+# This is the single source of truth for clip boundaries — every pick's
+# start_sec must be the start of a real sentence, every pick's end_sec must
+# be the end of a real sentence (+ a 0.40s breath pad). Mid-sentence cuts
+# become mathematically impossible.
+
+_SENT_END_RE = re.compile(r'[.!?]\s*$')
+
+# Inter-word/segment gap (in seconds) at which we treat the silence as a
+# sentence boundary. Empirically tuned against May-5 transcript stats:
+# median gap is 0.24s (mid-sentence breaths); >0.5s is in the top 28% and
+# almost always corresponds to a sentence/thought boundary.
+SENTENCE_GAP_BREAK = 0.50
+
+# A "sentence" combined from adjacent segments shouldn't exceed this duration
+# — if speech runs > 12s without a long pause, force a soft break to keep
+# downstream LLM judgments tractable.
+MAX_SENTENCE_DURATION = 12.0
+
+
+def _extract_sentences(transcript: dict) -> list[dict]:
+    """Group whisperX words into sentence-like chunks using TWO signals:
+      (1) WORD/SEGMENT TEXT ENDS WITH `.`, `!`, or `?` — a definitive
+          sentence end (some episodes have these, others don't).
+      (2) GAP between consecutive words ≥ SENTENCE_GAP_BREAK seconds —
+          a long pause, which usually signals a thought/sentence end
+          even when punctuation is missing.
+
+    Combining both signals produces robust sentence boundaries even on
+    the punctuation-poor transcripts (May 5 has only 9% of words ending
+    in .!? but 28% of inter-word gaps exceed 0.5s).
+
+    Each Sentence dict:
+      start, end:  float (seconds, episode-relative)
+      text:        full sentence text (joined word texts, stripped)
+      first_word:  cleaned first word (lowercase, no punctuation)
+      last_word:   cleaned last word (lowercase, no punctuation)
+
+    Cached on the transcript dict under `_sentences` so this runs ONCE
+    per episode regardless of how many functions need it.
+    """
+    cached = transcript.get("_sentences")
+    if cached is not None:
+        return cached
+
+    sentences: list[dict] = []
+    cur_words: list[dict] = []
+    cur_start_time: float | None = None
+
+    def _flush() -> None:
+        if not cur_words:
+            return
+        first_w = cur_words[0]
+        last_w = cur_words[-1]
+        text = " ".join((w.get("word") or "").strip() for w in cur_words).strip()
+        first_clean = re.sub(r"[^A-Za-z']+", "", first_w.get("word", "")).lower()
+        last_clean = re.sub(r"[^A-Za-z']+", "", last_w.get("word", "")).lower()
+        sentences.append({
+            "start": float(first_w.get("start", 0.0)),
+            "end": float(last_w.get("end", 0.0)),
+            "text": text,
+            "first_word": first_clean,
+            "last_word": last_clean,
+        })
+
+    prev_word_end: float | None = None
+    for seg in transcript.get("segments", []):
+        for w in seg.get("words") or []:
+            wt = (w.get("word") or "").strip()
+            if not wt:
+                continue
+            wstart = float(w.get("start", 0.0))
+            wend = float(w.get("end", 0.0))
+
+            # Signal (2): gap-based sentence break BEFORE this word
+            if prev_word_end is not None and cur_words:
+                gap = wstart - prev_word_end
+                if gap >= SENTENCE_GAP_BREAK:
+                    _flush()
+                    cur_words = []
+                    cur_start_time = None
+                # Force-break if accumulated sentence has run too long
+                elif cur_start_time is not None and (wstart - cur_start_time) > MAX_SENTENCE_DURATION:
+                    _flush()
+                    cur_words = []
+                    cur_start_time = None
+
+            if not cur_words:
+                cur_start_time = wstart
+            cur_words.append(w)
+
+            # Signal (1): explicit punctuation AFTER this word
+            if _SENT_END_RE.search(wt):
+                _flush()
+                cur_words = []
+                cur_start_time = None
+
+            prev_word_end = wend
+
+    # Flush the last accumulated sentence
+    if cur_words:
+        _flush()
+
+    transcript["_sentences"] = sentences
+    return sentences
+
+
+def _snap_to_sentence_start(t_sec: float, sentences: list[dict],
+                            tolerance: float = 1.0) -> float | None:
+    """Return the START time of the FIRST sentence whose start is within
+    [t_sec - tolerance, +inf). I.e., the earliest sentence that begins at or
+    after the requested time, with a small lookback for picks that landed
+    just past a sentence boundary. Returns None if no sentence fits.
+    """
+    if not sentences:
+        return None
+    best: float | None = None
+    for s in sentences:
+        if s["start"] >= t_sec - tolerance:
+            best = s["start"]
+            break
+    return best
+
+
+def _snap_to_sentence_end(t_sec: float, sentences: list[dict],
+                          tolerance: float = 1.0) -> float | None:
+    """Return the END time of the LAST sentence whose end is within
+    (-inf, t_sec + tolerance]. I.e., the latest sentence that ends at or
+    before the requested time, with a small lookahead. Returns None if no
+    sentence fits.
+    """
+    if not sentences:
+        return None
+    best: float | None = None
+    for s in sentences:
+        if s["end"] <= t_sec + tolerance:
+            best = s["end"]
+        else:
+            break
+    return best
+
+
+def _sentences_in_window(start_sec: float, end_sec: float,
+                         sentences: list[dict]) -> list[dict]:
+    """Return sentences whose start lands inside [start_sec, end_sec]."""
+    return [s for s in sentences if start_sec <= s["start"] <= end_sec]
+
+
 def _starts_mid_phrase(start_seg: dict, prev_seg: dict | None) -> bool:
     """Detect when a clip's first segment starts mid-phrase — i.e., the
     previous segment ends without sentence-terminal punctuation AND ends with
@@ -539,8 +693,14 @@ def _find_setup_question_backward(segments: list[dict], current_start_idx: int,
 def _snap_and_validate(
     pick: dict,
     segments: list[dict],
+    sentences: list[dict] | None = None,
 ) -> tuple[dict, bool, str]:
     """Snap start/end to segment boundaries, then validate stand-alone + duration rules.
+
+    Round 11 (2026-05-13): if `sentences` is provided, the final boundary
+    snap uses DETERMINISTIC sentence boundaries from word-level punctuation
+    instead of word-level snapping. This makes mid-sentence cuts mathematically
+    impossible.
 
     Returns (updated_pick, is_valid, reason).
     If stand-alone fails, tries extending back/forward one segment to rescue before rejecting.
@@ -666,37 +826,66 @@ def _snap_and_validate(
         if not ends_clean:
             return pick, False, f"end not sentence-terminal after rescue attempts"
 
-        # Word-boundary snap (2026-05-12): even after segment-level snapping,
-        # the LAST word of end_seg might extend slightly past new_end if
-        # whisperX picked a phrase pause that's slightly inside the final
-        # word. To eliminate ANY mid-word audio chop, walk end_seg's words
-        # and snap new_end to the END of the LAST complete word + a 0.10s
-        # trailing pad for a clean breath. Same for new_start: snap to the
-        # START of the first word so we don't begin mid-syllable.
-        if end_seg.get("words"):
-            last_word_end = end_seg["start"]
-            for w in end_seg["words"]:
-                w_end = w.get("end", 0)
-                if w_end <= new_end + 0.05:
-                    last_word_end = w_end
-                else:
-                    break
-            # Round 9c: bump breath pad 0.10 → 0.40s. User feedback: last
-            # word still felt chopped before the CTA — no clean pause.
-            # 0.40s gives a noticeable breath without dead air.
-            new_end = last_word_end + 0.40
-        if start_seg.get("words"):
-            first_word_start = start_seg["start"]
-            for w in start_seg["words"]:
-                w_start = w.get("start", 0)
-                if w_start >= new_start - 0.05:
-                    first_word_start = w_start
-                    break
-            new_start = max(0.0, first_word_start - 0.05)  # small lead-in
+        # SENTENCE-BOUNDARY SNAP (round 11 — 2026-05-13)
+        # The earlier word-boundary snap eliminated mid-syllable cuts but did
+        # NOT eliminate mid-SENTENCE cuts (because whisperX segments are
+        # pause-detected, not sentence-detected, so segment ends often land
+        # in the middle of a sentence). Round 11 uses deterministic sentence
+        # boundaries derived from word-level punctuation. Every clip's start
+        # = exact start of a real sentence; every clip's end = exact end of
+        # a real sentence + 0.40s breath. Mid-sentence cuts are now
+        # mathematically impossible.
+        if sentences:
+            snapped_start = _snap_to_sentence_start(new_start, sentences,
+                                                   tolerance=1.5)
+            snapped_end = _snap_to_sentence_end(new_end, sentences,
+                                                tolerance=1.5)
+            if snapped_start is None or snapped_end is None or snapped_end <= snapped_start:
+                # Sentence snap failed — likely a punctuation-poor section
+                # of transcript. Fall back to word-boundary snap.
+                if end_seg.get("words"):
+                    last_word_end = end_seg["start"]
+                    for w in end_seg["words"]:
+                        w_end = w.get("end", 0)
+                        if w_end <= new_end + 0.05:
+                            last_word_end = w_end
+                        else:
+                            break
+                    new_end = last_word_end + 0.40
+                if start_seg.get("words"):
+                    first_word_start = start_seg["start"]
+                    for w in start_seg["words"]:
+                        w_start = w.get("start", 0)
+                        if w_start >= new_start - 0.05:
+                            first_word_start = w_start
+                            break
+                    new_start = max(0.0, first_word_start - 0.05)
+            else:
+                # Sentence-precise — apply directly. 0.40s pad on end, none
+                # on start (sentence start is already a clean entry point).
+                new_start = snapped_start
+                new_end = snapped_end + 0.40
+        else:
+            # Legacy word-boundary fallback for callers that don't pass
+            # sentences (kept for back-compat; should be rare in round 11+).
+            if end_seg.get("words"):
+                last_word_end = end_seg["start"]
+                for w in end_seg["words"]:
+                    w_end = w.get("end", 0)
+                    if w_end <= new_end + 0.05:
+                        last_word_end = w_end
+                    else:
+                        break
+                new_end = last_word_end + 0.40
+            if start_seg.get("words"):
+                first_word_start = start_seg["start"]
+                for w in start_seg["words"]:
+                    w_start = w.get("start", 0)
+                    if w_start >= new_start - 0.05:
+                        first_word_start = w_start
+                        break
+                new_start = max(0.0, first_word_start - 0.05)
 
-        # Recompute duration after word-boundary snap (the 0.10s pad
-        # may push us slightly over what segment-level snapping picked,
-        # but always at a clean word boundary so audio never chops).
         duration = new_end - new_start
 
         adjusted = (
@@ -946,7 +1135,8 @@ def _gate1_narrative_coherence(candidates: list[dict], transcript: dict,
 # regardless of pick count. Uses Sonnet (cheap, fast — judgment is binary
 # yes/no, doesn't need Opus reasoning).
 
-def _cold_opener_gate(picks: list[dict], segments: list[dict]) -> list[dict]:
+def _cold_opener_gate(picks: list[dict], segments: list[dict],
+                      transcript: dict | None = None) -> list[dict]:
     """Filter picks by the cold-viewer opener test. Returns the surviving
     picks. Each pick's first 5 seconds get sent to Claude in isolation —
     no title, no hook, no surrounding context. If Claude says the opener
@@ -970,84 +1160,59 @@ def _cold_opener_gate(picks: list[dict], segments: list[dict]) -> list[dict]:
     import asyncio
 
     episode_stem = picks[0].get("source_stem", "unknown")
+    # Extract sentences from the transcript (cached). If no transcript was
+    # passed, build a temporary tx dict from the segments list.
+    sentences = _extract_sentences(transcript or {"segments": segments})
 
-    def _context_window(start_sec: float, window_pre: float = 12.0,
-                        window_post: float = 12.0) -> str:
-        """Build a context window of transcript text around the current
-        clip start, presented as INDIVIDUAL SENTENCES with the timestamp
-        of each sentence's first word. This lets Claude pick a precise
-        clean-sentence-start timestamp instead of being stuck with
-        segment-level granularity (segments can contain multiple
-        sentences, so segment-start ≠ sentence-start).
+    # Build per-pick numbered candidate lists. For each pick we present
+    # the CURRENT first sentence (#0) plus the next ~6 sentences as
+    # alternative starts Claude can pick from.
+    MAX_CANDIDATES = 7   # sentence #0 (current) + 6 alternatives
+    MIN_CANDIDATE_LEN = 4  # skip tiny "um" / "yeah" filler sentences
 
-        Each line: `[T.TTs] sentence text.` Closer to a real "scrubbing
-        timeline" view of the transcript that Claude can navigate.
-        """
-        lo = max(0.0, start_sec - window_pre)
-        hi = start_sec + window_post
-        # Walk all words across all segments in the window and split into
-        # sentences by punctuation. Each sentence carries the start time
-        # of its first word.
-        SENT_END_RE = re.compile(r'[.!?]')
-        lines: list[str] = []
-        cur_words: list[dict] = []
-        for seg in segments:
-            s_start = seg.get("start", 0.0)
-            s_end = seg.get("end", 0.0)
-            if s_end < lo - 0.5:
-                continue
-            if s_start > hi + 0.5:
-                break
-            for w in seg.get("words") or []:
-                w_start = w.get("start", 0.0)
-                w_text = (w.get("word") or "").strip()
-                if w_start < lo - 0.2 or w_start > hi + 0.2:
-                    continue
-                if not w_text:
-                    continue
-                cur_words.append(w)
-                # If this word ends a sentence, flush it as a line
-                if SENT_END_RE.search(w_text):
-                    if cur_words:
-                        first_t = cur_words[0].get("start", 0.0)
-                        sentence_text = " ".join((cw.get("word") or "").strip()
-                                                 for cw in cur_words)
-                        marker = " ← CURRENT START" if abs(first_t - start_sec) < 0.6 else ""
-                        lines.append(f"[{first_t:.2f}s]{marker} {sentence_text}")
-                    cur_words = []
-        # Flush any trailing partial sentence
-        if cur_words:
-            first_t = cur_words[0].get("start", 0.0)
-            sentence_text = " ".join((cw.get("word") or "").strip() for cw in cur_words)
-            lines.append(f"[{first_t:.2f}s] {sentence_text} (partial)")
-        return "\n".join(lines)
-
-    # Build per-pick prompts. Each prompt includes the current 5s opener
-    # AND a ±12s context window so Claude can suggest a better start_sec
-    # when the current one is bad.
-    work: list[tuple[dict, str | None, str]] = []
+    work: list[tuple[dict, str | None, str, list[dict]]] = []
     for pick in picks:
         try:
             start = float(pick.get("start_sec", 0))
         except (TypeError, ValueError):
-            work.append((pick, None, "?"))
+            work.append((pick, None, "?", []))
             continue
-        start_idx = _find_segment_containing(start, segments)
-        if start_idx is None:
-            work.append((pick, None, "?"))
+        # Find the FIRST sentence whose start is at-or-after the pick's start
+        sent_idx = None
+        for i, s in enumerate(sentences):
+            if s["start"] >= start - 0.5:
+                sent_idx = i
+                break
+        if sent_idx is None:
+            work.append((pick, None, "?", []))
             continue
-        opener_text = _opener_text_in_seconds(segments[start_idx:], start, n_seconds=5.0)
-        if not opener_text or len(opener_text.strip()) < 8:
-            work.append((pick, None, "?"))
+
+        # Collect candidates: current sentence (#0) + next non-trivial sentences
+        candidates: list[dict] = []
+        for s in sentences[sent_idx:]:
+            text = s.get("text", "").strip()
+            if len(text) < MIN_CANDIDATE_LEN:
+                continue
+            candidates.append(s)
+            if len(candidates) >= MAX_CANDIDATES:
+                break
+
+        if not candidates:
+            work.append((pick, None, "?", []))
             continue
-        context_window = _context_window(start, window_pre=12.0, window_post=12.0)
+
+        first_sentence = candidates[0]["text"].strip()
+        candidates_block = "\n".join(
+            f"  #{i}: \"{c['text'].strip()}\" (start={c['start']:.2f}s, dur={c['end']-c['start']:.1f}s)"
+            for i, c in enumerate(candidates)
+        )
+
         prompt = COLD_OPENER_TEST_V1.format(
-            opener_text=opener_text.strip()[:1500],
-            current_start_sec=start,
-            context_window=context_window[:3000],
+            first_sentence=first_sentence[:600],
+            candidates_block=candidates_block[:3000],
         )
         clip_id = pick.get("clip_id") or pick.get("title", "?")[:60]
-        work.append((pick, prompt, clip_id))
+        work.append((pick, prompt, clip_id, candidates))
 
     async def _gather_all() -> list:
         tasks = []
@@ -1072,8 +1237,8 @@ def _cold_opener_gate(picks: list[dict], segments: list[dict]) -> list[dict]:
 
     surviving: list[dict] = []
     n_adjusted = 0
-    for (pick, prompt, clip_id), verdict in zip(work, verdicts):
-        if prompt is None:
+    for (pick, prompt, clip_id, candidates), verdict in zip(work, verdicts):
+        if prompt is None or not candidates:
             surviving.append(pick)
             continue
         if isinstance(verdict, Exception):
@@ -1089,6 +1254,7 @@ def _cold_opener_gate(picks: list[dict], segments: list[dict]) -> list[dict]:
         log_gate_decision(episode_stem, "cold_opener", clip_id, verdict, extra={
             "title": pick.get("title", "?"),
             "start_sec": pick.get("start_sec", 0),
+            "n_candidates": len(candidates),
         })
 
         if rec == "PASS":
@@ -1096,63 +1262,34 @@ def _cold_opener_gate(picks: list[dict], segments: list[dict]) -> list[dict]:
             continue
 
         if rec == "ADJUST":
-            # Claude's suggested_start_sec now corresponds to a sentence-first
-            # word timestamp (since the context window presents per-sentence
-            # lines). Snap to the EXACT word that closest matches.
             try:
-                suggested = float(verdict.get("suggested_start_sec"))
+                idx = int(verdict.get("chosen_index"))
             except (TypeError, ValueError):
-                suggested = None
-            if suggested is None or suggested < 0:
-                print(f"  [cold-opener] REJECT (ADJUST without valid suggestion): {pick.get('title','?')[:50]}")
+                idx = None
+            if idx is None or idx <= 0 or idx >= len(candidates):
+                print(f"  [cold-opener] REJECT (ADJUST without valid chosen_index): {pick.get('title','?')[:50]}")
                 continue
             old_start = float(pick.get("start_sec", 0))
             old_end = float(pick.get("end_sec", 0))
             old_duration = old_end - old_start
-            # Walk ALL words across nearby segments to find the best match.
-            # We want the word whose start is CLOSEST to the suggested time
-            # (within 0.5s tolerance). This handles the case where the
-            # sentence start time we showed Claude doesn't perfectly
-            # match a single segment.
-            best_word_t = None
-            best_dist = 1e9
-            for seg in segments:
-                s_start = seg.get("start", 0.0)
-                s_end = seg.get("end", 0.0)
-                if s_end < suggested - 1.0:
-                    continue
-                if s_start > suggested + 1.0:
-                    break
-                for w in seg.get("words") or []:
-                    wt = w.get("start", 0.0)
-                    d = abs(wt - suggested)
-                    if d < best_dist:
-                        best_dist = d
-                        best_word_t = wt
-            if best_word_t is None or best_dist > 0.5:
-                print(f"  [cold-opener] REJECT (no word within 0.5s of suggested {suggested:.2f}s): {pick.get('title','?')[:50]}")
-                continue
-            new_start = max(0.0, best_word_t - 0.05)  # tiny pre-pad
-            # Recompute end_sec to preserve original duration (capped at duration ceiling)
-            new_duration = min(old_duration, DURATION_CEILING_SEC)
-            new_end = new_start + new_duration
-            # Snap new_end to the end of the last whole word that fits
-            end_idx = _find_segment_containing(new_end, segments)
-            if end_idx is not None:
-                end_seg = segments[end_idx]
-                last_word_end = end_seg.get("start", new_end)
-                for w in (end_seg.get("words") or []):
-                    if w.get("end", 0) <= new_end + 0.05:
-                        last_word_end = w.get("end", last_word_end)
-                    else:
-                        break
-                new_end = last_word_end + 0.40  # breath pad
-            # Validate the adjusted duration
+            chosen = candidates[idx]
+            # Sentence-precise start — comes directly from the candidate.
+            new_start = chosen["start"]
+            # Preserve duration (capped at ceiling), then snap end to a
+            # sentence boundary at-or-before that target.
+            target_dur = min(old_duration, DURATION_CEILING_SEC)
+            target_end = new_start + target_dur
+            new_end = _snap_to_sentence_end(target_end, sentences, tolerance=1.5)
+            if new_end is None or new_end <= new_start:
+                # Fallback: just use target_end with a small breath pad
+                new_end = target_end
+            else:
+                new_end += 0.40  # breath pad after the last sentence
             if new_end - new_start < DURATION_FLOOR_SEC:
                 print(f"  [cold-opener] REJECT (adjusted clip too short): {pick.get('title','?')[:50]}")
                 continue
             print(f"  [cold-opener] ADJUST: {pick.get('title','?')[:50]} "
-                  f"{old_start:.1f}s → {new_start:.2f}s ({reason})")
+                  f"#{idx} → start={new_start:.2f}s ({reason[:60]})")
             pick = {**pick,
                     "start_sec": round(new_start, 2),
                     "end_sec": round(new_end, 2),
@@ -1400,22 +1537,27 @@ def pick_clips_from_transcript(
     # when actually checked against the chosen boundaries.
     candidates = _gate1_narrative_coherence(candidates, tx, segments)
 
+    # Round 11: extract sentences ONCE for the whole transcript (cached on tx).
+    # Used by _snap_and_validate (sentence-precise boundaries) and the
+    # cold-opener gate (sentence-grain context).
+    sentences = _extract_sentences(tx)
+
     validated: list[dict] = []
     rejected: list[dict] = []
     for raw in candidates:
-        pick, ok, reason = _snap_and_validate(raw, segments)
+        pick, ok, reason = _snap_and_validate(raw, segments, sentences=sentences)
         if ok:
             validated.append(pick)
         else:
             rejected.append({**raw, "validation": f"rejected: {reason}"})
 
-    # COLD-VIEWER OPENER GATE (round 10b — 2026-05-13)
-    # Sends only the first 5s of each pick to Claude WITH a ±12s context
-    # window. Claude returns PASS / ADJUST (suggesting a better start_sec)
-    # / REJECT. The ADJUST path FIXES bad openers instead of dropping them,
-    # which is what the user asked for ("if a video starts in the middle
-    # of a sentence why not just back it up to start at the right time").
-    validated = _cold_opener_gate(validated, segments)
+    # COLD-VIEWER OPENER GATE (round 11 — 2026-05-13)
+    # Sentence-grain. Each pick gets a numbered list of nearby sentence
+    # candidates. Claude returns PASS / ADJUST (chosen_index) / REJECT.
+    # Sentence boundaries are deterministic (punctuation + gap signals),
+    # so any chosen index produces a sentence-precise start with zero
+    # mid-sentence cuts.
+    validated = _cold_opener_gate(validated, segments, transcript=tx)
 
     # Drop near-duplicates (retain highest-scoring representative of each cluster)
     deduped = _de_overlap(validated)

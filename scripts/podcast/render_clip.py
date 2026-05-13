@@ -347,35 +347,147 @@ def _detect_cuts_via_ffmpeg(source_video: Path, start_sec: float,
     return sorted(cuts)
 
 
+def _dense_face_track(cap, cascades, source_video: Path, start_sec: float,
+                      end_sec: float, fps: int = 6) -> list[tuple[float, int | None]]:
+    """Sample face_x at `fps` per second across [start_sec, end_sec].
+    Returns list of (clip_relative_t, face_x | None) tuples.
+
+    Uses _face_center_for_range with samples=1 for each tiny window so each
+    sample is the actual face position at that moment (no median across a
+    window). Missing detections (None) are filled in by the caller via
+    interpolation.
+    """
+    duration = end_sec - start_sec
+    n_samples = max(1, int(duration * fps))
+    sample_dt = duration / n_samples
+    track: list[tuple[float, int | None]] = []
+    for i in range(n_samples):
+        t_rel = i * sample_dt
+        # Sample a tiny window (1/(2*fps) wide) at this time. Single internal
+        # probe for speed.
+        win_start = start_sec + t_rel
+        win_end = win_start + 0.5 / fps
+        face_x = _face_center_for_range(cap, cascades, win_start, win_end, samples=1)
+        track.append((t_rel, face_x))
+    return track
+
+
+def _interpolate_track(track: list[tuple[float, int | None]],
+                       fallback_x: int) -> list[tuple[float, int]]:
+    """Fill None entries in the face track via nearest-neighbor lookup
+    (look ahead first, then back). If no detection anywhere, fill with
+    `fallback_x`."""
+    if not track:
+        return []
+    n = len(track)
+    raw = [fx for _t, fx in track]
+    # Forward fill from each None
+    filled: list[int] = []
+    for i, (t, fx) in enumerate(track):
+        if fx is not None:
+            filled.append(fx)
+            continue
+        # Look ahead
+        ahead = next((raw[j] for j in range(i + 1, n) if raw[j] is not None), None)
+        # Look back
+        back = next((raw[j] for j in range(i - 1, -1, -1) if raw[j] is not None), None)
+        if ahead is not None:
+            filled.append(ahead)
+        elif back is not None:
+            filled.append(back)
+        else:
+            filled.append(fallback_x)
+    return list(zip([t for t, _ in track], filled))
+
+
+def _detect_face_jump_cuts(track: list[tuple[float, int]],
+                           threshold_px: int = 150) -> list[float]:
+    """Detect cuts as large face_x jumps between consecutive samples.
+    Returns list of clip-relative times where the jump occurs."""
+    cuts: list[float] = []
+    for i in range(1, len(track)):
+        prev_x = track[i - 1][1]
+        cur_x = track[i][1]
+        if abs(cur_x - prev_x) >= threshold_px:
+            cuts.append(track[i][0])
+    return cuts
+
+
+def _smooth_face_track(track: list[tuple[float, int]],
+                       cut_times: list[float],
+                       crop_w: int, source_w: int,
+                       alpha: float = 0.3) -> list[tuple[float, int]]:
+    """Apply EMA smoothing to face_x WITHIN stable runs (gaps between cuts).
+    At each cut boundary, RESET smoothing — the first sample after a cut
+    becomes the new EMA seed (no carry-over from the prior run).
+    Convert smoothed face_x → crop_x with clamping.
+    """
+    if not track:
+        return []
+    cut_set = sorted(set(cut_times))
+    cut_idx = 0
+    smoothed_x: float | None = None
+    out: list[tuple[float, int]] = []
+    for t, raw_x in track:
+        # Have we passed a cut at-or-before this sample?
+        while cut_idx < len(cut_set) and t >= cut_set[cut_idx]:
+            smoothed_x = None  # reset EMA at cut boundary
+            cut_idx += 1
+        if smoothed_x is None:
+            smoothed_x = float(raw_x)
+        else:
+            smoothed_x = alpha * raw_x + (1 - alpha) * smoothed_x
+        # Convert face_x to crop_x with clamping
+        cx = int(smoothed_x) - crop_w // 2
+        cx = max(0, min(source_w - crop_w, cx))
+        out.append((t, cx))
+    return out
+
+
+def _write_sendcmd_file(trajectory: list[tuple[float, int]],
+                        out_path: Path) -> Path:
+    """Write a sendcmd-format file: each line specifies a crop x value at
+    a specific time. Format: `T.TTT crop x VALUE;`
+
+    Optimization: collapse consecutive samples with the SAME crop_x into a
+    single line (sendcmd applies the value until the next change).
+    """
+    lines: list[str] = []
+    last_x: int | None = None
+    for t, cx in trajectory:
+        if cx != last_x:
+            lines.append(f"{t:.3f} crop x {cx};")
+            last_x = cx
+    if not lines:
+        lines.append("0.000 crop x 0;")
+    out_path.write_text("\n".join(lines) + "\n")
+    return out_path
+
+
 def detect_scenes_and_crops(
     source_video: Path,
     start_sec: float,
     end_sec: float,
     crop_w: int = CROP_W,
     source_w: int = SOURCE_W,
-    cut_threshold: float = 0.30,
+    cut_threshold: float = 0.25,
 ) -> list[tuple[float, float, int]]:
-    """Detect camera cuts inside [start_sec, end_sec] and return per-scene
-    crop offsets.
+    """Detect camera cuts inside [start_sec, end_sec] and return a crop_x
+    trajectory expressed as fine-grained (start, end, crop_x) scenes.
 
-    Round 10 (2026-05-13): replaced homegrown histogram-bisect detection
-    with ffmpeg's built-in `select='gt(scene,X)'` + metadata. Frame-accurate
-    by construction — no seek imprecision, no off-by-one, no snap-back.
+    Round 11 (2026-05-13): per-frame face tracking with multi-signal cut
+    detection.
+      - Sample face_x densely (6fps) across the clip
+      - Combine ffmpeg histogram-based cuts AND face-position jumps as
+        the cut signal (catches subtle cuts where lighting is similar)
+      - Apply EMA smoothing within stable runs, RESET at cut boundaries
+      - Group consecutive identical crop_x samples into "scenes" for the
+        existing split+trim+concat filter graph
 
-    Returns a list of (scene_start_rel, scene_end_rel, crop_x) tuples, where
-    times are CLIP-RELATIVE (0-based). Always returns at least one tuple
-    covering the full duration — callers never have to handle an empty list.
-
-    Args:
-      cut_threshold: scene_score threshold for ffmpeg's scenedetect. 0.30
-        is the standard starting value. Gate 3 rerender rescue may lower
-        this to 0.20 to catch softer cuts the first pass missed.
-
-    Safe fallbacks (all return a single-scene center crop):
-      - OpenCV not installed / cv2 can't open the source
-      - Haar cascade fails to load
-      - Detection throws
-      - > MAX_SCENES scenes returned (detector gone wild on noisy content)
+    The trajectory is per-frame; collapsing identical adjacent samples
+    keeps the scene count manageable while preserving the continuous
+    tracking benefit (within stable runs, crop_x stays the same so we
+    get one big scene; at cuts, crop_x changes instantly).
     """
     duration = max(0.1, end_sec - start_sec)
     fallback = [(0.0, duration, CENTER_CROP_X)]
@@ -393,10 +505,7 @@ def detect_scenes_and_crops(
             print("  [SCENES] cv2 could not open source → 1 scene, center crop")
             return fallback
 
-        # Multi-cascade chain: frontal first, then profile (twice — once on
-        # the original gray, once on horizontally-flipped gray to catch the
-        # opposite profile direction since OpenCV's profileface XML only
-        # detects right-facing profiles).
+        # Multi-cascade chain: frontal + flipped-profile + profile.
         frontal_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
         profile_path = cv2.data.haarcascades + "haarcascade_profileface.xml"
         frontal = cv2.CascadeClassifier(frontal_path)
@@ -408,105 +517,84 @@ def detect_scenes_and_crops(
         if not profile.empty():
             cascades = [frontal, profile, profile]
 
-        # --- FRAME-ACCURATE CUT DETECTION via ffmpeg ----------------------
-        cut_pts_list = _detect_cuts_via_ffmpeg(source_video, start_sec, end_sec,
-                                               threshold=cut_threshold)
-        # ffmpeg often emits a scene-score spike at frame 0; drop any cut
-        # within the first 0.5s as it's almost certainly the clip-start
-        # itself, not a real internal cut.
-        cut_pts_list = [t for t in cut_pts_list if 0.5 <= t < duration - 0.1]
+        # ----------------------------------------------------------------
+        # 1. CUT DETECTION (multi-signal: ffmpeg-scene + face-position-jump)
+        # ----------------------------------------------------------------
+        # ffmpeg histogram-based cuts (works for hard cuts with lighting change)
+        ffmpeg_cuts = _detect_cuts_via_ffmpeg(source_video, start_sec, end_sec,
+                                              threshold=cut_threshold)
+        ffmpeg_cuts = [t for t in ffmpeg_cuts if 0.5 <= t < duration - 0.1]
 
-        # Build scenes from cut points. Boundaries = [0, cut1, cut2, ..., duration]
-        boundaries = [0.0] + cut_pts_list + [duration]
-        scenes_rel: list[tuple[float, float]] = []
-        for a, b in zip(boundaries, boundaries[1:]):
-            if b - a >= MIN_SCENE_DURATION_SEC:
-                scenes_rel.append((a, b))
+        # ----------------------------------------------------------------
+        # 2. DENSE FACE TRACK (6fps sample of face_x across the clip)
+        # ----------------------------------------------------------------
+        raw_track = _dense_face_track(cap, cascades, source_video, start_sec, end_sec, fps=6)
 
-        if not scenes_rel:
-            scenes_rel = [(0.0, duration)]
-        merged = scenes_rel  # No prior merging needed — ffmpeg's threshold already filters noise
-
-        if len(merged) > MAX_SCENES:
-            print(f"  [SCENES] {len(merged)} scenes > cap {MAX_SCENES} → 1 scene, center crop")
+        if not any(fx is not None for _t, fx in raw_track):
+            print(f"  [SCENES] no face detected anywhere → 1 scene, center crop")
             return fallback
 
-        # --- Pass 2: ONE crop_x per scene (round 9 REVERT, 2026-05-12) ------
-        # Round 6 introduced per-clip face tracking with 0.5s sub-segments to
-        # eliminate within-scene drift. The result was visible micro-jitter
-        # every 0.5s as the crop_x changed in small increments throughout the
-        # clip — much WORSE than the previous "stable per-scene crop with a
-        # 1-frame delay at hard cuts" behavior. User explicitly said to
-        # revert it.
-        #
-        # Restored simpler approach: one face_x sample per scene (median of
-        # multiple internal probes via _face_center_for_range), one crop_x per
-        # scene, output a list of (scene_start, scene_end, crop_x) tuples. The
-        # cross-boundary smoothing pass below merges scenes whose crops are
-        # close (catches phantom cuts from same-camera histogram variance).
-        face_xs: list[int | None] = []
-        for s, e in merged:
-            face_xs.append(_face_center_for_range(
-                cap, cascades, start_sec + s, start_sec + e,
-            ))
-        any_face = any(fx is not None for fx in face_xs)
-        if not any_face:
-            print(f"  [SCENES] {len(merged)} scenes, 0 faces → 1 scene, center crop")
+        # Fill missing detections by interpolation; convert face_x → fill value
+        filled_track = _interpolate_track(raw_track, fallback_x=CENTER_CROP_X + crop_w // 2)
+
+        # ----------------------------------------------------------------
+        # 3. FACE-JUMP CUTS — catches subtle cuts ffmpeg misses (similar
+        #    lighting between two cameras, e.g. Ryan vs Tristan in the
+        #    same room).
+        # ----------------------------------------------------------------
+        face_jump_cuts = _detect_face_jump_cuts(filled_track, threshold_px=150)
+
+        # Union ffmpeg + face_jump cuts, dedupe within 0.2s
+        all_cuts = sorted(set(ffmpeg_cuts) | set(face_jump_cuts))
+        deduped_cuts: list[float] = []
+        for c in all_cuts:
+            if not deduped_cuts or (c - deduped_cuts[-1]) > 0.2:
+                deduped_cuts.append(c)
+
+        # ----------------------------------------------------------------
+        # 4. EMA SMOOTHING WITHIN STABLE RUNS (RESET at cuts)
+        # ----------------------------------------------------------------
+        smoothed = _smooth_face_track(filled_track, deduped_cuts,
+                                       crop_w=crop_w, source_w=source_w, alpha=0.3)
+
+        # ----------------------------------------------------------------
+        # 5. COLLAPSE TRAJECTORY INTO SCENES (consecutive identical crop_x)
+        # ----------------------------------------------------------------
+        # For each sample (t, crop_x), if the crop_x is "close" to the
+        # previous sample's, extend the previous scene; otherwise start
+        # a new scene. Use a small px tolerance so micro-EMA-changes
+        # collapse to one scene.
+        TOLERANCE_PX = 4
+        scenes: list[list] = []  # list of [start, end, crop_x_running_sum, count]
+        for i, (t, cx) in enumerate(smoothed):
+            next_t = smoothed[i + 1][0] if i + 1 < len(smoothed) else duration
+            if scenes and abs(cx - (scenes[-1][2] // scenes[-1][3])) <= TOLERANCE_PX \
+                    and t - scenes[-1][1] < 0.5:
+                scenes[-1][1] = next_t
+                scenes[-1][2] += cx
+                scenes[-1][3] += 1
+            else:
+                scenes.append([t, next_t, cx, 1])
+
+        collapsed: list[tuple[float, float, int]] = [
+            (round(s[0], 3), round(s[1], 3), int(s[2] // s[3])) for s in scenes
+        ]
+
+        if not collapsed:
             return fallback
 
-        # Look-ahead for missing face_xs (so the new camera after a cut takes
-        # the upcoming face position, not the previous shot's).
-        result: list[tuple[float, float, int]] = []
-        last_good_crop_x: int | None = None
-        for i, ((s, e), fx) in enumerate(zip(merged, face_xs)):
-            if fx is not None:
-                cx = fx - crop_w // 2
-                cx = max(0, min(source_w - crop_w, cx))
-                last_good_crop_x = cx
-            else:
-                next_fx = next((face_xs[j] for j in range(i + 1, len(face_xs))
-                                if face_xs[j] is not None), None)
-                if next_fx is not None:
-                    cx = next_fx - crop_w // 2
-                    cx = max(0, min(source_w - crop_w, cx))
-                elif last_good_crop_x is not None:
-                    cx = last_good_crop_x
-                else:
-                    cx = CENTER_CROP_X
-            result.append((s, e, cx))
-
-        # CROSS-BOUNDARY SMOOTHING (round 7 — kept):
-        # If two adjacent scenes have crop_x within 80px, they're probably
-        # the same camera with histogram variance (false-positive cut).
-        # Average their crop_x to eliminate the visible jump.
-        CROSS_BOUNDARY_PX = 80
-        for i in range(1, len(result)):
-            ps, pe, px = result[i - 1]
-            cs, ce, cx_ = result[i]
-            if abs(px - cx_) < CROSS_BOUNDARY_PX:
-                avg = (px + cx_) // 2
-                result[i - 1] = (ps, pe, avg)
-                result[i] = (cs, ce, avg)
-
-        # Collapse adjacent scenes that ended up with identical crop_x.
-        collapsed: list[tuple[float, float, int]] = []
-        for (s, e, x) in result:
-            if collapsed and collapsed[-1][2] == x and abs(collapsed[-1][1] - s) < 1e-3:
-                ps, _pe, px = collapsed[-1]
-                collapsed[-1] = (ps, e, px)
-            else:
-                collapsed.append((s, e, x))
-
-        # Optimization: if all scenes share the same crop_x, single-segment.
-        uniq_x = {x for _s, _e, x in collapsed}
-        if len(uniq_x) == 1:
+        # Optimization: if everything is one crop_x, single-segment
+        if len({cx for _s, _e, cx in collapsed}) == 1:
             only_x = collapsed[0][2]
-            delta = abs(only_x - CENTER_CROP_X)
-            print(f"  [SCENES] {len(collapsed)} scenes, all crop_x={only_x} (Δ{delta} from center) → collapsed to 1")
+            print(f"  [SCENES] dense trajectory, all crop_x={only_x} → 1 scene")
             return [(0.0, duration, only_x)]
 
-        summary = ", ".join(f"({s:.2f}-{e:.2f}, cx={x})" for s, e, x in collapsed)
-        print(f"  [SCENES] {len(collapsed)} scenes → {summary}")
+        if len(collapsed) > MAX_SCENES:
+            print(f"  [SCENES] {len(collapsed)} scenes > cap {MAX_SCENES} → 1 scene, center crop")
+            return fallback
+
+        print(f"  [SCENES] {len(deduped_cuts)} cuts ({len(ffmpeg_cuts)} ffmpeg + "
+              f"{len(face_jump_cuts)} face-jump), trajectory → {len(collapsed)} scenes")
         return collapsed
 
     except Exception as exc:
