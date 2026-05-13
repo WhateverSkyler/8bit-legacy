@@ -958,10 +958,6 @@ def _cold_opener_gate(picks: list[dict], segments: list[dict]) -> list[dict]:
     On infrastructure errors (Anthropic outage, JSON parse failure), the
     pick is PASSED through (don't drop work on infra flakes).
     """
-    import sys as _sys
-    print(f"  [cold-opener] gate called with {len(picks) if picks else 0} picks, "
-          f"{len(segments) if segments else 0} segments", flush=True)
-    _sys.stdout.flush()
     if not picks:
         return picks
     try:
@@ -1034,12 +1030,7 @@ def _cold_opener_gate(picks: list[dict], segments: list[dict]) -> list[dict]:
         return await asyncio.gather(*tasks, return_exceptions=True)
 
     n_with_prompt = sum(1 for _, p, _ in work if p)
-    print(f"  [cold-opener] work-build: {len(work)} entries, {n_with_prompt} with prompt",
-          flush=True)
     if n_with_prompt == 0:
-        for pick, prompt, _cid in work[:3]:
-            print(f"     · prompt=None pick: start={pick.get('start_sec')} "
-                  f"title='{pick.get('title','?')[:40]}'", flush=True)
         return picks
     print(f"  [cold-opener] running {n_with_prompt} picks concurrently...")
     import time as _time
