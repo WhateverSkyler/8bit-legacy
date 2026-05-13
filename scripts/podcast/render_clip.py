@@ -40,7 +40,7 @@ SOURCE_1080P = ROOT / "data" / "podcast" / "source" / "1080p"
 TRANSCRIPTS = ROOT / "data" / "podcast" / "transcripts"
 MUSIC_BEDS = ROOT / "data" / "music-beds"
 CLIPS_DIR = ROOT / "data" / "podcast" / "clips"
-END_CARD = ROOT / "assets" / "brand" / "end-card-9x16.png"
+END_CARD = ROOT / "assets" / "brand" / "end-card-9x16.mp4"
 
 FONT_NAME = "Bebas Neue"
 FONT_SIZE = 96              # bumped 70 → 96; users reported captions were too small on phones
@@ -570,14 +570,28 @@ def detect_scenes_and_crops(
             for i in range(n_subs):
                 sub_s = s + i * actual_sub_dur
                 sub_e = s + (i + 1) * actual_sub_dur if i < n_subs - 1 else e
-                # Sample face_x at the MIDPOINT of this sub-segment, with 3
-                # samples for noise reduction (vs the 8 used for whole-scene
-                # sampling — we're now sampling much more densely so each
-                # sample doesn't need as many internal probes).
-                face_x = _face_center_for_range(
-                    cap, cascades, start_sec + sub_s, start_sec + sub_e,
-                    samples=3,
-                )
+                if i == 0:
+                    # CUT PRECISION (round 8): for the first sub-segment of
+                    # each scene, sample face_x ONLY in the first 0.15s of
+                    # the scene (~5 frames at 30fps), with 5 dense samples.
+                    # This captures the EXACT face position of the new
+                    # camera's first frames, before the speaker has any
+                    # chance to move. Used raw (no smoothing) below, so the
+                    # very first frame after a hard cut renders centered on
+                    # the new speaker — fixes the persistent "frame off"
+                    # complaint at boundaries.
+                    cut_window_s = sub_s
+                    cut_window_e = min(sub_s + 0.15, sub_e)
+                    face_x = _face_center_for_range(
+                        cap, cascades, start_sec + cut_window_s, start_sec + cut_window_e,
+                        samples=5,
+                    )
+                else:
+                    # Sample face_x across this sub-segment, 3 samples.
+                    face_x = _face_center_for_range(
+                        cap, cascades, start_sec + sub_s, start_sec + sub_e,
+                        samples=3,
+                    )
                 scene_face_xs.append(face_x)
             # Fill in missing face_xs within this scene via look-ahead then
             # look-back. Look-ahead first matches the prior behavior — after
@@ -609,17 +623,30 @@ def detect_scenes_and_crops(
             # nearby positions. We don't smooth across scene boundaries here —
             # a separate cross-boundary pass below handles that case where the
             # face_x is similar across a hard cut.
+            #
+            # EXCEPTION (round 8): sub-segment 0 of each scene uses its raw
+            # face_x WITHOUT smoothing. Sub-seg 0's face_x was sampled at
+            # the EXACT cut boundary (first 0.15s of the scene) so it
+            # represents the new camera's actual framing. Smoothing it
+            # against later sub-segments would pull the crop toward where
+            # the speaker moved AFTER the cut, leaving the cut frame
+            # off-center. Raw face_x at sub-seg 0 = correct framing on
+            # the very first new-camera frame.
             WIN = 2  # +/- 2 = window of 5
             smoothed: list[int] = []
             for j in range(n_subs):
                 if scene_face_xs[j] is None:
                     smoothed.append(fill_crop)
                     continue
-                window = []
-                for k in range(max(0, j - WIN), min(n_subs, j + WIN + 1)):
-                    if scene_face_xs[k] is not None:
-                        window.append(scene_face_xs[k])
-                avg = sum(window) // len(window)
+                if j == 0:
+                    # Raw face_x at the cut moment, no smoothing.
+                    avg = scene_face_xs[0]
+                else:
+                    window = []
+                    for k in range(max(0, j - WIN), min(n_subs, j + WIN + 1)):
+                        if scene_face_xs[k] is not None:
+                            window.append(scene_face_xs[k])
+                    avg = sum(window) // len(window)
                 cx = avg - crop_w // 2
                 cx = max(0, min(source_w - crop_w, cx))
                 smoothed.append(cx)
@@ -985,17 +1012,18 @@ def _build_ffmpeg_cmd(source_video: Path, start: float, end: float, duration: fl
                                        episode_dir=episode_dir, clip_id=clip_id)
     vout_label = "[v0]"
     if END_CARD.exists():
-        # End-card covers the last END_CARD_DURATION seconds with a quick
-        # fade-in. 3s is the YouTube Shorts standard for branded outros —
-        # long enough for the viewer to register the handle/CTA, short
-        # enough not to eat too much dialogue.
-        end_card_duration = 3.0
+        # End-card is now a 5s VIDEO (was a static PNG). User designed a
+        # vertical closer ad with subtle background motion + the 8BITNEW
+        # coupon CTA. We overlay the video for the last END_CARD_DURATION
+        # seconds of the clip. setpts shifts the end-card video's PTS so
+        # its first frame plays AT end_card_start (not at t=0).
+        end_card_duration = 5.0
         end_card_start = max(0.0, duration - end_card_duration)
         filter_parts.append(
-            f"[2:v]scale=1080:1920,format=rgba,fade=t=in:st={end_card_start:.2f}:d=0.4:alpha=1[ec]"
+            f"[2:v]scale=1080:1920,setpts=PTS-STARTPTS+{end_card_start:.3f}/TB[ec]"
         )
         filter_parts.append(
-            f"[v0][ec]overlay=0:0:enable='gte(t,{end_card_start:.2f})'[vout]"
+            f"[v0][ec]overlay=0:0:eof_action=pass[vout]"
         )
         vout_label = "[vout]"
 
@@ -1043,13 +1071,10 @@ def _build_ffmpeg_cmd(source_video: Path, start: float, end: float, duration: fl
         if not has_music:
             # if no music, end_card becomes input [1], not [2]
             filter_complex = filter_complex.replace("[2:v]", "[1:v]")
-        # -loop 1 is CRITICAL: without it, ffmpeg presents the PNG as a
-        # single-frame stream that only exists at t≈0. The overlay's
-        # `enable='gte(t,duration-3)'` is then never true while the stream
-        # is alive, so the overlay silently no-ops and the end-card never
-        # appears. (This is the bug that masked the end-card on 2026-05-11.)
-        # -t bounds the looped image so it doesn't outlast the output.
-        cmd += ["-loop", "1", "-t", f"{duration:.3f}", "-i", str(END_CARD)]
+        # End-card is a video (.mp4), no -loop or -t needed. The video has
+        # its own native duration (~5s) and the filter graph uses setpts to
+        # shift it to play at end_card_start.
+        cmd += ["-i", str(END_CARD)]
 
     cmd += [
         "-filter_complex", filter_complex,

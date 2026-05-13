@@ -35,10 +35,10 @@ COPY scripts/ /app/scripts/
 # Installed under /usr/local/share/fonts so it's picked up by _find_bebas_font().
 COPY assets/fonts/BebasNeue-Regular.ttf /usr/local/share/fonts/bebas-neue/BebasNeue-Regular.ttf
 
-# Brand end-card (1080x1920) — overlaid on the last 3s of every rendered short
-# by render_clip.py. Path mirrors repo layout so the existing END_CARD constant
-# (ROOT / "assets/brand/end-card-9x16.png") resolves at runtime.
-COPY assets/brand/end-card-9x16.png /app/assets/brand/end-card-9x16.png
+# Brand end-card (1080x1920, ~5s VIDEO) — overlaid on the last 5s of every
+# rendered short by render_clip.py. User designed it as a vertical closer
+# ad with subtle background motion + the 8BITNEW coupon CTA.
+COPY assets/brand/end-card-9x16.mp4 /app/assets/brand/end-card-9x16.mp4
 
 # Game-cover image stash used by scripts/podcast/build_end_card.py at
 # end-card generation time. Not currently referenced at render time, but

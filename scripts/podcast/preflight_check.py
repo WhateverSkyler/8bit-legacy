@@ -52,13 +52,15 @@ EXPECTED_W, EXPECTED_H = 1080, 1920
 # Soft thresholds — strict-mode only
 SOFT_MIN_DURATION_SEC = 25.0     # < this and the topic probably wasn't fully delivered
 
-# End-card detection thresholds. The end-card PNG is ~95% black with brand-
-# orange accents in the LEGACY logo and dividers. We extract the last frame
-# and check: (1) mean luma is low (mostly dark) AND (2) the orange channel
-# has enough hits to confirm the brand color is present.
-END_CARD_LAST_FRAME_OFFSET_SEC = 0.5  # sample frame this far before end
-END_CARD_MAX_MEAN_LUMA = 50.0    # 0-255 scale; > this means it's clearly NOT the end-card
-END_CARD_MIN_ORANGE_PCT = 0.5    # at least 0.5% of pixels must be brand-orange-ish
+# End-card detection thresholds. The end-card is now a 5s VIDEO with a
+# game-cover collage background + brand-orange "8BITNEW" coupon panel
+# + 8bitlegacy.com URL. The video is colorful (NOT mostly dark like the
+# old PNG was), so we can't rely on mean-luma. Instead we just check that
+# the brand orange is meaningfully present in the last frame — the
+# coupon button + accents add significant brand-orange pixels that
+# aren't typically in a podcast frame.
+END_CARD_LAST_FRAME_OFFSET_SEC = 0.5
+END_CARD_MIN_ORANGE_PCT = 1.5    # at least 1.5% of pixels brand-orange-ish
 
 
 def _ffprobe_json(path: Path, extra_args: list[str]) -> dict:
@@ -152,25 +154,21 @@ def check_clip(mp4: Path, *, strict: bool = False) -> tuple[list[str], list[str]
         warnings.append("no .ass sidecar (captions may have been skipped)")
 
     # End-card overlay check — extract a frame 0.5s before the end and verify
-    # it matches the end-card signature (mostly dark + brand-orange present).
-    # Skip if duration is too short to be meaningful or end-card is disabled.
-    if duration >= 5.0:
+    # the video closer-ad is present. The new end-card is a video with a
+    # game-cover collage background + brand-orange "8BITNEW" coupon panel —
+    # the brand-orange coverage of the last frame should be substantial.
+    if duration >= 6.0:
         with tempfile.TemporaryDirectory() as tmp:
             frame_path = Path(tmp) / "last_frame.jpg"
             t = max(0.0, duration - END_CARD_LAST_FRAME_OFFSET_SEC)
             if _extract_frame(mp4, t, frame_path):
-                mean_luma, orange_pct = _end_card_signature(frame_path)
-                if mean_luma > END_CARD_MAX_MEAN_LUMA:
+                _mean_luma, orange_pct = _end_card_signature(frame_path)
+                if orange_pct < END_CARD_MIN_ORANGE_PCT:
                     errors.append(
-                        f"end-card not detected at t={t:.1f}s — last frame mean "
-                        f"luma {mean_luma:.1f} > {END_CARD_MAX_MEAN_LUMA} (clip "
-                        f"is still showing the speaker, not the end-card)"
-                    )
-                elif orange_pct < END_CARD_MIN_ORANGE_PCT:
-                    warnings.append(
-                        f"end-card brand-orange coverage {orange_pct:.2f}% < "
-                        f"{END_CARD_MIN_ORANGE_PCT}% — last frame is dark but "
-                        f"may be a fade-to-black instead of the end-card"
+                        f"end-card not detected at t={t:.1f}s — brand-orange "
+                        f"coverage {orange_pct:.2f}% < {END_CARD_MIN_ORANGE_PCT}% "
+                        f"(closer ad's coupon panel + accents should yield "
+                        f"clearly more orange than a podcast-room frame)"
                     )
             else:
                 warnings.append(f"could not extract verification frame at t={t:.1f}s")

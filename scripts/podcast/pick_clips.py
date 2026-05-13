@@ -188,11 +188,30 @@ WHAT TO REJECT EVEN IF IT SOUNDS FUNNY:
 
 TITLE RULES (strict — bad titles get rejected post-generation):
 - 3 to 8 words, title case, no clickbait punctuation, no all-caps words.
-- **Prefer vague over specific-and-inaccurate.** "Adult Gaming Reality Check" beats "Why Tristan Hates Modern AAA Games" if the second one isn't precisely what's said. A title that works generally is better than one that misrepresents the clip.
+- **MUST contain at least one CONCRETE noun from the clip's transcript** —
+  a specific game title, console name, company, person, or year that is
+  literally said in the clip. "Tears of the Kingdom Feels Empty" passes;
+  "Adult Gaming Reality Check" fails (too generic — could apply to any
+  podcast). The concrete noun anchors the title to the actual discussion
+  so a cold viewer knows exactly what topic this clip is about.
+- **MUST be GROUNDED in what's actually said.** Every content verb and
+  noun in the title must appear in the transcript verbatim or as a clear
+  paraphrase. If the speakers said "this game isn't engaging," titles
+  like "Tears of the Kingdom Feels Empty" or "Tears of the Kingdom Isn't
+  Engaging" pass. "Tears of the Kingdom Is Too Easy to Break" FAILS
+  because nobody used the word "break" or talked about breaking the
+  game — it embellishes a hot-take frame the speakers didn't voice.
+- **PREFER honest specificity** over either extreme of vagueness or
+  embellishment. The viewer should learn the actual topic AND the actual
+  take from the title, not just one or the other.
 - NO time-decay words: "today", "this week", "next month", "just announced", "just dropped", "just released", "leaked", "breaking", "yesterday", "now", "recently". These work for one day and look stale forever after.
 - NO numerical specifics that aren't directly quoted in the clip ("3 reasons", "10x bigger", "first ever") — only use a number if the speakers literally state it.
 - NO names of people or companies in the title unless the clip is centrally about them — a tangent mention isn't enough.
-- The title should preview the *take*, not the *topic alone*. "AAA Gaming Is Cooked" > "AAA Gaming". But "AAA Gaming Pricing Debate" > "Why Tristan Thinks $80 Games Are Theft" if Tristan didn't quite say that.
+- NO metaphorical extensions ("ruins / breaks / kills / destroys / saves")
+  unless the speakers actually used that exact framing in the clip.
+- The title should preview the *take* AND name *what it's about*. "AAA
+  Gaming Is Cooked" is OK but "GameStop Wants To Buy eBay" is better
+  because it names the specific subject.
 
 Return strict JSON ONLY — a JSON ARRAY of picks, no prose, no markdown fences. Each pick:
 {
