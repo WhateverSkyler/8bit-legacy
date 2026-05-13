@@ -974,21 +974,52 @@ def _cold_opener_gate(picks: list[dict], segments: list[dict]) -> list[dict]:
     def _context_window(start_sec: float, window_pre: float = 12.0,
                         window_post: float = 12.0) -> str:
         """Build a context window of transcript text around the current
-        clip start, with absolute-timestamped segment lines so Claude
-        can suggest a better start time grounded in real transcript pts.
+        clip start, presented as INDIVIDUAL SENTENCES with the timestamp
+        of each sentence's first word. This lets Claude pick a precise
+        clean-sentence-start timestamp instead of being stuck with
+        segment-level granularity (segments can contain multiple
+        sentences, so segment-start ≠ sentence-start).
+
+        Each line: `[T.TTs] sentence text.` Closer to a real "scrubbing
+        timeline" view of the transcript that Claude can navigate.
         """
         lo = max(0.0, start_sec - window_pre)
         hi = start_sec + window_post
+        # Walk all words across all segments in the window and split into
+        # sentences by punctuation. Each sentence carries the start time
+        # of its first word.
+        SENT_END_RE = re.compile(r'[.!?]')
         lines: list[str] = []
+        cur_words: list[dict] = []
         for seg in segments:
             s_start = seg.get("start", 0.0)
             s_end = seg.get("end", 0.0)
-            if s_end < lo:
+            if s_end < lo - 0.5:
                 continue
-            if s_start > hi:
+            if s_start > hi + 0.5:
                 break
-            marker = " ← CURRENT START" if abs(s_start - start_sec) < 0.5 else ""
-            lines.append(f"[{s_start:.2f}s]{marker} {seg.get('text','').strip()}")
+            for w in seg.get("words") or []:
+                w_start = w.get("start", 0.0)
+                w_text = (w.get("word") or "").strip()
+                if w_start < lo - 0.2 or w_start > hi + 0.2:
+                    continue
+                if not w_text:
+                    continue
+                cur_words.append(w)
+                # If this word ends a sentence, flush it as a line
+                if SENT_END_RE.search(w_text):
+                    if cur_words:
+                        first_t = cur_words[0].get("start", 0.0)
+                        sentence_text = " ".join((cw.get("word") or "").strip()
+                                                 for cw in cur_words)
+                        marker = " ← CURRENT START" if abs(first_t - start_sec) < 0.6 else ""
+                        lines.append(f"[{first_t:.2f}s]{marker} {sentence_text}")
+                    cur_words = []
+        # Flush any trailing partial sentence
+        if cur_words:
+            first_t = cur_words[0].get("start", 0.0)
+            sentence_text = " ".join((cw.get("word") or "").strip() for cw in cur_words)
+            lines.append(f"[{first_t:.2f}s] {sentence_text} (partial)")
         return "\n".join(lines)
 
     # Build per-pick prompts. Each prompt includes the current 5s opener
@@ -1065,8 +1096,9 @@ def _cold_opener_gate(picks: list[dict], segments: list[dict]) -> list[dict]:
             continue
 
         if rec == "ADJUST":
-            # Snap to the suggested start. Then snap to nearest WORD boundary
-            # so we don't begin mid-syllable.
+            # Claude's suggested_start_sec now corresponds to a sentence-first
+            # word timestamp (since the context window presents per-sentence
+            # lines). Snap to the EXACT word that closest matches.
             try:
                 suggested = float(verdict.get("suggested_start_sec"))
             except (TypeError, ValueError):
@@ -1077,19 +1109,30 @@ def _cold_opener_gate(picks: list[dict], segments: list[dict]) -> list[dict]:
             old_start = float(pick.get("start_sec", 0))
             old_end = float(pick.get("end_sec", 0))
             old_duration = old_end - old_start
-            # Find the segment containing the suggested start
-            seg_idx = _find_segment_containing(suggested, segments)
-            if seg_idx is None:
-                print(f"  [cold-opener] REJECT (suggested {suggested:.2f}s not in any segment): {pick.get('title','?')[:50]}")
-                continue
-            target_seg = segments[seg_idx]
-            # Snap to the START of the first word at or after suggested
-            new_start = target_seg.get("start", suggested)
-            words = target_seg.get("words") or []
-            for w in words:
-                if w.get("start", 0) >= suggested - 0.1:
-                    new_start = w.get("start", new_start)
+            # Walk ALL words across nearby segments to find the best match.
+            # We want the word whose start is CLOSEST to the suggested time
+            # (within 0.5s tolerance). This handles the case where the
+            # sentence start time we showed Claude doesn't perfectly
+            # match a single segment.
+            best_word_t = None
+            best_dist = 1e9
+            for seg in segments:
+                s_start = seg.get("start", 0.0)
+                s_end = seg.get("end", 0.0)
+                if s_end < suggested - 1.0:
+                    continue
+                if s_start > suggested + 1.0:
                     break
+                for w in seg.get("words") or []:
+                    wt = w.get("start", 0.0)
+                    d = abs(wt - suggested)
+                    if d < best_dist:
+                        best_dist = d
+                        best_word_t = wt
+            if best_word_t is None or best_dist > 0.5:
+                print(f"  [cold-opener] REJECT (no word within 0.5s of suggested {suggested:.2f}s): {pick.get('title','?')[:50]}")
+                continue
+            new_start = max(0.0, best_word_t - 0.05)  # tiny pre-pad
             # Recompute end_sec to preserve original duration (capped at duration ceiling)
             new_duration = min(old_duration, DURATION_CEILING_SEC)
             new_end = new_start + new_duration
