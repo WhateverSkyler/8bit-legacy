@@ -65,6 +65,18 @@ DURATION_CEILING_SEC = 54.0    # HARD CAP — dialog + 5s CTA = 59s ≤ 60s YT c
 BAD_OPENING_WORDS = {
     # Continuation conjunctions — imply prior context
     "so", "and", "but", "then", "because", "anyway", "also", "plus",
+    "or", "nor", "yet",
+    # Prepositions — cannot start a sentence on their own (round 9c:
+    # user saw clip starting "of like kind of pre scalping" which is
+    # clearly mid-thought continuation)
+    "of", "for", "with", "by", "from", "in", "on", "at",
+    "into", "onto", "through", "across", "between",
+    "to",  # "to be honest" rare but mostly mid-clause continuation
+    # Articles — can technically start a sentence but in this transcript
+    # context "the way they..." is almost always mid-thought reference
+    "the", "a", "an",
+    # Quantifier/qualifier fillers that imply continuation
+    "kind", "sort",
     # Filler agreement — implies responding to something
     "yeah", "yep", "right", "exactly", "totally", "absolutely",
     # Mid-thought markers
@@ -185,12 +197,27 @@ WHAT TO REJECT EVEN IF IT SOUNDS FUNNY:
 
 TITLE RULES (strict — bad titles get rejected post-generation):
 - 3 to 8 words, title case, no clickbait punctuation, no all-caps words.
-- **MUST contain at least one CONCRETE noun from the clip's transcript** —
-  a specific game title, console name, company, person, or year that is
-  literally said in the clip. "Tears of the Kingdom Feels Empty" passes;
-  "Adult Gaming Reality Check" fails (too generic — could apply to any
-  podcast). The concrete noun anchors the title to the actual discussion
-  so a cold viewer knows exactly what topic this clip is about.
+- **TITLE MUST CAPTURE THE CLIP'S MAIN POINT / THESIS** — what the
+  speakers are actually arguing or making a case about — NOT just any
+  concrete fact mentioned in passing. Ask yourself: "If I asked the
+  speakers what this clip is about in one sentence, what would they
+  say?" The title should match THAT, not a side detail.
+  - GOOD: clip where speakers complain that scalpers ruin the trading
+    card hobby for kids → "Scalpers Are Ruining Kids' Hobby"
+  - BAD: same clip → "GameStop Pro Doubles The Card Limit" (this fact
+    is mentioned in passing as evidence; it's NOT what the clip is
+    about)
+  - GOOD: clip where they argue Switch 2 physical copies cost more than
+    digital → "Physical Switch 2 Games Cost More"
+  - BAD: same clip → "1,000 People At The Demo" (a passing detail)
+  Concrete-but-incidental titles look like the AI just grabbed the most
+  searchable noun. Topical titles tell the viewer the actual
+  conversation in 5 words.
+- **MUST contain at least one CONCRETE noun from the clip's transcript**
+  related to the main point — a specific game title, console name,
+  company, person, hobby, or year that is literally said in the clip.
+  "Adult Gaming Reality Check" fails (too generic). The concrete noun
+  must be one that anchors the MAIN POINT, not a tangent.
 - **MUST be GROUNDED in what's actually said.** Every content verb and
   noun in the title must appear in the transcript verbatim or as a clear
   paraphrase. If the speakers said "this game isn't engaging," titles
@@ -654,7 +681,10 @@ def _snap_and_validate(
                     last_word_end = w_end
                 else:
                     break
-            new_end = last_word_end + 0.10  # small breath pad
+            # Round 9c: bump breath pad 0.10 → 0.40s. User feedback: last
+            # word still felt chopped before the CTA — no clean pause.
+            # 0.40s gives a noticeable breath without dead air.
+            new_end = last_word_end + 0.40
         if start_seg.get("words"):
             first_word_start = start_seg["start"]
             for w in start_seg["words"]:

@@ -313,9 +313,18 @@ and (3) fit cleanly as a 1-2 line overlay (~24 chars per line).
 
 Score on 5 dimensions:
 
-1. **Specific not vague**: Title names the actual subject. "Why GameStop Wants
-   to Buy eBay" PASSES. "An interesting take on retro" FAILS. Answer the
-   "what is this ABOUT" question concretely.
+1. **Specific not vague AND captures the MAIN POINT**: Title names the
+   actual subject AND the actual thesis the speakers are making. The
+   title must be the answer to "what is this clip ABOUT" — not just
+   any noun mentioned in passing.
+   - PASSES: "Scalpers Are Ruining Kids' Hobby" (when the clip's main
+     argument is that scalpers ruin trading card collecting for kids)
+   - FAILS: "GameStop Pro Doubles The Card Limit" for that SAME clip —
+     the doubled limit is a passing FACT used as evidence; the actual
+     POINT is about scalpers + kids.
+   - FAILS: "An interesting take on retro" (vague, nothing specific)
+   If the title focuses on a tangential concrete fact while ignoring
+   the clip's argument, REWRITE or REJECT.
 
 2. **Natural / not corny**: Sounds like a real podcast editor wrote it.
    AVOID:
