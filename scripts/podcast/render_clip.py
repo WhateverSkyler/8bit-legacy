@@ -432,12 +432,19 @@ def detect_scenes_and_crops(
             """
             INTER_THRESHOLD = 0.10
             HIST_LEAD = 0.05
-            # Round 9 (2026-05-12): back to 1-frame snap-back. User accepted
-            # the round-1-5 "1-frame delay at cut" as a minor known issue.
-            # 2-frame snap-back combined with the per-clip face tracking
-            # caused over-correction; reverting to 1 frame keeps cuts
-            # stable without overshooting.
-            SNAP_BACK_FRAMES = 1
+            # Round 9b (2026-05-13): REMOVE snap-back entirely. User
+            # observed that the LAST frame of speaker A was rendering with
+            # speaker B's centering — exactly what snap-back does. The
+            # sequential frame walker already finds the EXACT pts of the
+            # first new-camera frame (the inter-frame Bhattacharyya jump
+            # triggers on that frame, not the one before). With snap-back
+            # the boundary lands 1 frame TOO EARLY → last old-camera frame
+            # gets new crop. Removing snap-back puts the boundary exactly
+            # at the first new-camera frame so both sides render with their
+            # correct crop_x. ffmpeg trim start=X is inclusive → frame at
+            # X goes to the NEW scene; the frame just before X stays in
+            # the OLD scene.
+            SNAP_BACK_FRAMES = 0
 
             pre_pad = 3.0 * src_frame_dur
             seek_t = max(0.0, t_lo - pre_pad)
@@ -634,6 +641,10 @@ TITLE_BANNER_INTRO_DURATION = 23.0 / 30.0   # ≈ 0.767s
 # After the banner finishes its intro motion, fade the title text in.
 TITLE_TEXT_FADE_IN = 0.30
 TITLE_TEXT_FADE_OUT = 0.40
+# Round 9b (2026-05-13): start fade-out earlier than the visual boundary
+# at TITLE_OVERLAY_SECONDS so the title is fully gone before the next
+# beat of the clip lands. User wanted 0.5-1s earlier — using 0.75s.
+TITLE_TEXT_FADE_OUT_LEAD = 0.75
 # Path to the user's banner asset — animated MOV ProRes 1080x1920.
 TITLE_BANNER = ROOT / "assets" / "brand" / "title-banner-9x16.mov"
 
@@ -648,6 +659,10 @@ TITLE_STRIP_W = 720      # width — extends to ~x=1040 leaving 40px right paddi
 TITLE_STRIP_H = 195      # vertical text-safe area
 TITLE_STRIP_PAD_H = 30   # extra horizontal padding inside the strip for text
 TITLE_STRIP_PAD_V = 12   # extra vertical padding
+# Round 9b (2026-05-13) fine alignment: user feedback "move down and left,
+# a few photoshop arrow-key presses". 6px down, 8px left.
+TITLE_STRIP_NUDGE_X = -8
+TITLE_STRIP_NUDGE_Y = 6
 
 # Auto-fit font size search bounds (Bebas Neue at the strip's pixel size).
 TITLE_FONT_MAX = 110
@@ -769,11 +784,14 @@ def _title_overlay_filter(title: str | None, episode_dir: Path, clip_id: str,
     n_lines = len(lines)
     fp = _font_path()
 
-    # Vertical positioning: center N lines in the strip's text-safe area
+    # Vertical positioning: center N lines in the strip's text-safe area,
+    # then apply the round-9b nudge for fine alignment.
     line_gap = 8 if n_lines > 1 else 0
     line_height = font_size + line_gap
     block_h = line_height * n_lines - line_gap
-    block_top_y = TITLE_STRIP_Y + TITLE_STRIP_PAD_V + (TITLE_STRIP_H - 2 * TITLE_STRIP_PAD_V - block_h) // 2
+    block_top_y = (TITLE_STRIP_Y + TITLE_STRIP_PAD_V
+                   + (TITLE_STRIP_H - 2 * TITLE_STRIP_PAD_V - block_h) // 2
+                   + TITLE_STRIP_NUDGE_Y)
 
     # Banner overlay: starts at t=0 of the clip, plays for 5s.
     # setpts shifts banner to start at 0; eof_action=pass keeps the underlying
@@ -787,16 +805,20 @@ def _title_overlay_filter(title: str | None, episode_dir: Path, clip_id: str,
         f":eof_action=pass[v_with_banner]"
     )
 
-    # Title text fades in AFTER the banner intro animation completes
+    # Title text fades in AFTER the banner intro animation completes.
+    # Fades out FADE_OUT_LEAD seconds before the banner disappears so the
+    # text clears the screen before the next beat of the clip lands.
     text_fade_in_start = TITLE_BANNER_INTRO_DURATION
     text_fade_in_end = text_fade_in_start + TITLE_TEXT_FADE_IN
-    text_fade_out_start = TITLE_OVERLAY_SECONDS - TITLE_TEXT_FADE_OUT
+    text_fade_out_end = TITLE_OVERLAY_SECONDS - TITLE_TEXT_FADE_OUT_LEAD
+    text_fade_out_start = text_fade_out_end - TITLE_TEXT_FADE_OUT
     text_alpha_expr = (
         f"if(lt(t\\,{text_fade_in_start:.3f})\\,0\\,"
         f"if(lt(t\\,{text_fade_in_end:.3f})\\,"
         f"(t-{text_fade_in_start:.3f})/{TITLE_TEXT_FADE_IN:.3f}\\,"
+        f"if(gt(t\\,{text_fade_out_end:.3f})\\,0\\,"
         f"if(gt(t\\,{text_fade_out_start:.3f})\\,"
-        f"({TITLE_OVERLAY_SECONDS:.3f}-t)/{TITLE_TEXT_FADE_OUT:.3f}\\,1)))"
+        f"({text_fade_out_end:.3f}-t)/{TITLE_TEXT_FADE_OUT:.3f}\\,1))))"
     )
 
     # Build a chain that applies one drawtext per line on top of the banner
@@ -807,10 +829,9 @@ def _title_overlay_filter(title: str | None, episode_dir: Path, clip_id: str,
         title_txt.write_text(line)
 
         y_line = block_top_y + i * line_height
-        # Center text horizontally inside the strip (not the whole frame).
-        # Strip x range = [TITLE_STRIP_X + PAD_H, TITLE_STRIP_X + TITLE_STRIP_W - PAD_H]
-        # ffmpeg expression: x = strip_left + (strip_w - text_w) / 2
-        strip_left = TITLE_STRIP_X + TITLE_STRIP_PAD_H
+        # Center text horizontally inside the strip (not the whole frame),
+        # then apply the round-9b nudge for fine alignment.
+        strip_left = TITLE_STRIP_X + TITLE_STRIP_PAD_H + TITLE_STRIP_NUDGE_X
         strip_inner_w = TITLE_STRIP_W - 2 * TITLE_STRIP_PAD_H
         x_expr = f"{strip_left}+({strip_inner_w}-text_w)/2"
 
@@ -820,10 +841,9 @@ def _title_overlay_filter(title: str | None, episode_dir: Path, clip_id: str,
             f"fontfile='{fp}'"
             f":textfile='{title_txt}'"
             f":fontsize={font_size}"
-            # Text color is black for contrast against the WHITE banner strip
+            # Pure black text on the white strip — no orange stroke per
+            # user feedback ("remove the orange stroke around the text").
             f":fontcolor=black"
-            # Brand-orange accent: thin border so the text feels designed
-            f":borderw=2:bordercolor=0x{BRAND_ORANGE_HEX}@0.4"
             f":x='{x_expr}'"
             f":y={y_line}"
             f":enable='lte(t\\,{TITLE_OVERLAY_SECONDS})'"
