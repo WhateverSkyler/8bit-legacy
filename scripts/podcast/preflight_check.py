@@ -49,6 +49,9 @@ MIN_FILE_SIZE_MB = 3.0           # < this is almost certainly truncated
 MAX_FILE_SIZE_MB = 60.0          # > this is a render-config regression
 EXPECTED_W, EXPECTED_H = 1080, 1920
 
+# Total clip length now = dialog + 5s appended CTA (round 9). Bump cap.
+MAX_DURATION_SEC_TOTAL = 59.0  # dialog (≤54) + 5s CTA = ≤59s YT Shorts
+
 # Soft thresholds — strict-mode only
 SOFT_MIN_DURATION_SEC = 25.0     # < this and the topic probably wasn't fully delivered
 

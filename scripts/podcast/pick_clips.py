@@ -53,15 +53,13 @@ except ImportError:
 
 
 # --- Duration policy ---
-# 2026-05-11: hard ceiling lowered 85→59s. YouTube Shorts cuts off at 60s —
-# anything ≥60s posts as a regular long-form video (different algorithm, ranks
-# in a different feed). To qualify as a Short on YT + Reel on IG/FB + short on
-# TikTok simultaneously, the clip MUST be <60s. We aim for 35-55s as the sweet
-# spot for cross-platform completion rate.
+# 2026-05-12: hard ceiling lowered 59→54s to leave room for the 5s appended
+# closer-ad CTA. Total output = dialog + 5s CTA, must stay under 60s YT
+# Shorts cap. Sweet-spot target also adjusted accordingly.
 DURATION_FLOOR_SEC = 25.0      # below this the clip feels like a fragment
-DURATION_TARGET_LO = 35.0      # sweet-spot lower bound (more breathing room than before)
-DURATION_TARGET_HI = 55.0      # sweet-spot upper bound (5s margin under YT's hard cap)
-DURATION_CEILING_SEC = 59.0    # HARD CAP — over 60s = not a Short on YouTube
+DURATION_TARGET_LO = 30.0      # sweet-spot lower bound
+DURATION_TARGET_HI = 50.0      # sweet-spot upper bound (4s margin under hard cap)
+DURATION_CEILING_SEC = 54.0    # HARD CAP — dialog + 5s CTA = 59s ≤ 60s YT cap
 
 # --- Stand-alone validators ---
 BAD_OPENING_WORDS = {
@@ -164,12 +162,11 @@ STAND-ALONE REQUIREMENTS (non-negotiable):
 3. **Clean end.** Ends on a conclusion, punchline, strong claim, or a "tell me what you think" callout. Does NOT fade out mid-thought, trail off into filler, or cut on a "yeah, I don't know, whatever."
 
 DURATION TARGET (hard constraint, optimized for cross-platform Shorts qualification):
-- Sweet spot: 35–55 seconds
+- Sweet spot: 30–50 seconds
 - Floor: 25 seconds (below this feels like a fragment, no payoff)
-- HARD CEILING: 59 seconds (NEVER exceed — YouTube Shorts caps at 60s, anything
-  longer posts as a regular long-form video which has a completely different
-  algorithm and feed. Must be <60s to qualify as a Short on YT + Reel on IG/FB
-  + short-form on TikTok simultaneously.)
+- HARD CEILING: 54 seconds (NEVER exceed — we APPEND a 5-second branded
+  closer ad after every clip, so dialog + ad must total <60s to qualify as
+  a Short on YouTube + Reel on IG/FB + short-form on TikTok.)
 Err shorter if the arc lands cleanly. Cutting at the punchline beats overstaying
 the welcome — completion rate matters more than length.
 
@@ -641,6 +638,36 @@ def _snap_and_validate(
             return pick, False, f"opener fails: {' | '.join(opener_issues)}"
         if not ends_clean:
             return pick, False, f"end not sentence-terminal after rescue attempts"
+
+        # Word-boundary snap (2026-05-12): even after segment-level snapping,
+        # the LAST word of end_seg might extend slightly past new_end if
+        # whisperX picked a phrase pause that's slightly inside the final
+        # word. To eliminate ANY mid-word audio chop, walk end_seg's words
+        # and snap new_end to the END of the LAST complete word + a 0.10s
+        # trailing pad for a clean breath. Same for new_start: snap to the
+        # START of the first word so we don't begin mid-syllable.
+        if end_seg.get("words"):
+            last_word_end = end_seg["start"]
+            for w in end_seg["words"]:
+                w_end = w.get("end", 0)
+                if w_end <= new_end + 0.05:
+                    last_word_end = w_end
+                else:
+                    break
+            new_end = last_word_end + 0.10  # small breath pad
+        if start_seg.get("words"):
+            first_word_start = start_seg["start"]
+            for w in start_seg["words"]:
+                w_start = w.get("start", 0)
+                if w_start >= new_start - 0.05:
+                    first_word_start = w_start
+                    break
+            new_start = max(0.0, first_word_start - 0.05)  # small lead-in
+
+        # Recompute duration after word-boundary snap (the 0.10s pad
+        # may push us slightly over what segment-level snapping picked,
+        # but always at a clean word boundary so audio never chops).
+        duration = new_end - new_start
 
         adjusted = (
             abs(new_start - pick["start_sec"]) > 0.3

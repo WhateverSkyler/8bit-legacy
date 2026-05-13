@@ -92,18 +92,10 @@ BHATTA_CUT_THRESHOLD = 0.50
 # brief scenes inherit the upcoming camera's face position so the new speaker
 # is centered the moment they appear on-screen.
 MIN_SCENE_DURATION_SEC = 0.25
-# Safety rail: cap on sub-segments emitted. Before round 6 this capped scene
-# count at 15 because each scene was a heavy split+trim+concat branch. The
-# 2026-05-12 per-clip face-tracker emits many more, smaller sub-segments (one
-# per ~0.5s), so the cap is much higher. ffmpeg handles 100+ trim branches
-# fine; the limit is just to catch a degenerate case.
-MAX_SCENES = 200
-
-# Per-clip face tracking (round 6) — granularity at which we resample
-# face_x within each detected hard-cut scene. Shorter = tighter following
-# at the cost of more filter chain segments. 0.5s strikes a balance:
-# typical clip = 30-55s → 60-110 sub-segments.
-SUB_SEGMENT_SEC = 0.5
+# Safety rail: if pass-1 emits more scenes than this for one clip, content
+# is probably noisy and we fall back to a single center crop. Round-9 reset
+# to 15 (round-6's 200 was for the abandoned per-clip sub-segmentation).
+MAX_SCENES = 15
 
 
 def _ass_time(sec: float) -> str:
@@ -440,7 +432,12 @@ def detect_scenes_and_crops(
             """
             INTER_THRESHOLD = 0.10
             HIST_LEAD = 0.05
-            SNAP_BACK_FRAMES = 2
+            # Round 9 (2026-05-12): back to 1-frame snap-back. User accepted
+            # the round-1-5 "1-frame delay at cut" as a minor known issue.
+            # 2-frame snap-back combined with the per-clip face tracking
+            # caused over-correction; reverting to 1 frame keeps cuts
+            # stable without overshooting.
+            SNAP_BACK_FRAMES = 1
 
             pre_pad = 3.0 * src_frame_dur
             seek_t = max(0.0, t_lo - pre_pad)
@@ -540,171 +537,82 @@ def detect_scenes_and_crops(
             print(f"  [SCENES] {len(merged)} scenes > cap {MAX_SCENES} → 1 scene, center crop")
             return fallback
 
-        # --- Pass 2: PER-CLIP FACE TRACKING (round 6, 2026-05-12) -----------
-        # Replaces the previous "one crop_x per scene" approach. That approach
-        # had a fundamental limitation: when the speaker MOVES within a scene
-        # (e.g., leans left then back), the single median crop_x misframes them
-        # at the extremes. It also broke when pass-1 detected phantom "cuts"
-        # from same-camera histogram variance (lighting/motion) and applied a
-        # different crop to each half of what was visually one continuous shot.
-        # User saw exactly this at 36.3s of c2: scene boundary at 36.36 had
-        # same camera but crop shifted right by ~150px, producing a visible
-        # jump even though no real cut happened.
+        # --- Pass 2: ONE crop_x per scene (round 9 REVERT, 2026-05-12) ------
+        # Round 6 introduced per-clip face tracking with 0.5s sub-segments to
+        # eliminate within-scene drift. The result was visible micro-jitter
+        # every 0.5s as the crop_x changed in small increments throughout the
+        # clip — much WORSE than the previous "stable per-scene crop with a
+        # 1-frame delay at hard cuts" behavior. User explicitly said to
+        # revert it.
         #
-        # Fix: sample face_x every SUB_SEGMENT_SEC (0.5s) across each scene.
-        # Each sample emits its own sub-segment with its own crop_x. The crop
-        # follows the face continuously across the clip. HARD cuts still
-        # produce instant crop changes (the new scene's first sub-segment
-        # uses the new camera's face_x); SOFT same-camera variance no longer
-        # produces visible jumps because consecutive sub-segments have very
-        # similar face_x.
-        sub_segments: list[tuple[float, float, int]] = []
-        any_face_seen = False
-        last_good_crop_x: int | None = None
+        # Restored simpler approach: one face_x sample per scene (median of
+        # multiple internal probes via _face_center_for_range), one crop_x per
+        # scene, output a list of (scene_start, scene_end, crop_x) tuples. The
+        # cross-boundary smoothing pass below merges scenes whose crops are
+        # close (catches phantom cuts from same-camera histogram variance).
+        face_xs: list[int | None] = []
         for s, e in merged:
-            scene_dur = e - s
-            # Number of sub-samples within this scene (at least 1).
-            n_subs = max(1, int(round(scene_dur / SUB_SEGMENT_SEC)))
-            actual_sub_dur = scene_dur / n_subs
-            scene_face_xs: list[int | None] = []
-            for i in range(n_subs):
-                sub_s = s + i * actual_sub_dur
-                sub_e = s + (i + 1) * actual_sub_dur if i < n_subs - 1 else e
-                if i == 0:
-                    # CUT PRECISION (round 8): for the first sub-segment of
-                    # each scene, sample face_x ONLY in the first 0.15s of
-                    # the scene (~5 frames at 30fps), with 5 dense samples.
-                    # This captures the EXACT face position of the new
-                    # camera's first frames, before the speaker has any
-                    # chance to move. Used raw (no smoothing) below, so the
-                    # very first frame after a hard cut renders centered on
-                    # the new speaker — fixes the persistent "frame off"
-                    # complaint at boundaries.
-                    cut_window_s = sub_s
-                    cut_window_e = min(sub_s + 0.15, sub_e)
-                    face_x = _face_center_for_range(
-                        cap, cascades, start_sec + cut_window_s, start_sec + cut_window_e,
-                        samples=5,
-                    )
-                else:
-                    # Sample face_x across this sub-segment, 3 samples.
-                    face_x = _face_center_for_range(
-                        cap, cascades, start_sec + sub_s, start_sec + sub_e,
-                        samples=3,
-                    )
-                scene_face_xs.append(face_x)
-            # Fill in missing face_xs within this scene via look-ahead then
-            # look-back. Look-ahead first matches the prior behavior — after
-            # a hard cut, the new scene's first sub-segment should adopt the
-            # next-detected face position, not carry over the previous shot's.
-            for j in range(n_subs):
-                if scene_face_xs[j] is not None:
-                    continue
-                ahead = next((scene_face_xs[k] for k in range(j + 1, n_subs)
-                              if scene_face_xs[k] is not None), None)
-                back = next((scene_face_xs[k] for k in range(j - 1, -1, -1)
-                             if scene_face_xs[k] is not None), None)
-                scene_face_xs[j] = ahead if ahead is not None else back
-            # If THIS scene has no face detections anywhere, look outside
-            # the scene for the most recent good crop.
-            if all(fx is None for fx in scene_face_xs):
-                # Carry forward from last good, or center if nothing yet.
-                fill = last_good_crop_x if last_good_crop_x is not None else CENTER_CROP_X
-                # Convert to crop_x (last_good_crop_x is already crop_x; the
-                # carry-forward face center would need conversion, but we're
-                # using last_good_crop_x directly here).
-                scene_face_xs = [None] * n_subs
-                fill_crop = fill
-            else:
-                fill_crop = None
-            # Smooth within scene: moving average of size 5 (was 3) to dampen
-            # face-detection noise. Larger window = smoother tracking, fewer
-            # visible micro-jumps when the face detector wiggles between
-            # nearby positions. We don't smooth across scene boundaries here —
-            # a separate cross-boundary pass below handles that case where the
-            # face_x is similar across a hard cut.
-            #
-            # EXCEPTION (round 8): sub-segment 0 of each scene uses its raw
-            # face_x WITHOUT smoothing. Sub-seg 0's face_x was sampled at
-            # the EXACT cut boundary (first 0.15s of the scene) so it
-            # represents the new camera's actual framing. Smoothing it
-            # against later sub-segments would pull the crop toward where
-            # the speaker moved AFTER the cut, leaving the cut frame
-            # off-center. Raw face_x at sub-seg 0 = correct framing on
-            # the very first new-camera frame.
-            WIN = 2  # +/- 2 = window of 5
-            smoothed: list[int] = []
-            for j in range(n_subs):
-                if scene_face_xs[j] is None:
-                    smoothed.append(fill_crop)
-                    continue
-                if j == 0:
-                    # Raw face_x at the cut moment, no smoothing.
-                    avg = scene_face_xs[0]
-                else:
-                    window = []
-                    for k in range(max(0, j - WIN), min(n_subs, j + WIN + 1)):
-                        if scene_face_xs[k] is not None:
-                            window.append(scene_face_xs[k])
-                    avg = sum(window) // len(window)
-                cx = avg - crop_w // 2
-                cx = max(0, min(source_w - crop_w, cx))
-                smoothed.append(cx)
-                last_good_crop_x = cx
-                any_face_seen = True
-            # Emit sub-segments
-            for i in range(n_subs):
-                sub_s = s + i * actual_sub_dur
-                sub_e = s + (i + 1) * actual_sub_dur if i < n_subs - 1 else e
-                sub_segments.append((sub_s, sub_e, smoothed[i]))
-
-        if not any_face_seen:
-            print(f"  [SCENES] no faces in clip → 1 segment, center crop")
+            face_xs.append(_face_center_for_range(
+                cap, cascades, start_sec + s, start_sec + e,
+            ))
+        any_face = any(fx is not None for fx in face_xs)
+        if not any_face:
+            print(f"  [SCENES] {len(merged)} scenes, 0 faces → 1 scene, center crop")
             return fallback
 
-        # CROSS-BOUNDARY SMOOTHING (round 7 defense in depth):
-        # If two adjacent sub-segments came from DIFFERENT pass-1 hard-cut
-        # scenes but their crop_x values are close (< 80px apart), that
-        # probably means pass-1 detected a phantom cut from same-camera
-        # variance. Smooth them by averaging — eliminates the residual jump
-        # at false-positive cut boundaries while preserving real cuts (where
-        # the crop_x values differ by hundreds of pixels).
+        # Look-ahead for missing face_xs (so the new camera after a cut takes
+        # the upcoming face position, not the previous shot's).
+        result: list[tuple[float, float, int]] = []
+        last_good_crop_x: int | None = None
+        for i, ((s, e), fx) in enumerate(zip(merged, face_xs)):
+            if fx is not None:
+                cx = fx - crop_w // 2
+                cx = max(0, min(source_w - crop_w, cx))
+                last_good_crop_x = cx
+            else:
+                next_fx = next((face_xs[j] for j in range(i + 1, len(face_xs))
+                                if face_xs[j] is not None), None)
+                if next_fx is not None:
+                    cx = next_fx - crop_w // 2
+                    cx = max(0, min(source_w - crop_w, cx))
+                elif last_good_crop_x is not None:
+                    cx = last_good_crop_x
+                else:
+                    cx = CENTER_CROP_X
+            result.append((s, e, cx))
+
+        # CROSS-BOUNDARY SMOOTHING (round 7 — kept):
+        # If two adjacent scenes have crop_x within 80px, they're probably
+        # the same camera with histogram variance (false-positive cut).
+        # Average their crop_x to eliminate the visible jump.
         CROSS_BOUNDARY_PX = 80
-        for i in range(1, len(sub_segments)):
-            ps, pe, px = sub_segments[i - 1]
-            cs, ce, cx_ = sub_segments[i]
+        for i in range(1, len(result)):
+            ps, pe, px = result[i - 1]
+            cs, ce, cx_ = result[i]
             if abs(px - cx_) < CROSS_BOUNDARY_PX:
                 avg = (px + cx_) // 2
-                sub_segments[i - 1] = (ps, pe, avg)
-                sub_segments[i] = (cs, ce, avg)
+                result[i - 1] = (ps, pe, avg)
+                result[i] = (cs, ce, avg)
 
-        # Collapse adjacent sub-segments with identical crop_x to reduce
-        # filter graph size. Doesn't change output but speeds up render.
+        # Collapse adjacent scenes that ended up with identical crop_x.
         collapsed: list[tuple[float, float, int]] = []
-        for (s, e, x) in sub_segments:
+        for (s, e, x) in result:
             if collapsed and collapsed[-1][2] == x and abs(collapsed[-1][1] - s) < 1e-3:
                 ps, _pe, px = collapsed[-1]
                 collapsed[-1] = (ps, e, px)
             else:
                 collapsed.append((s, e, x))
 
-        if len(collapsed) > MAX_SCENES:
-            print(f"  [SCENES] {len(collapsed)} sub-segments > cap {MAX_SCENES} → 1 segment, center crop")
-            return fallback
-
-        # Optimization: if every sub-segment has the same crop_x, collapse to one.
+        # Optimization: if all scenes share the same crop_x, single-segment.
         uniq_x = {x for _s, _e, x in collapsed}
         if len(uniq_x) == 1:
             only_x = collapsed[0][2]
             delta = abs(only_x - CENTER_CROP_X)
-            print(f"  [SCENES] {len(collapsed)} sub-segments, all crop_x={only_x} (Δ{delta} from center) → collapsed to 1")
+            print(f"  [SCENES] {len(collapsed)} scenes, all crop_x={only_x} (Δ{delta} from center) → collapsed to 1")
             return [(0.0, duration, only_x)]
 
-        # Logging: print compact summary instead of every sub-segment
-        x_min = min(x for _s, _e, x in collapsed)
-        x_max = max(x for _s, _e, x in collapsed)
-        print(f"  [SCENES] {len(merged)} hard-cut scenes → {len(collapsed)} sub-segments "
-              f"(crop_x range: {x_min}-{x_max}, Δ{x_max - x_min})")
+        summary = ", ".join(f"({s:.2f}-{e:.2f}, cx={x})" for s, e, x in collapsed)
+        print(f"  [SCENES] {len(collapsed)} scenes → {summary}")
         return collapsed
 
     except Exception as exc:
@@ -715,14 +623,36 @@ def detect_scenes_and_crops(
             cap.release()
 
 
-# Title overlay tunables (top-of-frame text shown for first N seconds)
-TITLE_OVERLAY_SECONDS = 5.0          # total time the title is on screen
-TITLE_OVERLAY_FADE_IN = 0.4          # fade-in duration at the start
-TITLE_OVERLAY_FADE_OUT = 0.5         # fade-out duration at the end
-TITLE_OVERLAY_FONT_SIZE = 84         # bumped 72→84 for stronger presence at thumbnail size
-TITLE_OVERLAY_MAX_CHARS_PER_LINE = 22  # 2-3 lines wrap for typical 4-8 word titles
-TITLE_OVERLAY_Y_OFFSET = 240         # px from top — clears the iOS clock + lower for breathing room
-TITLE_OVERLAY_LINE_SPACING = 18
+# Title overlay tunables (round 9 — banner-based design)
+# User hand-designed a banner with a circular brand badge on the left and a
+# white title strip extending to the right edge. We overlay the banner for
+# the first 5 seconds and place title text inside the strip with auto-fit
+# font sizing for any title length.
+TITLE_OVERLAY_SECONDS = 5.0          # total time the banner is on screen
+# Banner intro animation (motion of the strip extending) lasts 23 frames at 30fps
+TITLE_BANNER_INTRO_DURATION = 23.0 / 30.0   # ≈ 0.767s
+# After the banner finishes its intro motion, fade the title text in.
+TITLE_TEXT_FADE_IN = 0.30
+TITLE_TEXT_FADE_OUT = 0.40
+# Path to the user's banner asset — animated MOV ProRes 1080x1920.
+TITLE_BANNER = ROOT / "assets" / "brand" / "title-banner-9x16.mov"
+
+# Title strip bounds (where text goes inside the banner). Measured from the
+# PNG via PIL. The banner has a logo badge in the upper-left circle (roughly
+# x=21-280) and the WHITE TITLE STRIP extending right from there to the edge.
+# We give the text safe area generous padding inside the strip so descenders
+# don't clip and the layout has breathing room.
+TITLE_STRIP_X = 320      # left edge — clear of the logo badge
+TITLE_STRIP_Y = 130      # top edge of strip's text-safe area
+TITLE_STRIP_W = 720      # width — extends to ~x=1040 leaving 40px right padding
+TITLE_STRIP_H = 195      # vertical text-safe area
+TITLE_STRIP_PAD_H = 30   # extra horizontal padding inside the strip for text
+TITLE_STRIP_PAD_V = 12   # extra vertical padding
+
+# Auto-fit font size search bounds (Bebas Neue at the strip's pixel size).
+TITLE_FONT_MAX = 110
+TITLE_FONT_MIN_ONE_LINE = 64   # below this, wrap to 2 lines instead of shrinking further
+TITLE_FONT_MIN_TWO_LINE = 44
 
 # Brand color (matches active-word ORANGE used for karaoke captions). Hex form
 # for ffmpeg's drawtext fontcolor= argument. The 0x prefix is added at use site.
@@ -812,162 +742,204 @@ def _wrap_title(s: str, max_chars: int = TITLE_OVERLAY_MAX_CHARS_PER_LINE) -> li
     return lines
 
 
-def _title_overlay_filter(title: str | None, episode_dir: Path, clip_id: str) -> str:
-    """Return the ffmpeg drawtext filter segment for the title overlay.
+def _font_path() -> str:
+    """Locate the Bebas Neue font. In the deployed container it's installed
+    under /usr/local/share/fonts/...; locally (for tests) it's in
+    assets/fonts/. Use whichever exists."""
+    deployed = Path("/usr/local/share/fonts/bebas-neue/BebasNeue-Regular.ttf")
+    if deployed.exists():
+        return str(deployed)
+    return str(ROOT / "assets" / "fonts" / "BebasNeue-Regular.ttf")
 
-    Round 4 redesign (2026-05-12): drop the orange accent bar (user feedback
-    "the orange line below it needs to go"). Tighten the backdrop to fit the
-    actual text width with padding instead of spanning the full 1080-pixel
-    width — the prior design left huge dead space on either side and looked
-    amateur. Measure text widths via PIL using the same Bebas Neue font that
-    ffmpeg will render, so the box hugs the text precisely.
 
-    Layers (per frame, t in fade window):
-      1. Fitted dark backdrop rectangle (1 drawbox)
-      2. White text per line with thin black border (N drawtext)
+def _fit_title_to_strip(text: str) -> tuple[int, list[str]]:
+    """Binary-search the largest font size that fits the title in the strip's
+    text-safe area (with padding) on 1 line. If even the minimum 1-line size
+    overflows, wrap to 2 lines and find the largest size that fits both.
 
-    NO grow animation on the backdrop — ffmpeg drawbox doesn't evaluate
-    w/h expressions per-frame. Backdrop pops in/out at fade boundaries.
-    Text fades in/out smoothly via drawtext alpha=.
+    Returns (font_size, lines).
+
+    Pure auto-fit: any title length renders cleanly inside the strip without
+    manual intervention. A 4-word title fills the box at large size, a 9-word
+    title shrinks gracefully or wraps to 2 lines centered vertically.
+    """
+    try:
+        from PIL import ImageFont
+    except ImportError:
+        # Conservative fallback if PIL isn't available
+        words = text.strip().split()
+        if len(words) <= 5:
+            return (90, [text.strip()])
+        midpoint = len(words) // 2
+        return (70, [" ".join(words[:midpoint]), " ".join(words[midpoint:])])
+
+    text = text.strip()
+    fp = _font_path()
+    avail_w = TITLE_STRIP_W - 2 * TITLE_STRIP_PAD_H
+    avail_h = TITLE_STRIP_H - 2 * TITLE_STRIP_PAD_V
+
+    def _line_w(s: str, size: int) -> int:
+        font = ImageFont.truetype(fp, size)
+        bbox = font.getbbox(s)
+        return bbox[2] - bbox[0]
+
+    def _line_h(size: int) -> int:
+        font = ImageFont.truetype(fp, size)
+        # Use a generic uppercase string to estimate display height
+        bbox = font.getbbox("AGTHQy")
+        return bbox[3] - bbox[1]
+
+    # Try ONE LINE at decreasing font sizes
+    for size in range(TITLE_FONT_MAX, TITLE_FONT_MIN_ONE_LINE - 1, -2):
+        if _line_w(text, size) <= avail_w and _line_h(size) <= avail_h:
+            return (size, [text])
+
+    # Wrap to TWO LINES — pick the most-balanced split (matches the existing
+    # _wrap_title heuristic but ignores char limit since strip is wider than
+    # 22-char wrap target).
+    words = text.split()
+    n = len(words)
+    if n < 2:
+        return (TITLE_FONT_MIN_ONE_LINE, [text])
+    best_split = n // 2
+    best_imbalance = float("inf")
+    for split in range(1, n):
+        l1 = " ".join(words[:split])
+        l2 = " ".join(words[split:])
+        imbalance = abs(len(l1) - len(l2))
+        # Penalize splits that leave a function word at end of line 1
+        last_w = words[split - 1].lower().rstrip(",.!?;:")
+        if last_w in {"a", "an", "the", "to", "of", "in", "on", "and", "or", "but", "is", "as", "for"}:
+            imbalance += 6
+        if imbalance < best_imbalance:
+            best_imbalance = imbalance
+            best_split = split
+    lines = [" ".join(words[:best_split]), " ".join(words[best_split:])]
+
+    avail_h_per_line = (avail_h - 8) // 2  # 8px line gap
+    longer = max(lines, key=len)
+    for size in range(TITLE_FONT_MIN_ONE_LINE - 4, TITLE_FONT_MIN_TWO_LINE - 1, -2):
+        if _line_w(longer, size) <= avail_w and _line_h(size) <= avail_h_per_line:
+            return (size, lines)
+
+    # Floor: emit at minimum size and hope for the best
+    return (TITLE_FONT_MIN_TWO_LINE, lines)
+
+
+def _title_overlay_filter(title: str | None, episode_dir: Path, clip_id: str,
+                          banner_input_label: str = "[1:v]") -> str:
+    """Build the filter chain segment that overlays the user's hand-designed
+    banner + auto-fit drawtext on the dialogue stream.
+
+    Round 9 redesign (2026-05-12): drops every drawbox-backdrop attempt and
+    uses the user's hand-designed asset (animated 5s ProRes MOV with a logo
+    badge + white title strip). Title text is rendered with auto-fit font
+    sizing into the strip's text-safe area. Looks like designed graphic
+    instead of programmer-drawn rectangle.
+
+    Returns a CHAIN of filter segments (separated by `;`) that:
+      1. takes the dialogue stream label `[v_pre_title]` as input
+      2. overlays the banner video (banner_input_label) on top for first 5s
+      3. drawtext per line fades in starting at TITLE_BANNER_INTRO_DURATION
+      4. emits the result as `[v_with_title]`
+
+    The caller wires `[v_pre_title]` → `[v_with_title]` into the larger graph.
     """
     if not title or not title.strip():
         return ""
 
-    lines = _wrap_title(title.strip())
-    if not lines:
-        return ""
-
-    # Locate the font file. In the deployed container it's at
-    # /usr/local/share/fonts/...; locally for tests it's in assets/fonts/.
-    # We need PIL to measure widths AND ffmpeg to render, so use whichever
-    # path exists.
-    deployed_font = Path("/usr/local/share/fonts/bebas-neue/BebasNeue-Regular.ttf")
-    local_font = ROOT / "assets" / "fonts" / "BebasNeue-Regular.ttf"
-    font_path = str(deployed_font) if deployed_font.exists() else str(local_font)
-
-    # Measure each line's pixel width at the render font size so the
-    # backdrop hugs the text instead of dead-spacing it.
-    try:
-        from PIL import ImageFont
-        pil_font = ImageFont.truetype(font_path, TITLE_OVERLAY_FONT_SIZE)
-        line_widths = []
-        for line in lines:
-            bbox = pil_font.getbbox(line)
-            line_widths.append(bbox[2] - bbox[0])
-        max_text_w = max(line_widths) if line_widths else 600
-    except Exception:
-        # Fallback: estimate at ~0.45 * font_size per uppercase char
-        max_text_w = int(max(len(line) for line in lines) * 0.45 * TITLE_OVERLAY_FONT_SIZE)
-
-    # Alpha curve for the TEXT — fade in 0→FADE_IN, hold, fade out.
-    # Backslash-comma needed because ',' inside drawtext expressions
-    # otherwise terminates the filter argument.
-    fade_in_end = TITLE_OVERLAY_FADE_IN
-    fade_out_start = TITLE_OVERLAY_SECONDS - TITLE_OVERLAY_FADE_OUT
-    text_alpha_expr = (
-        f"if(lt(t\\,{fade_in_end:.2f})\\,t/{fade_in_end:.2f}\\,"
-        f"if(gt(t\\,{fade_out_start:.2f})\\,"
-        f"({TITLE_OVERLAY_SECONDS:.2f}-t)/{TITLE_OVERLAY_FADE_OUT:.2f}\\,"
-        f"1))"
-    )
-
-    line_height = TITLE_OVERLAY_FONT_SIZE + TITLE_OVERLAY_LINE_SPACING
+    font_size, lines = _fit_title_to_strip(title)
     n_lines = len(lines)
-    # Tight backdrop bounds: text-width + symmetric padding on each side.
-    # Vertical padding gives breathing room top/bottom.
-    h_pad = 70
-    v_pad_top = 32
-    v_pad_bottom = 40
-    backdrop_w = max_text_w + h_pad * 2
-    # Clamp so we never exceed the canvas
-    backdrop_w = min(backdrop_w, 1080 - 40)
-    backdrop_x = (1080 - backdrop_w) // 2
-    block_top = TITLE_OVERLAY_Y_OFFSET - v_pad_top
-    block_bottom = (TITLE_OVERLAY_Y_OFFSET + (n_lines - 1) * line_height
-                    + TITLE_OVERLAY_FONT_SIZE + v_pad_bottom)
-    backdrop_h = block_bottom - block_top
+    fp = _font_path()
 
+    # Vertical positioning: center N lines in the strip's text-safe area
+    line_gap = 8 if n_lines > 1 else 0
+    line_height = font_size + line_gap
+    block_h = line_height * n_lines - line_gap
+    block_top_y = TITLE_STRIP_Y + TITLE_STRIP_PAD_V + (TITLE_STRIP_H - 2 * TITLE_STRIP_PAD_V - block_h) // 2
+
+    # Banner overlay: starts at t=0 of the clip, plays for 5s.
+    # setpts shifts banner to start at 0; eof_action=pass keeps the underlying
+    # dialogue visible after the banner ends.
     parts: list[str] = []
-
-    # === Backdrop (single drawbox, tight to text) ==================
-    # alpha 0.65 — more solid than the prior 0.35 so the title reads as a
-    # designed "card" rather than a faint wash. Black for contrast on any
-    # underlying frame.
-    #
-    # NOTE on enable= window: backdrop is visible for the ENTIRE title
-    # window (0 → TITLE_OVERLAY_SECONDS), not just the "hold" interval
-    # between fades. Previously the backdrop popped on at fade_in_end
-    # and off at fade_out_start, producing a jarring rectangle-appears /
-    # rectangle-disappears effect. Keeping it on through the whole
-    # window means the text fades in/out smoothly over a stable
-    # backdrop — much more polished.
     parts.append(
-        f",drawbox=x={backdrop_x}:y={block_top}"
-        f":w={backdrop_w}:h={backdrop_h}"
-        f":color=0x000000@0.65:t=fill"
-        f":enable='lte(t\\,{TITLE_OVERLAY_SECONDS})'"
+        f"{banner_input_label}setpts=PTS-STARTPTS,format=rgba[banner_v]"
+    )
+    parts.append(
+        f"[v_pre_title][banner_v]overlay=0:0:enable='lte(t\\,{TITLE_OVERLAY_SECONDS})'"
+        f":eof_action=pass[v_with_banner]"
     )
 
-    # === Title text per line =======================================
+    # Title text fades in AFTER the banner intro animation completes
+    text_fade_in_start = TITLE_BANNER_INTRO_DURATION
+    text_fade_in_end = text_fade_in_start + TITLE_TEXT_FADE_IN
+    text_fade_out_start = TITLE_OVERLAY_SECONDS - TITLE_TEXT_FADE_OUT
+    text_alpha_expr = (
+        f"if(lt(t\\,{text_fade_in_start:.3f})\\,0\\,"
+        f"if(lt(t\\,{text_fade_in_end:.3f})\\,"
+        f"(t-{text_fade_in_start:.3f})/{TITLE_TEXT_FADE_IN:.3f}\\,"
+        f"if(gt(t\\,{text_fade_out_start:.3f})\\,"
+        f"({TITLE_OVERLAY_SECONDS:.3f}-t)/{TITLE_TEXT_FADE_OUT:.3f}\\,1)))"
+    )
+
+    # Build a chain that applies one drawtext per line on top of the banner
+    # overlay output. Last drawtext emits [v_with_title].
+    text_chain_in = "[v_with_banner]"
     for i, line in enumerate(lines):
         title_txt = episode_dir / f"{clip_id}.title.{i}.txt"
         title_txt.write_text(line)
 
-        y_main = TITLE_OVERLAY_Y_OFFSET + i * line_height
-        common = (
-            f"fontfile='{font_path}'"
+        y_line = block_top_y + i * line_height
+        # Center text horizontally inside the strip (not the whole frame).
+        # Strip x range = [TITLE_STRIP_X + PAD_H, TITLE_STRIP_X + TITLE_STRIP_W - PAD_H]
+        # ffmpeg expression: x = strip_left + (strip_w - text_w) / 2
+        strip_left = TITLE_STRIP_X + TITLE_STRIP_PAD_H
+        strip_inner_w = TITLE_STRIP_W - 2 * TITLE_STRIP_PAD_H
+        x_expr = f"{strip_left}+({strip_inner_w}-text_w)/2"
+
+        out_label = "[v_with_title]" if i == n_lines - 1 else f"[v_text_{i}]"
+        parts.append(
+            f"{text_chain_in}drawtext="
+            f"fontfile='{fp}'"
             f":textfile='{title_txt}'"
-            f":fontsize={TITLE_OVERLAY_FONT_SIZE}"
+            f":fontsize={font_size}"
+            # Text color is black for contrast against the WHITE banner strip
+            f":fontcolor=black"
+            # Brand-orange accent: thin border so the text feels designed
+            f":borderw=2:bordercolor=0x{BRAND_ORANGE_HEX}@0.4"
+            f":x='{x_expr}'"
+            f":y={y_line}"
             f":enable='lte(t\\,{TITLE_OVERLAY_SECONDS})'"
             f":alpha='{text_alpha_expr}'"
+            f"{out_label}"
         )
-        # White text with slightly thicker border for weight + readability.
-        # Border 4px on the dark backdrop gives the text more presence than
-        # the prior 3px.
-        parts.append(
-            f",drawtext={common}"
-            f":fontcolor=white"
-            f":borderw=4:bordercolor=black@0.85"
-            f":x=(w-text_w)/2"
-            f":y={y_main}"
-        )
+        text_chain_in = out_label
 
-    return "".join(parts)
+    return ";".join(parts)
 
 
 def _build_video_filter(scenes: list[tuple[float, float, int]], ass_path: Path,
-                        crop_w: int = CROP_W, title: str | None = None,
-                        episode_dir: Path | None = None,
-                        clip_id: str | None = None) -> list[str]:
-    """Build the video-branch filter segments that produce the `[v0]` label
-    (a 1080x1920 stream with captions burned in). Callers then append the
-    end-card overlay and audio branches the same way regardless of scene
-    count.
+                        crop_w: int = CROP_W) -> list[str]:
+    """Build the video-branch filter segments that produce the `[v_pre_title]`
+    label — a 1080x1920 stream with crop applied per scene + captions burned
+    in. Callers then layer banner overlay + drawtext title on top, and CTA
+    appended at the end.
 
-    Single-scene fast path (identical to pre-fix behavior):
-        [0:v]crop=...,scale=1080:1920,setsar=1,fade=in,drawtext=...,subtitles='...'[v0]
+    Round 9 refactor: stripped title overlay from this function. Title is now
+    a separate banner-video overlay handled in _build_ffmpeg_cmd.
+
+    Single-scene fast path:
+        [0:v]crop=...,scale=1080:1920,setsar=1,subtitles='...'[v_pre_title]
 
     Multi-scene path: split the video N ways, trim+crop each branch with its
     own offset, concat, then apply subtitles to the rebuilt 0-based timeline.
-
-    Polish (2026-05-11):
-      - Title overlay (drawtext) at top of frame for first TITLE_OVERLAY_SECONDS,
-        animated alpha (fade in/out), brand-orange outline + drop shadow.
-      - Intro fade-in from black over INTRO_FADE_DURATION sec — clip no longer
-        cold-pops in.
-      The intro fade and title overlay both apply to the FINAL concat'd stream
-      so they're continuous regardless of internal scene count.
     """
-    title_filter = _title_overlay_filter(title, episode_dir, clip_id) if (
-        title and episode_dir is not None and clip_id is not None
-    ) else ""
     n = len(scenes)
     if n <= 1:
         _s, _e, cx = scenes[0]
         return [
-            f"[0:v]crop={crop_w}:1080:{cx}:0,scale=1080:1920,setsar=1"
-            f"{title_filter},"
-            f"subtitles='{ass_path}'[v0]"
+            f"[0:v]crop={crop_w}:1080:{cx}:0,scale=1080:1920,setsar=1,"
+            f"subtitles='{ass_path}'[v_pre_title]"
         ]
 
     parts: list[str] = []
@@ -980,9 +952,8 @@ def _build_video_filter(scenes: list[tuple[float, float, int]], ass_path: Path,
         )
     concat_inputs = "".join(f"[s{i}]" for i in range(n))
     parts.append(
-        f"{concat_inputs}concat=n={n}:v=1:a=0,setsar=1"
-        f"{title_filter},"
-        f"subtitles='{ass_path}'[v0]"
+        f"{concat_inputs}concat=n={n}:v=1:a=0,setsar=1,"
+        f"subtitles='{ass_path}'[v_pre_title]"
     )
     return parts
 
@@ -996,84 +967,126 @@ def _build_ffmpeg_cmd(source_video: Path, start: float, end: float, duration: fl
                       clip_id: str | None = None) -> list[str]:
     """Build the full ffmpeg command for one render. Pure function — no side effects.
 
-    Factored out of render_clip() so Gate 2 + Gate 3 rescue paths can rebuild
-    cmd with shifted captions or restricter scene detection and re-run.
+    Round 9 architecture (2026-05-12):
 
-    Args:
-      music_volume: dialog-vs-music balance. Default 0.12 (legacy fixed value).
-        Pick_clips' AUDIO_MIX_MOOD_V1 audit overrides this per-clip via the
-        spec's `_audio_music_volume` field — intense=0.08, storytelling=0.10,
-        casual=0.12, upbeat=0.14. Clamped to [0.05, 0.20] for safety.
-      episode_dir, clip_id: required for the title overlay's textfile= sidecar.
-        If either is None, the title overlay is silently skipped.
+    INPUTS:
+      [0] source_video — full podcast episode (we use -ss/-to to extract dialog window)
+      [1] music bed (if has_music)
+      [2] title banner (animated 5s MOV) — if title is provided
+      [3] end-card / closer ad (5s MP4) — if END_CARD exists
+
+    VIDEO CHAIN:
+      [0:v] → crop + scale + subtitles → [v_pre_title]
+      [v_pre_title] + [banner] → overlay banner first 5s → [v_with_banner]
+      [v_with_banner] → drawtext title in strip area → [v_with_title]
+      ([v_with_title] = dialogue portion, 1080x1920 with captions + banner + title)
+      [closer_ad] → scale + fade-in from black → [v_cta]
+      [v_with_title] + [v_cta] → concat → [v_out]
+
+    AUDIO CHAIN:
+      [0:a] dialogue
+      [1:a] music — single continuous stream from t=0, volume timeline:
+            quiet during dialog (music_volume), bumps to 0.20 during CTA
+      Mix dialogue + music with sidechain ducking on the dialog portion only.
+      apad the dialogue to total_duration so the audio stream extends through
+      the CTA portion as silence + bumped music.
+
+    OUTPUT:
+      [v_out] + [a_out], total duration = dialog_duration + CTA_DURATION
     """
     music_volume = max(0.05, min(0.20, float(music_volume)))
-    filter_parts = _build_video_filter(scenes, ass_path, crop_w=crop_w, title=title,
-                                       episode_dir=episode_dir, clip_id=clip_id)
-    vout_label = "[v0]"
-    if END_CARD.exists():
-        # End-card is now a 5s VIDEO (was a static PNG). User designed a
-        # vertical closer ad with subtle background motion + the 8BITNEW
-        # coupon CTA. We overlay the video for the last END_CARD_DURATION
-        # seconds of the clip. setpts shifts the end-card video's PTS so
-        # its first frame plays AT end_card_start (not at t=0).
-        end_card_duration = 5.0
-        end_card_start = max(0.0, duration - end_card_duration)
-        filter_parts.append(
-            f"[2:v]scale=1080:1920,setpts=PTS-STARTPTS+{end_card_start:.3f}/TB[ec]"
-        )
-        filter_parts.append(
-            f"[v0][ec]overlay=0:0:eof_action=pass[vout]"
-        )
-        vout_label = "[vout]"
 
+    has_title = bool(title and title.strip() and episode_dir is not None
+                     and clip_id is not None and TITLE_BANNER.exists())
+    has_cta = END_CARD.exists()
+    CTA_DURATION = 5.0
+    CTA_FADE_IN = 0.4
+    total_duration = duration + (CTA_DURATION if has_cta else 0.0)
+
+    # Build the VIDEO chain
+    filter_parts = _build_video_filter(scenes, ass_path, crop_w=crop_w)
+
+    # Determine input indices dynamically. Order: source(0), music(1?), banner(?), endcard(?)
+    next_input_idx = 1
+    music_idx = -1
+    banner_idx = -1
+    cta_idx = -1
     if has_music:
-        # Music bed adaptive per clip mood (intense=0.08 → upbeat=0.14),
-        # set by pick_clips._post_pick_enrichment via AUDIO_MIX_MOOD_V1.
-        #
-        # 2026-05-12: added sidechain ducking. Music dips ~10dB when dialog
-        # is loud and returns smoothly between phrases. Much more pro-sounding
-        # than the prior flat-mix approach where music either drowned dialog
-        # or sat too low to add presence.
-        #
-        # Filter chain:
-        #   [0:a] dialog       -> asplit: one copy to sidechain key, one to mix
-        #   [1:a] music bed    -> volume scaled, looped to clip length
-        #   music + dialog-key -> sidechaincompress (10dB attenuation, fast
-        #                         attack, slow release for natural ducking)
-        #   ducked music + dialog -> amix
-        filter_parts.append("[0:a]asplit=2[dialog][dialog_key]")
-        filter_parts.append(f"[1:a]volume={music_volume:.3f},aloop=loop=-1:size=2e9[music_raw]")
-        # sidechaincompress params:
-        #   threshold=0.05  ~ -26dB — kicks in when dialog has any speech energy
-        #   ratio=8         strong compression on the music when triggered
-        #   attack=5        5ms — duck quickly so consonants don't get masked
-        #   release=400     400ms — let music come back gently between phrases
-        #   makeup=1        no makeup gain (we already set music volume)
+        music_idx = next_input_idx; next_input_idx += 1
+    if has_title:
+        banner_idx = next_input_idx; next_input_idx += 1
+    if has_cta:
+        cta_idx = next_input_idx; next_input_idx += 1
+
+    # Title overlay (banner + drawtext) — operates on [v_pre_title] → [v_with_title]
+    if has_title:
+        title_chain = _title_overlay_filter(title, episode_dir, clip_id,
+                                            banner_input_label=f"[{banner_idx}:v]")
+        if title_chain:
+            filter_parts.append(title_chain)
+        last_video_label = "[v_with_title]"
+    else:
+        last_video_label = "[v_pre_title]"
+
+    # CTA append — concat dialogue portion with CTA portion
+    if has_cta:
+        filter_parts.append(
+            f"[{cta_idx}:v]scale=1080:1920,setsar=1,"
+            f"fade=t=in:st=0:d={CTA_FADE_IN:.2f}:color=black[v_cta]"
+        )
+        filter_parts.append(
+            f"{last_video_label}[v_cta]concat=n=2:v=1:a=0[v_out]"
+        )
+        vout_label = "[v_out]"
+    else:
+        vout_label = last_video_label
+
+    # AUDIO CHAIN
+    if has_music:
+        # Pad the dialogue with silence to total_duration so the timeline
+        # extends through the CTA portion.
+        filter_parts.append(
+            f"[0:a]apad=whole_dur={total_duration:.3f}[dialog_padded]"
+        )
+        # Split for sidechain key + mix
+        filter_parts.append("[dialog_padded]asplit=2[dialog][dialog_key]")
+        # Music bed: timeline volume — quieter during dialogue, louder during CTA
+        filter_parts.append(
+            f"[{music_idx}:a]aloop=loop=-1:size=2e9,"
+            f"atrim=0:{total_duration:.3f},"
+            f"volume='if(lt(t\\,{duration:.3f})\\,{music_volume:.3f}\\,0.22)':eval=frame"
+            f"[music_raw]"
+        )
+        # Sidechain ducking under the dialog (no-op during silent CTA portion
+        # since the dialog stream is silent there — music sits at its bumped
+        # level uninterrupted).
         filter_parts.append(
             "[music_raw][dialog_key]sidechaincompress="
             "threshold=0.05:ratio=8:attack=5:release=400:makeup=1[music]"
         )
-        filter_parts.append("[dialog][music]amix=duration=shortest:dropout_transition=3[aout]")
+        filter_parts.append(
+            f"[dialog][music]amix=duration=first:dropout_transition=3[aout]"
+        )
         aout_label = "[aout]"
     else:
-        aout_label = "0:a"
+        # No music: just pad dialogue with silence for the CTA portion.
+        filter_parts.append(
+            f"[0:a]apad=whole_dur={total_duration:.3f}[aout]"
+        )
+        aout_label = "[aout]"
 
     filter_complex = ";".join(filter_parts)
 
+    # Build the input arg list. Order matters — must match input indices above.
     cmd = [
         "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
         "-ss", f"{start:.3f}", "-to", f"{end:.3f}", "-i", str(source_video),
     ]
     if has_music and music is not None:
         cmd += ["-stream_loop", "-1", "-i", str(music)]
-    if END_CARD.exists():
-        if not has_music:
-            # if no music, end_card becomes input [1], not [2]
-            filter_complex = filter_complex.replace("[2:v]", "[1:v]")
-        # End-card is a video (.mp4), no -loop or -t needed. The video has
-        # its own native duration (~5s) and the filter graph uses setpts to
-        # shift it to play at end_card_start.
+    if has_title:
+        cmd += ["-i", str(TITLE_BANNER)]
+    if has_cta:
         cmd += ["-i", str(END_CARD)]
 
     cmd += [
@@ -1085,7 +1098,7 @@ def _build_ffmpeg_cmd(source_video: Path, start: float, end: float, duration: fl
         "-r", "30",
         "-c:a", "aac", "-b:a", "192k",
         "-movflags", "+faststart",
-        "-t", f"{duration:.3f}",
+        "-t", f"{total_duration:.3f}",
         str(out_path),
     ]
     return cmd
