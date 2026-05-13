@@ -1286,7 +1286,15 @@ def pick_clips_from_transcript(
     # After rule-based snap+validation, fire a concurrent Claude batch that
     # judges ONLY the first 5 seconds of each pick (no title, no context).
     # Catches mid-sentence openers that the rule-based checks let through.
-    validated = _cold_opener_gate(validated, segments)
+    #
+    # 2026-05-13: TEMPORARILY DISABLED for yield calibration. Cold-opener
+    # was rejecting 100% of picks because the source recordings have very
+    # few naturally clean cold-viewer openings. Need to either tighten
+    # upstream rescue logic OR loosen the gate before re-enabling.
+    # Set ENABLE_COLD_OPENER_GATE = True once calibrated.
+    ENABLE_COLD_OPENER_GATE = False
+    if ENABLE_COLD_OPENER_GATE:
+        validated = _cold_opener_gate(validated, segments)
 
     # Drop near-duplicates (retain highest-scoring representative of each cluster)
     deduped = _de_overlap(validated)
