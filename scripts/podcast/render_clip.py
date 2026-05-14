@@ -400,10 +400,45 @@ def _interpolate_track(track: list[tuple[float, int | None]],
     return list(zip([t for t, _ in track], filled))
 
 
+def _median_filter_track(track: list[tuple[float, int]],
+                         window: int = 3) -> list[tuple[float, int]]:
+    """Round-13: 3-sample median filter over face_x to kill single-frame
+    outliers (Haar-cascade disagreements between adjacent samples where one
+    cascade hits the real face and another grabs a background blob).
+
+    Real cuts are sustained — the new face_x holds for many samples post-cut
+    — so a median filter preserves them while erasing one-sample spikes that
+    were previously read as cuts by _detect_face_jump_cuts.
+
+    Edges (first/last `half` samples) are kept unchanged — applying a
+    truncated-window median at edges flips real first-sample values to the
+    neighbor and can MASK a real first-sample cut.
+    """
+    if window < 3 or len(track) < window:
+        return track
+    half = window // 2
+    out: list[tuple[float, int]] = []
+    for i, (t, x) in enumerate(track):
+        if i < half or i >= len(track) - half:
+            out.append((t, x))
+            continue
+        xs = sorted(_x for _t, _x in track[i - half:i + half + 1])
+        out.append((t, xs[len(xs) // 2]))
+    return out
+
+
 def _detect_face_jump_cuts(track: list[tuple[float, int]],
-                           threshold_px: int = 150) -> list[float]:
+                           threshold_px: int = 300) -> list[float]:
     """Detect cuts as large face_x jumps between consecutive samples.
-    Returns list of clip-relative times where the jump occurs."""
+    Returns list of clip-relative times where the jump occurs.
+
+    Round-13: threshold raised 150 → 300. At 1920-wide source 150px is only
+    7.8% of frame width — natural head movement (leaning forward, turning to
+    address another speaker) easily clears that. Real camera switches
+    between two speakers in different seat positions on the same shared
+    source are typically 400–800px of face_x shift. 300px sits between
+    natural movement and real cuts.
+    """
     cuts: list[float] = []
     for i in range(1, len(track)):
         prev_x = track[i - 1][1]
@@ -537,12 +572,18 @@ def detect_scenes_and_crops(
         # Fill missing detections by interpolation; convert face_x → fill value
         filled_track = _interpolate_track(raw_track, fallback_x=CENTER_CROP_X + crop_w // 2)
 
+        # Round-13: median-filter the track BEFORE jump detection so single-
+        # frame Haar-cascade outliers don't fire as cuts. Real cuts survive
+        # because they're sustained across many samples; spurious one-sample
+        # spikes get clipped to the surrounding median.
+        filled_track = _median_filter_track(filled_track, window=3)
+
         # ----------------------------------------------------------------
         # 3. FACE-JUMP CUTS — catches subtle cuts ffmpeg misses (similar
         #    lighting between two cameras, e.g. Ryan vs Tristan in the
-        #    same room).
+        #    same room). Round-13: threshold raised to 300px.
         # ----------------------------------------------------------------
-        face_jump_cuts = _detect_face_jump_cuts(filled_track, threshold_px=150)
+        face_jump_cuts = _detect_face_jump_cuts(filled_track, threshold_px=300)
 
         # Union ffmpeg + face_jump cuts, dedupe within 0.2s
         all_cuts = sorted(set(ffmpeg_cuts) | set(face_jump_cuts))
@@ -597,8 +638,38 @@ def detect_scenes_and_crops(
             return [(0.0, duration, only_x)]
 
         if len(collapsed) > MAX_SCENES:
-            print(f"  [SCENES] {len(collapsed)} scenes > cap {MAX_SCENES} → 1 scene, center crop")
-            return fallback
+            # Round-13: instead of returning a single center-crop scene (which
+            # gives up framing entirely — the c6 "off-center the whole time"
+            # bug), collapse adjacent scenes by bucketing crop_x to 100px
+            # quanta. This keeps the face-tracked positioning even when the
+            # raw scene count blows past the cap.
+            BUCKET = 100
+            bucketed = [(s, e, (cx // BUCKET) * BUCKET) for s, e, cx in collapsed]
+            merged: list[tuple[float, float, int]] = []
+            for s, e, cx in bucketed:
+                if merged and merged[-1][2] == cx:
+                    merged[-1] = (merged[-1][0], e, cx)
+                else:
+                    merged.append((s, e, cx))
+            if len(merged) > MAX_SCENES:
+                # Still too many — keep the longest MAX_SCENES runs, but
+                # extend their durations to fill any short runs that drop
+                # out (so playback timing stays continuous).
+                merged_sorted = sorted(merged, key=lambda r: r[1] - r[0], reverse=True)
+                keep = sorted(merged_sorted[:MAX_SCENES], key=lambda r: r[0])
+                # Stretch each kept run forward to where the next one begins
+                stretched: list[tuple[float, float, int]] = []
+                for i, (s, _, cx) in enumerate(keep):
+                    next_s = keep[i + 1][0] if i + 1 < len(keep) else duration
+                    stretched.append((s, next_s, cx))
+                # Make sure first run starts at 0
+                if stretched and stretched[0][0] > 0:
+                    s0, e0, cx0 = stretched[0]
+                    stretched[0] = (0.0, e0, cx0)
+                merged = stretched
+            print(f"  [SCENES] {len(collapsed)} scenes > cap {MAX_SCENES} → "
+                  f"{len(merged)} scenes (bucketed by 100px)")
+            return merged
 
         print(f"  [SCENES] {len(deduped_cuts)} cuts ({len(ffmpeg_cuts)} ffmpeg + "
               f"{len(face_jump_cuts)} face-jump) → {len(collapsed)} scenes (PTS-aligned)")

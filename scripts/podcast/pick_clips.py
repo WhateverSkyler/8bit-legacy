@@ -490,7 +490,16 @@ def _extract_sentences(transcript: dict) -> list[dict]:
     cur_words: list[dict] = []
     cur_start_time: float | None = None
 
-    def _flush() -> None:
+    # Round-13: confidence-tag each emitted sentence so downstream gates
+    # can distinguish "real" boundaries (HIGH/MED) from artifacts (LOW).
+    # See _end_completion_gate which filters to HIGH/MED only — picking
+    # a LOW-confidence "sentence end" lands mid-actual-sentence in the audio.
+    #   HIGH = explicit .!? terminal punctuation
+    #   MED  = gap >= 1.0s before the next word (real conversational pause)
+    #   LOW  = gap in [0.5, 1.0) OR forced by MAX_SENTENCE_DURATION cap
+    HIGH_CONF_GAP = 1.0
+
+    def _flush(confidence: str = "LOW", gap_after: float = 0.0) -> None:
         if not cur_words:
             return
         first_w = cur_words[0]
@@ -504,6 +513,8 @@ def _extract_sentences(transcript: dict) -> list[dict]:
             "text": text,
             "first_word": first_clean,
             "last_word": last_clean,
+            "boundary_confidence": confidence,
+            "gap_after": round(gap_after, 3),
         })
 
     prev_word_end: float | None = None
@@ -519,12 +530,14 @@ def _extract_sentences(transcript: dict) -> list[dict]:
             if prev_word_end is not None and cur_words:
                 gap = wstart - prev_word_end
                 if gap >= SENTENCE_GAP_BREAK:
-                    _flush()
+                    confidence = "MED" if gap >= HIGH_CONF_GAP else "LOW"
+                    _flush(confidence=confidence, gap_after=gap)
                     cur_words = []
                     cur_start_time = None
-                # Force-break if accumulated sentence has run too long
+                # Force-break if accumulated sentence has run too long.
+                # This is a fake boundary (no signal) — tag LOW.
                 elif cur_start_time is not None and (wstart - cur_start_time) > MAX_SENTENCE_DURATION:
-                    _flush()
+                    _flush(confidence="LOW", gap_after=gap)
                     cur_words = []
                     cur_start_time = None
 
@@ -532,17 +545,17 @@ def _extract_sentences(transcript: dict) -> list[dict]:
                 cur_start_time = wstart
             cur_words.append(w)
 
-            # Signal (1): explicit punctuation AFTER this word
+            # Signal (1): explicit punctuation AFTER this word — HIGH confidence
             if _SENT_END_RE.search(wt):
-                _flush()
+                _flush(confidence="HIGH")
                 cur_words = []
                 cur_start_time = None
 
             prev_word_end = wend
 
-    # Flush the last accumulated sentence
+    # Flush the last accumulated sentence — no gap-after signal, leave LOW
     if cur_words:
-        _flush()
+        _flush(confidence="LOW")
 
     transcript["_sentences"] = sentences
     return sentences
@@ -565,22 +578,63 @@ def _snap_to_sentence_start(t_sec: float, sentences: list[dict],
     return best
 
 
+def _safe_breath_pad(sentence_end: float, sentences: list[dict],
+                     max_pad: float = 0.40) -> float:
+    """Round-13: cap the breath pad after a sentence end to the actual silence
+    available before the next spoken word, so the pad never bleeds into the
+    next sentence's audio.
+
+    Without this, a clip ending on a HIGH-confidence sentence boundary in a
+    continuous-speech stretch (e.g., "...given the situation." immediately
+    followed by "These are cards...") plays 0.40s of the next sentence and
+    sounds like a mid-sentence cut to the viewer.
+
+    Caller passes the sentence end time and the sentences list. We find the
+    next sentence whose start > sentence_end and use that gap. If nothing
+    follows, the full max_pad is safe.
+    """
+    next_start: float | None = None
+    for s in sentences:
+        # The next sentence starts at sentence_end OR later. Equal-time is
+        # the continuous-speech case ("...situation." → "These" at the same
+        # timestamp) — exactly the case we need to catch with a zero pad.
+        if s["start"] >= sentence_end and s["start"] > sentence_end - 0.01 \
+                and (s["start"] - sentence_end < 30.0):  # search-window cap
+            # Skip self-matches (a sentence ending at its own start is degenerate)
+            if s["end"] <= sentence_end + 0.001:
+                continue
+            next_start = s["start"]
+            break
+    if next_start is None:
+        return max_pad
+    return min(max_pad, max(0.0, next_start - sentence_end))
+
+
 def _snap_to_sentence_end(t_sec: float, sentences: list[dict],
                           tolerance: float = 1.0) -> float | None:
     """Return the END time of the LAST sentence whose end is within
     (-inf, t_sec + tolerance]. I.e., the latest sentence that ends at or
     before the requested time, with a small lookahead. Returns None if no
     sentence fits.
+
+    Round-13: prefer HIGH/MED boundary_confidence sentences. Only fall back
+    to a LOW boundary if no HIGH/MED option exists within tolerance.
+    LOW boundaries are mid-actual-sentence artifacts of the heuristic
+    (0.5–1.0s gaps or MAX_SENTENCE_DURATION cap) — picking one as a clip
+    end lands mid-spoken-sentence.
     """
     if not sentences:
         return None
-    best: float | None = None
+    best_strong: float | None = None
+    best_any: float | None = None
     for s in sentences:
         if s["end"] <= t_sec + tolerance:
-            best = s["end"]
+            best_any = s["end"]
+            if s.get("boundary_confidence") in ("HIGH", "MED"):
+                best_strong = s["end"]
         else:
             break
-    return best
+    return best_strong if best_strong is not None else best_any
 
 
 def _sentences_in_window(start_sec: float, end_sec: float,
@@ -861,10 +915,12 @@ def _snap_and_validate(
                             break
                     new_start = max(0.0, first_word_start - 0.05)
             else:
-                # Sentence-precise — apply directly. 0.40s pad on end, none
-                # on start (sentence start is already a clean entry point).
+                # Sentence-precise — apply directly. Adaptive breath pad on
+                # end (caps at silence-to-next-word so we never bleed into
+                # the next sentence's audio). No pad on start (sentence
+                # start is already a clean entry point).
                 new_start = snapped_start
-                new_end = snapped_end + 0.40
+                new_end = snapped_end + _safe_breath_pad(snapped_end, sentences)
         else:
             # Legacy word-boundary fallback for callers that don't pass
             # sentences (kept for back-compat; should be rare in round 11+).
@@ -1315,7 +1371,9 @@ def _cold_opener_gate(picks: list[dict], segments: list[dict],
                 # Fallback: just use target_end with a small breath pad
                 new_end = target_end
             else:
-                new_end += 0.40  # breath pad after the last sentence
+                # Adaptive breath pad — caps at actual silence-to-next-word
+                # so we don't bleed into the next sentence's audio.
+                new_end += _safe_breath_pad(new_end, sentences)
             if new_end - new_start < DURATION_FLOOR_SEC:
                 print(f"  [cold-opener] REJECT (adjusted clip too short): {pick.get('title','?')[:50]}")
                 continue
@@ -1410,12 +1468,19 @@ def _end_completion_gate(picks: list[dict], segments: list[dict],
         # Build candidates: current last sentence + up to 5 future sentences
         # that aren't filler. Cap each candidate's potential extension so
         # the clip doesn't blow past DURATION_CEILING_SEC.
+        # Round-13: filter to HIGH/MED boundary_confidence only — LOW
+        # boundaries are mid-actual-sentence artifacts and EXTENDing onto
+        # one still ends mid-spoken-sentence in the audio. Index #0 (current
+        # end) is included unconditionally so Claude can see the starting
+        # point; only the alternative slots (#1+) are confidence-filtered.
         candidates: list[dict] = []
         for j, s in enumerate(sentences[cur_end_idx:]):
             text = s.get("text", "").strip()
             if len(text) < MIN_CANDIDATE_LEN:
                 continue
             if j > 0 and _is_filler(text):
+                continue
+            if j > 0 and s.get("boundary_confidence") not in ("HIGH", "MED"):
                 continue
             # Don't allow extension past duration ceiling
             if s["end"] - start > DURATION_CEILING_SEC + 0.5:
@@ -1425,8 +1490,9 @@ def _end_completion_gate(picks: list[dict], segments: list[dict],
                 break
 
         if len(candidates) < 2:
-            # Only the current ending available; PASS through without
-            # bothering Claude
+            # Only the current ending available (or all alternatives were
+            # LOW confidence) — PASS through without bothering Claude.
+            # Don't extend into uncertain territory.
             work.append((pick, None, "?", candidates))
             continue
 
@@ -1488,7 +1554,10 @@ def _end_completion_gate(picks: list[dict], segments: list[dict],
                 continue
             chosen = candidates[idx]
             old_end = float(pick.get("end_sec", 0))
-            new_end = chosen["end"] + 0.40  # breath pad
+            # Adaptive breath pad: caps at silence-to-next-word so the pad
+            # never bleeds into the next sentence's audio (the bug that
+            # made c3/c6 sound like mid-sentence cuts on round 12).
+            new_end = chosen["end"] + _safe_breath_pad(chosen["end"], sentences)
             new_dur = new_end - float(pick.get("start_sec", 0))
             if new_dur > DURATION_CEILING_SEC:
                 # Refuse extensions that would blow the duration cap
