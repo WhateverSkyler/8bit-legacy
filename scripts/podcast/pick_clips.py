@@ -1247,7 +1247,7 @@ def _cold_opener_gate(picks: list[dict], segments: list[dict],
 
     async def _gather_all() -> list:
         tasks = []
-        for _p, prompt, _c in work:
+        for _p, prompt, _c, _cands in work:
             if prompt is None:
                 tasks.append(asyncio.sleep(0, result=None))
             else:
@@ -1256,7 +1256,7 @@ def _cold_opener_gate(picks: list[dict], segments: list[dict],
                 tasks.append(call_claude_text_async(prompt, model=SONNET_MODEL, max_tokens=300))
         return await asyncio.gather(*tasks, return_exceptions=True)
 
-    n_with_prompt = sum(1 for _, p, _ in work if p)
+    n_with_prompt = sum(1 for _, p, _, _ in work if p)
     if n_with_prompt == 0:
         return picks
     print(f"  [cold-opener] running {n_with_prompt} picks concurrently...")
