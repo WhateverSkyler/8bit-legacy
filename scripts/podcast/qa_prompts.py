@@ -132,53 +132,71 @@ Return STRICT JSON ONLY (no prose, no markdown fences, start with `{{` end with 
 # end. Claude sees the LAST sentence + 5 candidate continuation
 # sentences and decides whether to keep the current end or extend.
 
-END_COMPLETION_TEST_V1 = """You are deciding where a short-form clip should END so the viewer hears a COMPLETE thought, including any payoff to a setup. TikTok/Reels viewer — no follow-up context, no part-2, the clip stands alone.
+END_COMPLETION_TEST_V1 = """You are deciding where a short-form clip should END so the viewer hears a COMPLETE thought AND nothing irrelevant after it. TikTok/Reels viewer — no follow-up context, no part-2, the clip stands alone.
 
-CRITICAL RULE — NEVER end on a SETUP without its PAYOFF.
-A setup is anything that primes the viewer to expect more:
-- A QUESTION ("Can you guess?", "What franchise hasn't done this?", "You know what's crazy?")
-- A TEASE ("There's one I'm thinking of specifically", "Wait until you hear this", "I'll tell you why")
-- A CONTRAST / PRE-AMBLE ("There's one exception though", "but here's the thing", "however")
-- An UNRESOLVED SUBJECT pronoun ("Then he said...", "And it was...")
+You can move the clip end EARLIER (SHORTEN) or LATER (EXTEND), or PASS. The current end is marked `<-- CURRENT` in the candidate list.
 
-If the LAST audible thought is a setup, the clip CANNOT end there — you MUST extend to a candidate that captures the payoff (the answer, the reveal, the resolution).
+TWO failure modes to detect and fix:
 
-Each candidate below shows you THREE pieces of text:
-- BEFORE: the sentence the viewer hears RIGHT BEFORE this candidate's silence (= what the clip's last audible thought would be if you pick this candidate)
-- AFTER: the next sentence (post-silence) — this is what gets CUT OFF if you choose this candidate. Use this to check whether you'd be cutting off a payoff that needed to be heard.
-- silence_dur: how long the audio silence is (longer = more emphatic conversational pause = often a natural landing)
+(A) UNDER-EXTENDED — current end cuts off BEFORE a payoff lands:
+    - SETUP: a question ("Can you guess?", "What franchise hasn't done this?")
+    - TEASE: "There's one I'm thinking of specifically", "Wait until you hear this"
+    - CONTRAST/PRE-AMBLE: "There's one exception though", "however", "but here's the thing"
+    - UNRESOLVED PRONOUN: "Then he said...", "And it was..."
+    → EXTEND to the candidate where the answer/reveal/resolution lands.
 
-CANDIDATE ENDINGS (numbered, sorted by clip-end time ascending):
+(B) OVER-EXTENDED — current end includes content AFTER the real conclusion:
+    - The current AFTER text starts a NEW topic, a tangent, an off-ramp.
+    - The speaker has CLEARLY landed their point already, and the next words are someone else pivoting elsewhere.
+    - Trailing filler like "yeah", "you know", "I don't know" tacked onto a complete thought.
+    → SHORTEN to an EARLIER candidate whose BEFORE text is the real landing point and whose AFTER text is the pivot/tangent.
+
+Each candidate shows:
+- clip_end: the timestamp the clip would end at
+- silence_dur: how long the silence is (longer = more emphatic conversational pause)
+- BEFORE: the sentence the viewer hears RIGHT BEFORE this end (= the LAST audible content)
+- AFTER: the sentence that gets CUT OFF (= what we'd lose, or what we'd be glad to lose)
+
+CANDIDATE ENDINGS (numbered chronologically, ascending clip_end):
 {candidates_block}
 
-#0 is the clip's CURRENT end. Candidates #1+ are later silence points you can EXTEND to.
+Note: the `last_sentence` Claude sees at the top is what the viewer hears right before the CURRENT end:
+"{last_sentence}"
 
 DECISION RULES:
 
-1. Read each candidate's BEFORE text and ask: "Does this stand alone as a complete thought?" If BEFORE ends on a question, tease, contrast marker, or unresolved pronoun → that candidate is INVALID. Move to a later candidate.
+1. For each candidate, ask:
+   - Does BEFORE stand alone as a complete thought? (no setup/tease/contrast/unresolved pronoun)
+   - Does AFTER look like content the clip SHOULD include? Or is it a pivot/tangent/filler?
 
-2. Among valid candidates, prefer the one with the most satisfying landing — a stated take, a punchline, a resolution. Look at silence_dur as a quality signal (longer pause = stronger landing).
+2. Pick the candidate whose BEFORE is a complete payoff AND whose AFTER is either irrelevant or the clean end of the conversation.
 
-3. If the CURRENT ending (#0) is already a complete thought AND no later candidate would noticeably improve it, PASS.
+3. If the CURRENT candidate (marked `<-- CURRENT`) is the best choice, PASS.
 
-4. If every candidate's BEFORE text is a setup with no payoff in the window, REJECT (rare).
+4. If a candidate EARLIER than CURRENT has a better (more conclusive) BEFORE + the current AFTER text is a pivot/tangent → SHORTEN.
 
-PASS examples (current ending IS a complete payoff):
-  - "...and that's why GameStop will never get my money again."  ← conclusive stance
-  - "It's literally infinite money."  ← punchy landing
-  - "I'd rather just play the original."  ← clear ending take
+5. If a candidate LATER than CURRENT captures a payoff the current end misses → EXTEND.
 
-EXTEND examples (current ending is a setup — payoff is in a later candidate):
-  - Current: "Can you guess which franchise hasn't done this?" → MUST extend to the candidate where the answer is given.
-  - Current: "There's one I'm specifically thinking of." → MUST extend to the candidate that names it.
-  - Current: "...so I think it's just kind of."  ← trails off, incomplete
+6. If every candidate is bad → REJECT (rare).
+
+PASS examples:
+  - Current BEFORE: "And that's why GameStop will never get my money again."  ← conclusive stance
+  - Current BEFORE: "It's literally infinite money."  ← punchy landing
+
+SHORTEN examples (over-extension into pivot):
+  - Current BEFORE: "...what I really feel". Current AFTER: "Oh, by the way, did you see the new Xbox?" → pivot is irrelevant, SHORTEN to the candidate ending at "what I really feel".
+  - Current BEFORE: "I think handheld is the future." AFTER: "Yeah, anyway, switching topics for a sec..." → SHORTEN.
+
+EXTEND examples:
+  - Current BEFORE: "Can you guess which franchise hasn't done this?" → MUST EXTEND to the candidate where the answer is given.
+  - Current BEFORE: "There's one I'm specifically thinking of." → MUST EXTEND.
 
 Return STRICT JSON ONLY (no prose, no markdown fences, start with `{{` end with `}}`):
 {{
   "discussion_concluded": true | false,
-  "recommendation": "PASS" | "EXTEND" | "REJECT",
-  "chosen_index": null | <integer index from the candidate list, only set if EXTEND>,
-  "reason": "one short sentence — specifically NAME the setup/payoff if EXTENDing"
+  "recommendation": "PASS" | "EXTEND" | "SHORTEN" | "REJECT",
+  "chosen_index": null | <integer index from the candidate list, only set if EXTEND or SHORTEN>,
+  "reason": "one short sentence — name the setup/payoff if EXTENDing, or name the pivot/tangent if SHORTENing"
 }}
 """
 

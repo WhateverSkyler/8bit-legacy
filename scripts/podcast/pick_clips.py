@@ -1424,57 +1424,66 @@ def _end_completion_gate(picks: list[dict], segments: list[dict],
                 return s["text"].strip()
         return "(no following sentence — end of episode)"
 
-    work: list[tuple[dict, str | None, str, list[dict]]] = []
+    work: list[tuple[dict, str | None, str, list[dict], int]] = []
     for pick in picks:
         try:
             end = float(pick.get("end_sec", 0))
             start = float(pick.get("start_sec", 0))
         except (TypeError, ValueError):
-            work.append((pick, None, "?", []))
+            work.append((pick, None, "?", [], 0))
             continue
-        # Build silence-aligned candidates in [start + FLOOR, start + CEILING + 2].
-        # Each has start, end, duration, clip_end (= start + 0.10s offset).
+        # Round 16 (2026-05-14): bidirectional candidates.
+        # Window includes silences BEFORE the current end (for SHORTEN candidates)
+        # and AFTER (for EXTEND candidates). Floor for SHORTEN candidates is
+        # `start + 0.6 * DURATION_FLOOR_SEC` — a clip can shorten to ~60% of
+        # the floor if a stronger landing exists earlier (we'd rather have a
+        # shorter sharp clip than a longer one that includes a tangent).
         cands_raw = silence_candidates_for_gate(
             silence_map,
-            lo=start + DURATION_FLOOR_SEC,
+            lo=start + DURATION_FLOOR_SEC * 0.6,
             hi=start + DURATION_CEILING_SEC + 2.0,
-            max_n=6,
+            max_n=12,  # wider window — split between BEFORE/AFTER
         )
-        if len(cands_raw) < 2:
-            # Not enough silence-aligned options to make a meaningful choice.
-            # PASS unchanged — the pick's current end was already set by
-            # _snap_and_validate using audio silence, so it's already clean.
-            work.append((pick, None, "?", []))
+
+        # Split into BEFORE (≤ current end) and AFTER (> current end).
+        # Take up to 3 of each so Claude has bidirectional options.
+        before_cands = [c for c in cands_raw if c["clip_end"] <= end + 0.20]
+        after_cands = [c for c in cands_raw if c["clip_end"] > end + 0.20]
+        # Take the 3 closest BEFORE (= latest 3 before current) and 3 earliest AFTER.
+        before_cands = before_cands[-3:]
+        after_cands = after_cands[:3]
+
+        # The current end is whichever BEFORE is closest to `end`, OR the
+        # earliest AFTER if no BEFORE exists.
+        current = before_cands[-1] if before_cands else (after_cands[0] if after_cands else None)
+        if current is None:
+            work.append((pick, None, "?", [], 0))
             continue
 
-        # Find the candidate closest to (and at-or-before) the current pick end
-        # — this becomes index #0 (current state). Other candidates are
-        # alternative endings Claude can EXTEND to.
-        # Sort so #0 is the one closest to current end; #1..#N are LATER
-        # candidates (extensions) in chronological order.
-        before = [c for c in cands_raw if c["clip_end"] <= end + 0.20]
-        after = [c for c in cands_raw if c["clip_end"] > end + 0.20]
-        current = before[-1] if before else after[0] if after else None
-        extensions = after  # candidates strictly later than current end
-        if current is None or len(extensions) == 0:
-            # Nothing meaningful to extend to — PASS.
-            work.append((pick, None, "?", []))
-            continue
-        candidates = [current] + extensions[:5]   # up to 6 total
+        # Assemble the candidate list in chronological order, dedup against current.
+        chronological: list[dict] = []
+        for c in before_cands + after_cands:
+            if not chronological or c["clip_end"] != chronological[-1]["clip_end"]:
+                chronological.append(c)
 
-        # Build the prompt block: each candidate shows the preceding sentence
-        # (what the viewer would HEAR last if we end here) AND the following
-        # sentence (what gets CUT OFF). Round 15: showing the following
-        # sentence is critical for catching setup→payoff endings — Claude
-        # can now see "ending here cuts off the answer to the just-posed
-        # question" and EXTEND to capture the payoff.
+        # Need at least 2 distinct candidates to make a meaningful choice.
+        if len(chronological) < 2:
+            work.append((pick, None, "?", [], 0))
+            continue
+
+        # Mark which one is CURRENT (the index Claude should treat as the baseline).
+        current_idx = chronological.index(current)
+        candidates = chronological
+
+        # Build the prompt block. Mark `<-- CURRENT` on the current end.
         def _candidate_block(i: int, c: dict) -> str:
-            before = _preceding_sentence_text(c['start'])[:180]
-            after = _following_sentence_text(c['end'])[:180]
+            before_text = _preceding_sentence_text(c['start'])[:180]
+            after_text = _following_sentence_text(c['end'])[:180]
+            mark = " <-- CURRENT" if i == current_idx else ""
             return (
-                f"  #{i}: clip_end={c['clip_end']:.2f}s  silence_dur={c['duration']:.2f}s\n"
-                f"      BEFORE (last heard): \"{before}\"\n"
-                f"      AFTER  (cut off):    \"{after}\""
+                f"  #{i}: clip_end={c['clip_end']:.2f}s  silence_dur={c['duration']:.2f}s{mark}\n"
+                f"      BEFORE (last heard): \"{before_text}\"\n"
+                f"      AFTER  (cut off):    \"{after_text}\""
             )
         candidates_block = "\n".join(
             _candidate_block(i, c) for i, c in enumerate(candidates)
@@ -1485,18 +1494,19 @@ def _end_completion_gate(picks: list[dict], segments: list[dict],
             candidates_block=candidates_block[:5000],
         )
         clip_id = pick.get("clip_id") or pick.get("title", "?")[:60]
-        work.append((pick, prompt, clip_id, candidates))
+        # Stash current_idx in the work tuple so the verdict-handler knows it.
+        work.append((pick, prompt, clip_id, candidates, current_idx))
 
     async def _gather_all() -> list:
         tasks = []
-        for _p, prompt, _c, _cands in work:
+        for _p, prompt, _c, _cands, _cur in work:
             if prompt is None:
                 tasks.append(asyncio.sleep(0, result=None))
             else:
                 tasks.append(call_claude_text_async(prompt, model=SONNET_MODEL, max_tokens=300))
         return await asyncio.gather(*tasks, return_exceptions=True)
 
-    n_with_prompt = sum(1 for _, p, _, _ in work if p)
+    n_with_prompt = sum(1 for _, p, _, _, _ in work if p)
     if n_with_prompt == 0:
         return picks
     print(f"  [end-check] running {n_with_prompt} picks concurrently...")
@@ -1507,7 +1517,8 @@ def _end_completion_gate(picks: list[dict], segments: list[dict],
 
     surviving: list[dict] = []
     n_extended = 0
-    for (pick, prompt, clip_id, candidates), verdict in zip(work, verdicts):
+    n_shortened = 0
+    for (pick, prompt, clip_id, candidates, current_idx), verdict in zip(work, verdicts):
         if prompt is None or not candidates:
             surviving.append(pick)
             continue
@@ -1521,42 +1532,54 @@ def _end_completion_gate(picks: list[dict], segments: list[dict],
             "title": pick.get("title", "?"),
             "end_sec": pick.get("end_sec", 0),
             "n_candidates": len(candidates),
+            "current_idx": current_idx,
         })
 
-        if rec == "EXTEND":
+        # Round 16: EXTEND moves to a LATER candidate (idx > current_idx),
+        # SHORTEN moves to an EARLIER candidate (idx < current_idx).
+        if rec in ("EXTEND", "SHORTEN"):
             try:
                 idx = int(verdict.get("chosen_index"))
             except (TypeError, ValueError):
                 idx = None
-            if idx is None or idx <= 0 or idx >= len(candidates):
+            if idx is None or idx < 0 or idx >= len(candidates) or idx == current_idx:
+                surviving.append(pick)
+                continue
+            # Direction sanity check: EXTEND requires LATER, SHORTEN requires EARLIER.
+            if rec == "EXTEND" and idx <= current_idx:
+                surviving.append(pick)
+                continue
+            if rec == "SHORTEN" and idx >= current_idx:
                 surviving.append(pick)
                 continue
             chosen = candidates[idx]
             old_end = float(pick.get("end_sec", 0))
-            # Round 14: candidate already includes the 100ms offset into the
-            # silence period (clip_end = silence_start + 0.10). No breath
-            # pad needed — we ARE landing in real audio silence.
             new_end = chosen["clip_end"]
             new_dur = new_end - float(pick.get("start_sec", 0))
-            if new_dur > DURATION_CEILING_SEC:
-                # Refuse extensions that would blow the duration cap
+            # Respect floor + ceiling. SHORTEN that pushes below DURATION_FLOOR
+            # is rejected — we'd rather keep the longer-but-imperfect clip than
+            # have a fragment.
+            if new_dur > DURATION_CEILING_SEC or new_dur < DURATION_FLOOR_SEC:
                 surviving.append(pick)
                 continue
-            print(f"  [end-check] EXTEND: {pick.get('title','?')[:50]} "
+            print(f"  [end-check] {rec}: {pick.get('title','?')[:50]} "
                   f"end {old_end:.1f}s → {new_end:.2f}s ({reason[:60]})")
             pick = {**pick,
                     "end_sec": round(new_end, 2),
                     "duration_sec": round(new_dur, 2),
-                    "_end_extended": True}
-            n_extended += 1
+                    f"_end_{rec.lower()}ed": True}
+            if rec == "EXTEND":
+                n_extended += 1
+            else:
+                n_shortened += 1
             surviving.append(pick)
             continue
 
         # PASS or REJECT (we keep on REJECT — the existing pick is at least
-        # sentence-precise; better than dropping the clip entirely)
+        # silence-aligned; better than dropping the clip entirely)
         surviving.append(pick)
 
-    print(f"  [end-check] {len(picks)} picks → {n_extended} extended")
+    print(f"  [end-check] {len(picks)} picks → {n_extended} extended, {n_shortened} shortened")
     return surviving
 
 
