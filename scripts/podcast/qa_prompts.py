@@ -134,13 +134,13 @@ Return STRICT JSON ONLY (no prose, no markdown fences, start with `{{` end with 
 
 END_COMPLETION_TEST_V1 = """You are deciding whether a short-form clip's ENDING gives a satisfying conclusion to the discussion (TikTok/Reels viewer, no follow-up context).
 
-The clip's CURRENT LAST sentence (what the viewer would hear right before the clip ends):
+The clip's CURRENT LAST spoken thought (what the viewer would hear right before the clip ends):
 
 \"\"\"
 {last_sentence}
 \"\"\"
 
-You may EXTEND the clip end to include one of these later candidate sentences if doing so completes the topic better. Each candidate is numbered. #0 is the current last sentence (= same as above). All candidates are real sentence-precise endings — picking any one snaps the clip end to that exact sentence boundary.
+You may EXTEND the clip end to include one of these later candidate ending points if doing so completes the topic better. Each candidate is numbered. #0 is the current end (= same spoken thought as above). All candidates are **silence-aligned endings** — every candidate lands in real audio silence in the source recording, so the clip end is always a clean cut, never mid-word. `silence_dur` shows how long that silence period is — LONGER silence = more emphatic conversational pause = often a stronger landing.
 
 CANDIDATE ENDINGS (numbered):
 {candidates_block}

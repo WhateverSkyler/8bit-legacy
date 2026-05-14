@@ -393,6 +393,33 @@ def best_speaker_cx(frames_faces: list[list[dict]]) -> int | None:
         return None
     scored = [(t, _score_track(t, len(frames_faces))) for t in tracks]
     scored.sort(key=lambda x: x[1], reverse=True)
+
+    # Round 14 (2026-05-14): two-speakers-both-talking tie-breaker.
+    # When the top-2 tracks score within 10% AND both show real mouth motion
+    # (>0.5 normalized), the winner is decided by floating-point noise in the
+    # variance estimator. The user sees the "wrong" person centered for the
+    # whole scene, with the choice flipping unpredictably across re-renders.
+    # Tie-break by avg face area DESC — the camera-focused subject wins.
+    if len(scored) >= 2:
+        s1 = scored[0][1]
+        s2 = scored[1][1]
+        if s1 > 0 and (s1 - s2) / s1 < 0.10:
+            mouth1 = [t.get("mouth_opening") for t in scored[0][0]
+                      if t.get("mouth_opening") is not None]
+            mouth2 = [t.get("mouth_opening") for t in scored[1][0]
+                      if t.get("mouth_opening") is not None]
+            def _var(xs: list[float]) -> float:
+                if len(xs) < 2:
+                    return 0.0
+                m = sum(xs) / len(xs)
+                return sum((x - m) ** 2 for x in xs) / len(xs)
+            if _var(mouth1) * 200.0 > 0.5 and _var(mouth2) * 200.0 > 0.5:
+                # Both are clearly talking — pick the larger-area subject
+                area1 = sum(t["area"] for t in scored[0][0]) / len(scored[0][0])
+                area2 = sum(t["area"] for t in scored[1][0]) / len(scored[1][0])
+                if area2 > area1:
+                    scored[0], scored[1] = scored[1], scored[0]
+
     best_track, best_score = scored[0]
 
     # The chosen speaker's X = median of their face centers across frames they appear in

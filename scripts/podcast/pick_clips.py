@@ -462,25 +462,22 @@ MAX_SENTENCE_DURATION = 12.0
 
 
 def _extract_sentences(transcript: dict) -> list[dict]:
-    """Group whisperX words into sentence-like chunks using TWO signals:
-      (1) WORD/SEGMENT TEXT ENDS WITH `.`, `!`, or `?` — a definitive
-          sentence end (some episodes have these, others don't).
-      (2) GAP between consecutive words ≥ SENTENCE_GAP_BREAK seconds —
-          a long pause, which usually signals a thought/sentence end
-          even when punctuation is missing.
+    """Group whisperX words into sentence-like chunks using two signals:
+      (1) WORD text ends with `.`, `!`, or `?` (when punctuation is present).
+      (2) Gap between consecutive words ≥ SENTENCE_GAP_BREAK seconds.
 
-    Combining both signals produces robust sentence boundaries even on
-    the punctuation-poor transcripts (May 5 has only 9% of words ending
-    in .!? but 28% of inter-word gaps exceed 0.5s).
+    Hard cap MAX_SENTENCE_DURATION to keep individual chunks bounded for
+    LLM prompts.
 
-    Each Sentence dict:
-      start, end:  float (seconds, episode-relative)
-      text:        full sentence text (joined word texts, stripped)
-      first_word:  cleaned first word (lowercase, no punctuation)
-      last_word:   cleaned last word (lowercase, no punctuation)
+    Round 14 (2026-05-14): boundary_confidence tagging removed. Sentence
+    extraction still provides text chunks for cold-opener candidates and
+    the text context shown to Claude in the end-completion gate, but END
+    boundaries now come from REAL audio silence (_silence_detect) instead
+    of text-derived gap heuristics — sentence boundaries here are NOT
+    audio-truth and never were.
 
-    Cached on the transcript dict under `_sentences` so this runs ONCE
-    per episode regardless of how many functions need it.
+    Each Sentence dict: {start, end, text, first_word, last_word}.
+    Cached on the transcript dict under `_sentences`.
     """
     cached = transcript.get("_sentences")
     if cached is not None:
@@ -490,16 +487,7 @@ def _extract_sentences(transcript: dict) -> list[dict]:
     cur_words: list[dict] = []
     cur_start_time: float | None = None
 
-    # Round-13: confidence-tag each emitted sentence so downstream gates
-    # can distinguish "real" boundaries (HIGH/MED) from artifacts (LOW).
-    # See _end_completion_gate which filters to HIGH/MED only — picking
-    # a LOW-confidence "sentence end" lands mid-actual-sentence in the audio.
-    #   HIGH = explicit .!? terminal punctuation
-    #   MED  = gap >= 1.0s before the next word (real conversational pause)
-    #   LOW  = gap in [0.5, 1.0) OR forced by MAX_SENTENCE_DURATION cap
-    HIGH_CONF_GAP = 1.0
-
-    def _flush(confidence: str = "LOW", gap_after: float = 0.0) -> None:
+    def _flush() -> None:
         if not cur_words:
             return
         first_w = cur_words[0]
@@ -513,8 +501,6 @@ def _extract_sentences(transcript: dict) -> list[dict]:
             "text": text,
             "first_word": first_clean,
             "last_word": last_clean,
-            "boundary_confidence": confidence,
-            "gap_after": round(gap_after, 3),
         })
 
     prev_word_end: float | None = None
@@ -526,18 +512,14 @@ def _extract_sentences(transcript: dict) -> list[dict]:
             wstart = float(w.get("start", 0.0))
             wend = float(w.get("end", 0.0))
 
-            # Signal (2): gap-based sentence break BEFORE this word
             if prev_word_end is not None and cur_words:
                 gap = wstart - prev_word_end
                 if gap >= SENTENCE_GAP_BREAK:
-                    confidence = "MED" if gap >= HIGH_CONF_GAP else "LOW"
-                    _flush(confidence=confidence, gap_after=gap)
+                    _flush()
                     cur_words = []
                     cur_start_time = None
-                # Force-break if accumulated sentence has run too long.
-                # This is a fake boundary (no signal) — tag LOW.
                 elif cur_start_time is not None and (wstart - cur_start_time) > MAX_SENTENCE_DURATION:
-                    _flush(confidence="LOW", gap_after=gap)
+                    _flush()
                     cur_words = []
                     cur_start_time = None
 
@@ -545,17 +527,15 @@ def _extract_sentences(transcript: dict) -> list[dict]:
                 cur_start_time = wstart
             cur_words.append(w)
 
-            # Signal (1): explicit punctuation AFTER this word — HIGH confidence
             if _SENT_END_RE.search(wt):
-                _flush(confidence="HIGH")
+                _flush()
                 cur_words = []
                 cur_start_time = None
 
             prev_word_end = wend
 
-    # Flush the last accumulated sentence — no gap-after signal, leave LOW
     if cur_words:
-        _flush(confidence="LOW")
+        _flush()
 
     transcript["_sentences"] = sentences
     return sentences
@@ -578,75 +558,27 @@ def _snap_to_sentence_start(t_sec: float, sentences: list[dict],
     return best
 
 
-def _safe_breath_pad(sentence_end: float, sentences: list[dict],
-                     max_pad: float = 0.40,
-                     safe_margin: float = 0.10) -> float:
-    """Round-13: cap the breath pad after a sentence end to the actual silence
-    available before the next spoken word, with a safety margin so the clip
-    never bleeds into the START of the next word.
-
-    Round-13.5 fix: even with adaptive pad = gap, the consonant onset of the
-    next word starts ~0.05s before whisperX's `start` timestamp. So if gap
-    is 0.20s and we pad 0.20s, the clip ends exactly when whisperX says the
-    next word starts — capturing the audible onset and producing the "still
-    cuts off mid-sentence" complaint on c3.
-
-    Fix: subtract `safe_margin` from the available gap before applying. With
-    safe_margin=0.10 and gap=0.20, pad becomes 0.10s — clip ends 0.10s
-    before next word starts, leaving real silence before fade-to-CTA.
-
-    Without this, a clip ending on a HIGH-confidence sentence boundary in a
-    continuous-speech stretch (e.g., "...given the situation." immediately
-    followed by "These are cards...") plays 0.40s of the next sentence and
-    sounds like a mid-sentence cut to the viewer.
-
-    Caller passes the sentence end time and the sentences list. We find the
-    next sentence whose start > sentence_end and use that gap. If nothing
-    follows, the full max_pad is safe.
-    """
-    next_start: float | None = None
-    for s in sentences:
-        # The next sentence starts at sentence_end OR later. Equal-time is
-        # the continuous-speech case ("...situation." → "These" at the same
-        # timestamp) — exactly the case we need to catch with a zero pad.
-        if s["start"] >= sentence_end and s["start"] > sentence_end - 0.01 \
-                and (s["start"] - sentence_end < 30.0):  # search-window cap
-            # Skip self-matches (a sentence ending at its own start is degenerate)
-            if s["end"] <= sentence_end + 0.001:
-                continue
-            next_start = s["start"]
-            break
-    if next_start is None:
-        return max_pad
-    available = max(0.0, next_start - sentence_end - safe_margin)
-    return min(max_pad, available)
-
-
 def _snap_to_sentence_end(t_sec: float, sentences: list[dict],
                           tolerance: float = 1.0) -> float | None:
     """Return the END time of the LAST sentence whose end is within
-    (-inf, t_sec + tolerance]. I.e., the latest sentence that ends at or
-    before the requested time, with a small lookahead. Returns None if no
-    sentence fits.
+    (-inf, t_sec + tolerance]. Returns None if no sentence fits.
 
-    Round-13: prefer HIGH/MED boundary_confidence sentences. Only fall back
-    to a LOW boundary if no HIGH/MED option exists within tolerance.
-    LOW boundaries are mid-actual-sentence artifacts of the heuristic
-    (0.5–1.0s gaps or MAX_SENTENCE_DURATION cap) — picking one as a clip
-    end lands mid-spoken-sentence.
+    Round 14: simplified to "last sentence ≤ t_sec + tolerance". Round-13's
+    HIGH/MED boundary preference was removed because END placement now uses
+    audio silence detection (_silence_detect.best_end_in_window) which is
+    audio-truth instead of text-heuristic. This function remains as the
+    last-resort fallback when silence detection finds no qualifying period
+    in the search window (rare for podcast audio).
     """
     if not sentences:
         return None
-    best_strong: float | None = None
-    best_any: float | None = None
+    best: float | None = None
     for s in sentences:
         if s["end"] <= t_sec + tolerance:
-            best_any = s["end"]
-            if s.get("boundary_confidence") in ("HIGH", "MED"):
-                best_strong = s["end"]
+            best = s["end"]
         else:
             break
-    return best_strong if best_strong is not None else best_any
+    return best
 
 
 def _sentences_in_window(start_sec: float, end_sec: float,
@@ -760,16 +692,20 @@ def _snap_and_validate(
     pick: dict,
     segments: list[dict],
     sentences: list[dict] | None = None,
+    silence_map: list[dict] | None = None,
 ) -> tuple[dict, bool, str]:
     """Snap start/end to segment boundaries, then validate stand-alone + duration rules.
 
-    Round 11 (2026-05-13): if `sentences` is provided, the final boundary
-    snap uses DETERMINISTIC sentence boundaries from word-level punctuation
-    instead of word-level snapping. This makes mid-sentence cuts mathematically
-    impossible.
+    Round 14 (2026-05-14): END boundary placement uses AUDIO-WAVEFORM silence
+    via `silence_map` (from `_silence_detect.compute_silence_map`). Sentence
+    boundaries are still used for the START (cold-opener gates and start-snap)
+    but the END snaps to the nearest qualifying silence period. If no
+    qualifying silence is found in [target_end-3, target_end+2] (or widened
+    to ±5s), the pick is REJECTED with `no_silence_in_window`. We do NOT
+    fall back to text-derived sentence end — that was the broken path round 14
+    was built to replace.
 
     Returns (updated_pick, is_valid, reason).
-    If stand-alone fails, tries extending back/forward one segment to rescue before rejecting.
     """
     # Title QA — fail fast before doing snapping work
     title_ok, title_reason = _validate_title(pick.get("title", ""))
@@ -892,60 +828,14 @@ def _snap_and_validate(
         if not ends_clean:
             return pick, False, f"end not sentence-terminal after rescue attempts"
 
-        # SENTENCE-BOUNDARY SNAP (round 11 — 2026-05-13)
-        # The earlier word-boundary snap eliminated mid-syllable cuts but did
-        # NOT eliminate mid-SENTENCE cuts (because whisperX segments are
-        # pause-detected, not sentence-detected, so segment ends often land
-        # in the middle of a sentence). Round 11 uses deterministic sentence
-        # boundaries derived from word-level punctuation. Every clip's start
-        # = exact start of a real sentence; every clip's end = exact end of
-        # a real sentence + 0.40s breath. Mid-sentence cuts are now
-        # mathematically impossible.
+        # START boundary: snap to sentence start (existing text-based logic).
+        # Sentence STARTS = first-word ONSETS; we want the clip to begin AT
+        # a spoken word, not in silence. Text-based heuristic is correct here.
         if sentences:
-            snapped_start = _snap_to_sentence_start(new_start, sentences,
-                                                   tolerance=1.5)
-            snapped_end = _snap_to_sentence_end(new_end, sentences,
-                                                tolerance=1.5)
-            if snapped_start is None or snapped_end is None or snapped_end <= snapped_start:
-                # Sentence snap failed — likely a punctuation-poor section
-                # of transcript. Fall back to word-boundary snap.
-                if end_seg.get("words"):
-                    last_word_end = end_seg["start"]
-                    for w in end_seg["words"]:
-                        w_end = w.get("end", 0)
-                        if w_end <= new_end + 0.05:
-                            last_word_end = w_end
-                        else:
-                            break
-                    new_end = last_word_end + 0.40
-                if start_seg.get("words"):
-                    first_word_start = start_seg["start"]
-                    for w in start_seg["words"]:
-                        w_start = w.get("start", 0)
-                        if w_start >= new_start - 0.05:
-                            first_word_start = w_start
-                            break
-                    new_start = max(0.0, first_word_start - 0.05)
-            else:
-                # Sentence-precise — apply directly. Adaptive breath pad on
-                # end (caps at silence-to-next-word so we never bleed into
-                # the next sentence's audio). No pad on start (sentence
-                # start is already a clean entry point).
+            snapped_start = _snap_to_sentence_start(new_start, sentences, tolerance=1.5)
+            if snapped_start is not None:
                 new_start = snapped_start
-                new_end = snapped_end + _safe_breath_pad(snapped_end, sentences)
-        else:
-            # Legacy word-boundary fallback for callers that don't pass
-            # sentences (kept for back-compat; should be rare in round 11+).
-            if end_seg.get("words"):
-                last_word_end = end_seg["start"]
-                for w in end_seg["words"]:
-                    w_end = w.get("end", 0)
-                    if w_end <= new_end + 0.05:
-                        last_word_end = w_end
-                    else:
-                        break
-                new_end = last_word_end + 0.40
-            if start_seg.get("words"):
+            elif start_seg.get("words"):
                 first_word_start = start_seg["start"]
                 for w in start_seg["words"]:
                     w_start = w.get("start", 0)
@@ -953,6 +843,61 @@ def _snap_and_validate(
                         first_word_start = w_start
                         break
                 new_start = max(0.0, first_word_start - 0.05)
+        elif start_seg.get("words"):
+            first_word_start = start_seg["start"]
+            for w in start_seg["words"]:
+                w_start = w.get("start", 0)
+                if w_start >= new_start - 0.05:
+                    first_word_start = w_start
+                    break
+            new_start = max(0.0, first_word_start - 0.05)
+
+        # END boundary: snap to AUDIO SILENCE via silence_map (round 14).
+        # Sentence-derived ends were the broken layer — whisperX word timing
+        # is not audio-aligned to actual silence, so text "sentence ends"
+        # frequently land mid-spoken-word in the audio. Silence detection
+        # is audio truth.
+        if silence_map is not None:
+            from _silence_detect import best_end_in_window
+            # Clamp search to NEVER exceed DURATION_CEILING_SEC from new_start
+            # (silence search can extend end forward past the cap otherwise).
+            ceiling_end = new_start + DURATION_CEILING_SEC
+            # Primary search window: target ± a couple seconds.
+            silence_end = best_end_in_window(
+                silence_map, new_end,
+                search_lo=max(new_start + DURATION_FLOOR_SEC, new_end - 3.0),
+                search_hi=min(ceiling_end, new_end + 2.0),
+            )
+            if silence_end is None:
+                # Widen once before giving up — sometimes the speaker monologs
+                # past the target by a few seconds before pausing. Still cap at ceiling.
+                silence_end = best_end_in_window(
+                    silence_map, new_end,
+                    search_lo=max(new_start + DURATION_FLOOR_SEC, new_end - 5.0),
+                    search_hi=min(ceiling_end, new_end + 5.0),
+                )
+            if silence_end is None:
+                # No real silence anywhere near. REJECT the pick rather than
+                # falling back to the text-based path that produced the round-13
+                # mid-word cuts. Caller can pick a different segment range.
+                return pick, False, "no_silence_in_window"
+            new_end = silence_end
+        else:
+            # No silence map (silence_detect unavailable on this host) —
+            # last-resort fallback: text sentence end with no breath pad.
+            # Used only on local/test runs that don't have audio access.
+            snapped_end = _snap_to_sentence_end(new_end, sentences or [], tolerance=1.5)
+            if snapped_end is not None:
+                new_end = snapped_end
+            elif end_seg.get("words"):
+                last_word_end = end_seg["start"]
+                for w in end_seg["words"]:
+                    w_end = w.get("end", 0)
+                    if w_end <= new_end + 0.05:
+                        last_word_end = w_end
+                    else:
+                        break
+                new_end = last_word_end
 
         duration = new_end - new_start
 
@@ -1204,7 +1149,8 @@ def _gate1_narrative_coherence(candidates: list[dict], transcript: dict,
 # yes/no, doesn't need Opus reasoning).
 
 def _cold_opener_gate(picks: list[dict], segments: list[dict],
-                      transcript: dict | None = None) -> list[dict]:
+                      transcript: dict | None = None,
+                      silence_map: list[dict] | None = None) -> list[dict]:
     """Filter picks by the cold-viewer opener test. Returns the surviving
     picks. Each pick's first 5 seconds get sent to Claude in isolation —
     no title, no hook, no surrounding context. If Claude says the opener
@@ -1375,17 +1321,29 @@ def _cold_opener_gate(picks: list[dict], segments: list[dict],
             # Sentence-precise start — comes directly from the candidate.
             new_start = chosen["start"]
             # Preserve duration (capped at ceiling), then snap end to a
-            # sentence boundary at-or-before that target.
+            # silence period at-or-near that target. Round 14: audio-truth
+            # silence, not text sentence end.
             target_dur = min(old_duration, DURATION_CEILING_SEC)
             target_end = new_start + target_dur
-            new_end = _snap_to_sentence_end(target_end, sentences, tolerance=1.5)
-            if new_end is None or new_end <= new_start:
-                # Fallback: just use target_end with a small breath pad
-                new_end = target_end
+            silence_end = None
+            if silence_map is not None:
+                from _silence_detect import best_end_in_window
+                silence_end = best_end_in_window(
+                    silence_map, target_end,
+                    search_lo=target_end - 3.0, search_hi=target_end + 2.0,
+                )
+                if silence_end is None:
+                    silence_end = best_end_in_window(
+                        silence_map, target_end,
+                        search_lo=target_end - 5.0, search_hi=target_end + 5.0,
+                    )
+            if silence_end is not None:
+                new_end = silence_end
             else:
-                # Adaptive breath pad — caps at actual silence-to-next-word
-                # so we don't bleed into the next sentence's audio.
-                new_end += _safe_breath_pad(new_end, sentences)
+                # Fallback: sentence end (text-based) — only if silence_map
+                # unavailable OR no silence found anywhere reasonable.
+                snapped = _snap_to_sentence_end(target_end, sentences, tolerance=1.5)
+                new_end = snapped if snapped is not None and snapped > new_start else target_end
             if new_end - new_start < DURATION_FLOOR_SEC:
                 print(f"  [cold-opener] REJECT (adjusted clip too short): {pick.get('title','?')[:50]}")
                 continue
@@ -1410,24 +1368,33 @@ def _cold_opener_gate(picks: list[dict], segments: list[dict],
 
 
 # ============================================================================
-# END-COMPLETION GATE (round 12 — 2026-05-13)
+# END-COMPLETION GATE (round 12, rebuilt round 14 — 2026-05-14)
 # ============================================================================
-# Symmetric to the cold-opener gate but for clip ENDS. Catches premature
-# endings where the discussion cuts off mid-thought. Each pick gets a
-# numbered list of candidate ENDING sentences (current + 5 next sentences)
-# and Claude either PASSES or EXTENDS to a later sentence that lands the
-# discussion better.
+# Round 14: candidates are now audio SILENCE PERIODS from
+# `_silence_detect.compute_silence_map`, not text-derived sentence boundaries.
+# Each candidate is a real audio pause; landing the clip end at one is
+# mathematically impossible to cut mid-spoken-word in the audio. Claude still
+# picks WHICH silence period gives the most narratively satisfying ending,
+# seeing the sentence text that immediately precedes each silence as context.
 def _end_completion_gate(picks: list[dict], segments: list[dict],
-                         transcript: dict | None = None) -> list[dict]:
-    """Filter or extend picks based on whether the ending feels conclusive.
-    Concurrent batch (asyncio.gather), Sonnet model. Same shape as the
-    cold-opener gate.
+                         transcript: dict | None = None,
+                         silence_map: list[dict] | None = None) -> list[dict]:
+    """Per pick, extend or keep the clip-end position using audio-silence
+    candidates. Concurrent batch (asyncio.gather), Sonnet model.
+
+    If silence_map is None (e.g., audio unavailable on host), gate becomes
+    a no-op — returns picks unchanged. _snap_and_validate would already have
+    REJECTed any pick with no silence in window, so survivors are at clean
+    silence-aligned ends.
     """
     if not picks:
+        return picks
+    if silence_map is None:
         return picks
     try:
         from _qa_helpers import call_claude_text_async, log_gate_decision, SONNET_MODEL
         from qa_prompts import END_COMPLETION_TEST_V1
+        from _silence_detect import silence_candidates_for_gate
     except ImportError as exc:
         print(f"  [end-check] qa helpers unavailable ({exc}) — skipping gate")
         return picks
@@ -1437,25 +1404,17 @@ def _end_completion_gate(picks: list[dict], segments: list[dict],
     episode_stem = picks[0].get("source_stem", "unknown")
     sentences = _extract_sentences(transcript or {"segments": segments})
 
-    MAX_CANDIDATES = 6  # current end (#0) + 5 next-sentence extensions
-    MIN_CANDIDATE_LEN = 4
-    FILLER_WORDS = {
-        "yeah", "yep", "yes", "no", "ok", "okay", "um", "uh", "uhh",
-        "hmm", "mm", "mmm", "huh", "like", "so", "well", "right",
-        "exactly", "totally", "absolutely", "anyway",
-        "i", "you", "we", "they", "the", "a", "an", "and", "but", "or",
-        "is", "was", "are", "were", "be", "been",
-        "know", "mean", "think", "guess", "feel",
-        "basically", "literally", "actually",
-        "what", "that", "this", "it", "its",
-    }
-
-    def _is_filler(text: str) -> bool:
-        words = re.findall(r"[A-Za-z']+", text.lower())
-        if not words or len(words) < 2:
-            return True
-        non_filler = sum(1 for w in words if w not in FILLER_WORDS)
-        return (non_filler / len(words)) < 0.30
+    def _preceding_sentence_text(silence_start: float) -> str:
+        """Return the text of the sentence whose end is closest to (and at or
+        before) silence_start. Used as Claude's context for what was last
+        spoken before each silence period."""
+        best = None
+        for s in sentences:
+            if s["end"] <= silence_start + 0.10:
+                best = s
+            else:
+                break
+        return best["text"].strip() if best else "(no preceding sentence)"
 
     work: list[tuple[dict, str | None, str, list[dict]]] = []
     for pick in picks:
@@ -1465,54 +1424,45 @@ def _end_completion_gate(picks: list[dict], segments: list[dict],
         except (TypeError, ValueError):
             work.append((pick, None, "?", []))
             continue
-        # Find the LAST sentence whose end is at-or-before the current end
-        # (this is the current "last sentence" of the clip).
-        cur_end_idx = None
-        for i, s in enumerate(sentences):
-            if s["end"] <= end + 0.5:
-                cur_end_idx = i
-            else:
-                break
-        if cur_end_idx is None:
+        # Build silence-aligned candidates in [start + FLOOR, start + CEILING + 2].
+        # Each has start, end, duration, clip_end (= start + 0.10s offset).
+        cands_raw = silence_candidates_for_gate(
+            silence_map,
+            lo=start + DURATION_FLOOR_SEC,
+            hi=start + DURATION_CEILING_SEC + 2.0,
+            max_n=6,
+        )
+        if len(cands_raw) < 2:
+            # Not enough silence-aligned options to make a meaningful choice.
+            # PASS unchanged — the pick's current end was already set by
+            # _snap_and_validate using audio silence, so it's already clean.
             work.append((pick, None, "?", []))
             continue
 
-        # Build candidates: current last sentence + up to 5 future sentences
-        # that aren't filler. Cap each candidate's potential extension so
-        # the clip doesn't blow past DURATION_CEILING_SEC.
-        # Round-13: filter to HIGH/MED boundary_confidence only — LOW
-        # boundaries are mid-actual-sentence artifacts and EXTENDing onto
-        # one still ends mid-spoken-sentence in the audio. Index #0 (current
-        # end) is included unconditionally so Claude can see the starting
-        # point; only the alternative slots (#1+) are confidence-filtered.
-        candidates: list[dict] = []
-        for j, s in enumerate(sentences[cur_end_idx:]):
-            text = s.get("text", "").strip()
-            if len(text) < MIN_CANDIDATE_LEN:
-                continue
-            if j > 0 and _is_filler(text):
-                continue
-            if j > 0 and s.get("boundary_confidence") not in ("HIGH", "MED"):
-                continue
-            # Don't allow extension past duration ceiling
-            if s["end"] - start > DURATION_CEILING_SEC + 0.5:
-                break
-            candidates.append(s)
-            if len(candidates) >= MAX_CANDIDATES:
-                break
-
-        if len(candidates) < 2:
-            # Only the current ending available (or all alternatives were
-            # LOW confidence) — PASS through without bothering Claude.
-            # Don't extend into uncertain territory.
-            work.append((pick, None, "?", candidates))
+        # Find the candidate closest to (and at-or-before) the current pick end
+        # — this becomes index #0 (current state). Other candidates are
+        # alternative endings Claude can EXTEND to.
+        # Sort so #0 is the one closest to current end; #1..#N are LATER
+        # candidates (extensions) in chronological order.
+        before = [c for c in cands_raw if c["clip_end"] <= end + 0.20]
+        after = [c for c in cands_raw if c["clip_end"] > end + 0.20]
+        current = before[-1] if before else after[0] if after else None
+        extensions = after  # candidates strictly later than current end
+        if current is None or len(extensions) == 0:
+            # Nothing meaningful to extend to — PASS.
+            work.append((pick, None, "?", []))
             continue
+        candidates = [current] + extensions[:5]   # up to 6 total
 
-        last_sentence = candidates[0]["text"].strip()
+        # Build the prompt block: each candidate shows the preceding sentence
+        # text (what Claude reads as the last spoken thought before that
+        # silence) + the silence_dur (longer = more emphatic pause).
         candidates_block = "\n".join(
-            f"  #{i}: \"{c['text'].strip()}\" (end={c['end']:.2f}s)"
+            f"  #{i}: ends after: \"{_preceding_sentence_text(c['start'])[:120]}\""
+            f"  (clip_end={c['clip_end']:.2f}s, silence_dur={c['duration']:.2f}s)"
             for i, c in enumerate(candidates)
         )
+        last_sentence = _preceding_sentence_text(current["start"])
         prompt = END_COMPLETION_TEST_V1.format(
             last_sentence=last_sentence[:600],
             candidates_block=candidates_block[:3000],
@@ -1566,10 +1516,10 @@ def _end_completion_gate(picks: list[dict], segments: list[dict],
                 continue
             chosen = candidates[idx]
             old_end = float(pick.get("end_sec", 0))
-            # Adaptive breath pad: caps at silence-to-next-word so the pad
-            # never bleeds into the next sentence's audio (the bug that
-            # made c3/c6 sound like mid-sentence cuts on round 12).
-            new_end = chosen["end"] + _safe_breath_pad(chosen["end"], sentences)
+            # Round 14: candidate already includes the 100ms offset into the
+            # silence period (clip_end = silence_start + 0.10). No breath
+            # pad needed — we ARE landing in real audio silence.
+            new_end = chosen["clip_end"]
             new_dur = new_end - float(pick.get("start_sec", 0))
             if new_dur > DURATION_CEILING_SEC:
                 # Refuse extensions that would blow the duration cap
@@ -1823,29 +1773,67 @@ def pick_clips_from_transcript(
     candidates = _gate1_narrative_coherence(candidates, tx, segments)
 
     # Round 11: extract sentences ONCE for the whole transcript (cached on tx).
-    # Used by _snap_and_validate (sentence-precise boundaries) and the
-    # cold-opener gate (sentence-grain context).
+    # Used by _snap_and_validate (sentence-precise STARTS) and the cold-opener
+    # gate (sentence-grain context). Round 14: ENDS now come from audio
+    # silence detection — see silence_map below.
     sentences = _extract_sentences(tx)
+
+    # Round 14: compute the audio silence map ONCE per episode (cached on
+    # disk as <stem>.silence.json next to the source mp4). Used by
+    # _snap_and_validate, _cold_opener_gate ADJUST, and _end_completion_gate
+    # to land clip ends in REAL audio silence — no more text-derived end
+    # boundaries that miss whisperX timing drift.
+    silence_map: list[dict] | None = None
+    try:
+        from _silence_detect import compute_silence_map
+        audio_path_str = tx.get("source")
+        if audio_path_str:
+            audio_path = Path(audio_path_str)
+            if not audio_path.exists():
+                # Cross-host fallback: the transcript's "source" may be a path
+                # from the host that produced it (e.g. /home/tristan/... on Linux).
+                # Resolve via the local 1080p source dir using the transcript stem.
+                from prepare_sources import SOURCE_1080P  # may not exist on all hosts
+                local_guess = SOURCE_1080P / f"{stem_key}.mp4"
+                if local_guess.exists():
+                    audio_path = local_guess
+            if audio_path.exists():
+                silence_map = compute_silence_map(audio_path)
+                print(f"  [silence] cached {len(silence_map)} silence periods "
+                      f"(audio={audio_path.name})")
+            else:
+                print(f"  [silence] audio source not found at {audio_path_str} — "
+                      "silence-aligned end disabled (will rely on text snap)")
+        else:
+            print("  [silence] transcript has no 'source' field — silence-aligned "
+                  "end disabled (will rely on text snap)")
+    except Exception as exc:
+        print(f"  [silence] compute failed ({exc}) — silence-aligned end disabled")
 
     validated: list[dict] = []
     rejected: list[dict] = []
     for raw in candidates:
-        pick, ok, reason = _snap_and_validate(raw, segments, sentences=sentences)
+        pick, ok, reason = _snap_and_validate(
+            raw, segments, sentences=sentences, silence_map=silence_map,
+        )
         if ok:
             validated.append(pick)
         else:
             rejected.append({**raw, "validation": f"rejected: {reason}"})
 
     # COLD-VIEWER OPENER GATE (round 11 — 2026-05-13)
-    # Sentence-grain. Each pick gets a numbered list of nearby sentence
-    # candidates. Claude returns PASS / ADJUST (chosen_index) / REJECT.
-    validated = _cold_opener_gate(validated, segments, transcript=tx)
+    # Sentence-grain start adjustments. Round 14: ADJUST's new clip end uses
+    # silence_map for audio-aligned termination.
+    validated = _cold_opener_gate(
+        validated, segments, transcript=tx, silence_map=silence_map,
+    )
 
-    # END-COMPLETION GATE (round 12 — 2026-05-13)
-    # Symmetric to cold-opener but for clip END. Catches premature endings
-    # where the discussion cuts off mid-thought; EXTENDS to a later
-    # sentence that lands the discussion when needed.
-    validated = _end_completion_gate(validated, segments, transcript=tx)
+    # END-COMPLETION GATE (round 12, rebuilt round 14 — 2026-05-14)
+    # Candidates are audio silence periods (not text sentences). Claude picks
+    # WHICH silence to land in for the most narratively satisfying ending.
+    validated = _end_completion_gate(
+        validated, segments, transcript=tx, silence_map=silence_map,
+    )
 
     # Drop near-duplicates (retain highest-scoring representative of each cluster)
     deduped = _de_overlap(validated)

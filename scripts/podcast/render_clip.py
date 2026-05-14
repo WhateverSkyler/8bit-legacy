@@ -57,14 +57,6 @@ CENTER_CROP_X = (SOURCE_W - CROP_W) // 2  # 656
 # --- Face detection ----------------------------------------------------------
 # Minimum face size (px) — filters out noise / far-background detections.
 # At 1080p, typical face on-camera is ~140-220 px wide.
-# 2026-04-29: lowered 90 → 60. The "Tristan in front of arcade" angle had him
-# at ~70-110 px wide due to camera distance + angled pose; old 90 floor missed
-# him completely → fell back to dead-center crop with subject off-frame.
-FACE_MIN_SIZE = 60
-# Frames sampled per detected scene when computing that scene's face center.
-# Bumped 3 → 5 for better recall on scenes with brief angled poses.
-FACE_SAMPLES_PER_SCENE = 5
-
 # --- Scene detection ---------------------------------------------------------
 # Round 10 (2026-05-13): replaced homegrown histogram bisect with ffmpeg's
 # native `select='gt(scene,X)'` filter. The threshold below maps to
@@ -82,10 +74,6 @@ SCENE_DETECT_THRESHOLD = 0.30
 # brief scenes inherit the upcoming camera's face position so the new speaker
 # is centered the moment they appear on-screen.
 MIN_SCENE_DURATION_SEC = 0.25
-# Safety rail: if pass-1 emits more scenes than this for one clip, content
-# is probably noisy and we fall back to a single center crop. Round-9 reset
-# to 15 (round-6's 200 was for the abandoned per-clip sub-segmentation).
-MAX_SCENES = 15
 
 
 def _ass_time(sec: float) -> str:
@@ -229,82 +217,6 @@ def _pick_music_bed(seed: str | None = None, mood: str | None = None) -> Path | 
     return rng.choice(candidates)
 
 
-def _face_center_for_range(cap, cascades: list, t_start: float, t_end: float,
-                           samples: int = FACE_SAMPLES_PER_SCENE,
-                           min_face: int = FACE_MIN_SIZE) -> int | None:
-    """Return the X-center of the most likely active speaker in [t_start, t_end].
-
-    Delegates to scripts/podcast/_face_detect.py which uses YuNet (state-of-the-art
-    lightweight face detector built into OpenCV ≥4.5) and active-speaker selection
-    via mouth-corner-motion variance across multiple sampled frames.
-
-    YuNet (built-in to opencv-python-headless, 227KB ONNX model):
-      - ~95% recall on profile/angled poses (vs Haar's ~50%)
-      - Returns landmarks (eye/nose/mouth corners) used for active-speaker scoring
-      - Returns confidence scores
-
-    Falls back automatically to Haar cascades if YuNet model is unavailable
-    (graceful degrade — see _face_detect.FaceDetector).
-
-    `cascades` arg retained for backward-compat signature; ignored by YuNet path.
-    Samples bumped 5 → 8 in the new module (better active-speaker statistics —
-    mouth-motion variance needs more samples to be reliable).
-    """
-    # Lazy import — keep render_clip.py importable on hosts without the new module.
-    try:
-        from _face_detect import face_center_for_range as _new_impl
-    except ImportError:
-        # Fall back to the legacy Haar median path if _face_detect isn't deployed.
-        return _face_center_for_range_haar_legacy(
-            cap, cascades, t_start, t_end, samples=samples, min_face=min_face,
-        )
-    # Use 8 samples for the new path (better mouth-motion statistics)
-    return _new_impl(cap, t_start, t_end, samples=max(samples, 8))
-
-
-def _face_center_for_range_haar_legacy(cap, cascades: list, t_start: float, t_end: float,
-                                       samples: int = FACE_SAMPLES_PER_SCENE,
-                                       min_face: int = FACE_MIN_SIZE) -> int | None:
-    """Legacy Haar-cascade median fallback. Used only when _face_detect is
-    unavailable (e.g., the YuNet ONNX model file is missing on a stripped
-    container deploy). Kept verbatim for compatibility — caller signature
-    unchanged.
-    """
-    import cv2  # type: ignore
-
-    dur = max(0.1, t_end - t_start)
-    xs: list[int] = []
-    for i in range(samples):
-        t = t_start + dur * ((i + 0.5) / samples)
-        cap.set(cv2.CAP_PROP_POS_MSEC, t * 1000.0)
-        ok, frame = cap.read()
-        if not ok or frame is None:
-            continue
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        for idx, cascade in enumerate(cascades):
-            search_img = gray
-            mirror = (idx == 1)
-            if mirror:
-                search_img = cv2.flip(gray, 1)
-            faces = cascade.detectMultiScale(
-                search_img, scaleFactor=1.1, minNeighbors=4,
-                minSize=(min_face, min_face),
-            )
-            if len(faces) > 0:
-                w_img = search_img.shape[1]
-                for (x, _y, w, _h) in faces:
-                    cx = int(x + w / 2)
-                    if mirror:
-                        cx = w_img - cx
-                    xs.append(cx)
-                break
-
-    if not xs:
-        return None
-    xs.sort()
-    return xs[len(xs) // 2]
-
-
 def _detect_cuts_via_ffmpeg(source_video: Path, start_sec: float,
                             end_sec: float, threshold: float = 0.30) -> list[float]:
     """Run ffmpeg's built-in scene-change detection over the clip window.
@@ -347,156 +259,100 @@ def _detect_cuts_via_ffmpeg(source_video: Path, start_sec: float,
     return sorted(cuts)
 
 
-def _dense_face_track(cap, cascades, source_video: Path, start_sec: float,
-                      end_sec: float, fps: int = 6) -> list[tuple[float, int | None]]:
-    """Sample face_x at `fps` per second across [start_sec, end_sec].
-    Returns list of (clip_relative_t, face_x | None) tuples.
+# Round-14 (2026-05-14): scenes derived from ffmpeg histogram cuts only;
+# per-scene crop_x = YuNet active-speaker once per scene. Dense face track,
+# EMA smoothing, face-jump cut detection, median filter — all ripped. They
+# were per-sample noise accumulators when the actual need is one fixed crop
+# per shot. See _face_detect.py for the YuNet wrapper + active-speaker scorer.
+MIN_DURATION_FOR_YUNET_SEC = 0.6   # scenes shorter than this inherit prior crop_x
 
-    Uses _face_center_for_range with samples=1 for each tiny window so each
-    sample is the actual face position at that moment (no median across a
-    window). Missing detections (None) are filled in by the caller via
-    interpolation.
+# Intra-scene cut detection: if the 8-sample YuNet output for one scene shows
+# two clusters of face X positions separated by >= INTRA_SCENE_CUT_PX with at
+# least 3 samples on each side, bisect the scene at the cluster boundary
+# midpoint. Recovers similar-lighting cuts ffmpeg missed without re-introducing
+# the per-frame face-jump noise (we only consider bisection within an
+# already-confirmed scene window).
+INTRA_SCENE_CUT_PX = 300
+
+
+def _crop_x_for_scene(cap, source_video: Path, start_sec: float,
+                      end_sec: float, prev_crop_x: int | None,
+                      crop_w: int, source_w: int,
+                      samples: int = 8) -> tuple[list[tuple[float, float, int]], list[int]]:
+    """Run YuNet on `samples` frames inside [start_sec, end_sec] and return:
+      (1) a list of (start, end, crop_x) sub-scenes — single-element unless
+          intra-scene bisection detected a missed cut, in which case two
+      (2) the per-sample best-face X values (source-image coords) for the
+          calling-side intra-scene-cut bookkeeping (logging)
+
+    Falls back to prev_crop_x (or CENTER_CROP_X if None) when YuNet can't
+    detect a face anywhere in the scene.
+
+    `cap` is an open cv2.VideoCapture; we seek via CAP_PROP_POS_MSEC.
     """
-    duration = end_sec - start_sec
-    n_samples = max(1, int(duration * fps))
-    sample_dt = duration / n_samples
-    track: list[tuple[float, int | None]] = []
-    for i in range(n_samples):
-        t_rel = i * sample_dt
-        # Sample a tiny window (1/(2*fps) wide) at this time. Single internal
-        # probe for speed.
-        win_start = start_sec + t_rel
-        win_end = win_start + 0.5 / fps
-        face_x = _face_center_for_range(cap, cascades, win_start, win_end, samples=1)
-        track.append((t_rel, face_x))
-    return track
+    import cv2  # type: ignore
+    from _face_detect import FaceDetector, best_speaker_cx
 
+    duration = max(0.1, end_sec - start_sec)
 
-def _interpolate_track(track: list[tuple[float, int | None]],
-                       fallback_x: int) -> list[tuple[float, int]]:
-    """Fill None entries in the face track via nearest-neighbor lookup
-    (look ahead first, then back). If no detection anywhere, fill with
-    `fallback_x`."""
-    if not track:
-        return []
-    n = len(track)
-    raw = [fx for _t, fx in track]
-    # Forward fill from each None
-    filled: list[int] = []
-    for i, (t, fx) in enumerate(track):
-        if fx is not None:
-            filled.append(fx)
+    # Sample 8 frames at even offsets across the scene window. Capture each
+    # frame's per-face detections; pass the whole batch to `best_speaker_cx`
+    # for active-speaker selection via mouth-motion variance + scoring.
+    det = FaceDetector.get()
+    frames_faces: list[list[dict]] = []
+    per_sample_best_x: list[int | None] = []
+    for i in range(samples):
+        t = start_sec + duration * ((i + 0.5) / samples)
+        cap.set(cv2.CAP_PROP_POS_MSEC, t * 1000.0)
+        ok, frame = cap.read()
+        if not ok or frame is None:
+            frames_faces.append([])
+            per_sample_best_x.append(None)
             continue
-        # Look ahead
-        ahead = next((raw[j] for j in range(i + 1, n) if raw[j] is not None), None)
-        # Look back
-        back = next((raw[j] for j in range(i - 1, -1, -1) if raw[j] is not None), None)
-        if ahead is not None:
-            filled.append(ahead)
-        elif back is not None:
-            filled.append(back)
-        else:
-            filled.append(fallback_x)
-    return list(zip([t for t, _ in track], filled))
+        faces = det.detect(frame)
+        frames_faces.append(faces)
+        # For intra-scene bisection: track the largest face on each frame
+        # (cheap heuristic; matches what `best_speaker_cx` uses for the
+        # 1-face cluster path).
+        per_sample_best_x.append(faces[0]["cx"] if faces else None)
 
+    cx = best_speaker_cx(frames_faces)
+    if cx is None:
+        cx = prev_crop_x + crop_w // 2 if prev_crop_x is not None else CENTER_CROP_X + crop_w // 2
+    crop_x = max(0, min(source_w - crop_w, int(cx) - crop_w // 2))
 
-def _median_filter_track(track: list[tuple[float, int]],
-                         window: int = 3) -> list[tuple[float, int]]:
-    """Round-13: 3-sample median filter over face_x to kill single-frame
-    outliers (Haar-cascade disagreements between adjacent samples where one
-    cascade hits the real face and another grabs a background blob).
+    # Intra-scene bisection check: do the per-sample face Xs split into two
+    # clusters >300px apart with >= 3 samples on each side?
+    xs_with_idx = [(i, x) for i, x in enumerate(per_sample_best_x) if x is not None]
+    bisect_t: float | None = None
+    if len(xs_with_idx) >= 6:
+        for k in range(2, len(xs_with_idx) - 2):
+            left = [x for _i, x in xs_with_idx[:k + 1]]
+            right = [x for _i, x in xs_with_idx[k + 1:]]
+            if len(left) >= 3 and len(right) >= 3:
+                if abs((sum(left) / len(left)) - (sum(right) / len(right))) >= INTRA_SCENE_CUT_PX:
+                    # Bisect at the midpoint timestamp between sample k and k+1
+                    t_left = start_sec + duration * ((xs_with_idx[k][0] + 0.5) / samples)
+                    t_right = start_sec + duration * ((xs_with_idx[k + 1][0] + 0.5) / samples)
+                    bisect_t = (t_left + t_right) / 2
+                    break
 
-    Real cuts are sustained — the new face_x holds for many samples post-cut
-    — so a median filter preserves them while erasing one-sample spikes that
-    were previously read as cuts by _detect_face_jump_cuts.
+    if bisect_t is None:
+        return [(round(start_sec, 3), round(end_sec, 3), crop_x)], [
+            x for x in per_sample_best_x if x is not None
+        ]
 
-    Edges (first/last `half` samples) are kept unchanged — applying a
-    truncated-window median at edges flips real first-sample values to the
-    neighbor and can MASK a real first-sample cut.
-    """
-    if window < 3 or len(track) < window:
-        return track
-    half = window // 2
-    out: list[tuple[float, int]] = []
-    for i, (t, x) in enumerate(track):
-        if i < half or i >= len(track) - half:
-            out.append((t, x))
-            continue
-        xs = sorted(_x for _t, _x in track[i - half:i + half + 1])
-        out.append((t, xs[len(xs) // 2]))
-    return out
-
-
-def _detect_face_jump_cuts(track: list[tuple[float, int]],
-                           threshold_px: int = 300) -> list[float]:
-    """Detect cuts as large face_x jumps between consecutive samples.
-    Returns list of clip-relative times where the jump occurs.
-
-    Round-13: threshold raised 150 → 300. At 1920-wide source 150px is only
-    7.8% of frame width — natural head movement (leaning forward, turning to
-    address another speaker) easily clears that. Real camera switches
-    between two speakers in different seat positions on the same shared
-    source are typically 400–800px of face_x shift. 300px sits between
-    natural movement and real cuts.
-    """
-    cuts: list[float] = []
-    for i in range(1, len(track)):
-        prev_x = track[i - 1][1]
-        cur_x = track[i][1]
-        if abs(cur_x - prev_x) >= threshold_px:
-            cuts.append(track[i][0])
-    return cuts
-
-
-def _smooth_face_track(track: list[tuple[float, int]],
-                       cut_times: list[float],
-                       crop_w: int, source_w: int,
-                       alpha: float = 0.3) -> list[tuple[float, int]]:
-    """Apply EMA smoothing to face_x WITHIN stable runs (gaps between cuts).
-    At each cut boundary, RESET smoothing — the first sample after a cut
-    becomes the new EMA seed (no carry-over from the prior run).
-    Convert smoothed face_x → crop_x with clamping.
-    """
-    if not track:
-        return []
-    cut_set = sorted(set(cut_times))
-    cut_idx = 0
-    smoothed_x: float | None = None
-    out: list[tuple[float, int]] = []
-    for t, raw_x in track:
-        # Have we passed a cut at-or-before this sample?
-        while cut_idx < len(cut_set) and t >= cut_set[cut_idx]:
-            smoothed_x = None  # reset EMA at cut boundary
-            cut_idx += 1
-        if smoothed_x is None:
-            smoothed_x = float(raw_x)
-        else:
-            smoothed_x = alpha * raw_x + (1 - alpha) * smoothed_x
-        # Convert face_x to crop_x with clamping
-        cx = int(smoothed_x) - crop_w // 2
-        cx = max(0, min(source_w - crop_w, cx))
-        out.append((t, cx))
-    return out
-
-
-def _write_sendcmd_file(trajectory: list[tuple[float, int]],
-                        out_path: Path) -> Path:
-    """Write a sendcmd-format file: each line specifies a crop x value at
-    a specific time. Format: `T.TTT crop x VALUE;`
-
-    Optimization: collapse consecutive samples with the SAME crop_x into a
-    single line (sendcmd applies the value until the next change).
-    """
-    lines: list[str] = []
-    last_x: int | None = None
-    for t, cx in trajectory:
-        if cx != last_x:
-            lines.append(f"{t:.3f} crop x {cx};")
-            last_x = cx
-    if not lines:
-        lines.append("0.000 crop x 0;")
-    out_path.write_text("\n".join(lines) + "\n")
-    return out_path
+    # Bisected: recurse on each half (samples halved, but at least 4 each)
+    left_subs, _ = _crop_x_for_scene(
+        cap, source_video, start_sec, bisect_t, prev_crop_x,
+        crop_w, source_w, samples=max(4, samples // 2),
+    )
+    right_prev = left_subs[-1][2] if left_subs else prev_crop_x
+    right_subs, _ = _crop_x_for_scene(
+        cap, source_video, bisect_t, end_sec, right_prev,
+        crop_w, source_w, samples=max(4, samples // 2),
+    )
+    return left_subs + right_subs, [x for x in per_sample_best_x if x is not None]
 
 
 def detect_scenes_and_crops(
@@ -505,24 +361,29 @@ def detect_scenes_and_crops(
     end_sec: float,
     crop_w: int = CROP_W,
     source_w: int = SOURCE_W,
-    cut_threshold: float = 0.25,
+    cut_threshold: float = SCENE_DETECT_THRESHOLD,
 ) -> list[tuple[float, float, int]]:
-    """Detect camera cuts inside [start_sec, end_sec] and return a crop_x
-    trajectory expressed as fine-grained (start, end, crop_x) scenes.
+    """Detect camera cuts inside [start_sec, end_sec] and return one fixed
+    crop_x per scene as a list of (start, end, crop_x) tuples.
 
-    Round 11 (2026-05-13): per-frame face tracking with multi-signal cut
-    detection.
-      - Sample face_x densely (6fps) across the clip
-      - Combine ffmpeg histogram-based cuts AND face-position jumps as
-        the cut signal (catches subtle cuts where lighting is similar)
-      - Apply EMA smoothing within stable runs, RESET at cut boundaries
-      - Group consecutive identical crop_x samples into "scenes" for the
-        existing split+trim+concat filter graph
+    Round 14 (2026-05-14): rebuilt to use ffmpeg histogram cuts ONLY for
+    scene detection and ONE YuNet active-speaker call per scene for crop_x.
+    Previous rounds (11-13) used a 6-fps dense Haar face track + EMA smoothing
+    + 150-300px face-jump cuts; that pipeline accumulated per-sample noise
+    that caused "spazzing" within stable shots and hit a MAX_SCENES cap that
+    fell back to dead-center crop for entire clips.
 
-    The trajectory is per-frame; collapsing identical adjacent samples
-    keeps the scene count manageable while preserving the continuous
-    tracking benefit (within stable runs, crop_x stays the same so we
-    get one big scene; at cuts, crop_x changes instantly).
+    Per-scene flow:
+      1. ffmpeg histogram cuts (threshold pinned to SCENE_DETECT_THRESHOLD=0.30
+         — the constant; previously called with cut_threshold=0.25 which was
+         a noise source).
+      2. For each scene window >= MIN_DURATION_FOR_YUNET_SEC (0.6s): 8 frame
+         samples → YuNet detect on each → best_speaker_cx picks the talker.
+         Shorter scenes inherit the prior scene's crop_x (mouth-variance is
+         unreliable below 0.6s).
+      3. Intra-scene bisection: if the 8 samples split into two X-clusters
+         >300px apart, the scene contained a missed cut → bisect at the
+         cluster boundary midpoint.
     """
     duration = max(0.1, end_sec - start_sec)
     fallback = [(0.0, duration, CENTER_CROP_X)]
@@ -540,140 +401,71 @@ def detect_scenes_and_crops(
             print("  [SCENES] cv2 could not open source → 1 scene, center crop")
             return fallback
 
-        # Multi-cascade chain: frontal + flipped-profile + profile.
-        frontal_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
-        profile_path = cv2.data.haarcascades + "haarcascade_profileface.xml"
-        frontal = cv2.CascadeClassifier(frontal_path)
-        if frontal.empty():
-            print("  [SCENES] frontal haar cascade failed to load → 1 scene, center crop")
-            return fallback
-        profile = cv2.CascadeClassifier(profile_path)
-        cascades = [frontal]
-        if not profile.empty():
-            cascades = [frontal, profile, profile]
-
-        # ----------------------------------------------------------------
-        # 1. CUT DETECTION (multi-signal: ffmpeg-scene + face-position-jump)
-        # ----------------------------------------------------------------
-        # ffmpeg histogram-based cuts (works for hard cuts with lighting change)
-        ffmpeg_cuts = _detect_cuts_via_ffmpeg(source_video, start_sec, end_sec,
-                                              threshold=cut_threshold)
+        # 1. ffmpeg histogram cuts — sole cut signal in round 14
+        ffmpeg_cuts = _detect_cuts_via_ffmpeg(
+            source_video, start_sec, end_sec, threshold=cut_threshold,
+        )
         ffmpeg_cuts = [t for t in ffmpeg_cuts if 0.5 <= t < duration - 0.1]
 
-        # ----------------------------------------------------------------
-        # 2. DENSE FACE TRACK (6fps sample of face_x across the clip)
-        # ----------------------------------------------------------------
-        raw_track = _dense_face_track(cap, cascades, source_video, start_sec, end_sec, fps=6)
-
-        if not any(fx is not None for _t, fx in raw_track):
-            print(f"  [SCENES] no face detected anywhere → 1 scene, center crop")
-            return fallback
-
-        # Fill missing detections by interpolation; convert face_x → fill value
-        filled_track = _interpolate_track(raw_track, fallback_x=CENTER_CROP_X + crop_w // 2)
-
-        # Round-13: median-filter the track BEFORE jump detection so single-
-        # frame Haar-cascade outliers don't fire as cuts. Real cuts survive
-        # because they're sustained across many samples; spurious one-sample
-        # spikes get clipped to the surrounding median.
-        filled_track = _median_filter_track(filled_track, window=3)
-
-        # ----------------------------------------------------------------
-        # 3. FACE-JUMP CUTS — catches subtle cuts ffmpeg misses (similar
-        #    lighting between two cameras, e.g. Ryan vs Tristan in the
-        #    same room). Round-13: threshold raised to 300px.
-        # ----------------------------------------------------------------
-        face_jump_cuts = _detect_face_jump_cuts(filled_track, threshold_px=300)
-
-        # Union ffmpeg + face_jump cuts, dedupe within 0.2s
-        all_cuts = sorted(set(ffmpeg_cuts) | set(face_jump_cuts))
-        deduped_cuts: list[float] = []
-        for c in all_cuts:
-            if not deduped_cuts or (c - deduped_cuts[-1]) > 0.2:
-                deduped_cuts.append(c)
-
-        # ----------------------------------------------------------------
-        # 4. EMA SMOOTHING WITHIN STABLE RUNS (RESET at cuts)
-        # ----------------------------------------------------------------
-        smoothed = _smooth_face_track(filled_track, deduped_cuts,
-                                       crop_w=crop_w, source_w=source_w, alpha=0.3)
-
-        # ----------------------------------------------------------------
-        # 5. ALIGN SCENES TO CUT PTS (NOT sample times) — round 12 fix
-        # ----------------------------------------------------------------
-        # The previous version used SAMPLE times as scene boundaries. With
-        # face sampling at 6fps, the boundary could be up to 0.167s (≈5
-        # frames at 30fps source) AFTER the actual cut. Frames between the
-        # real cut and the next sample inherited the OLD scene's crop —
-        # exactly what the user keeps reporting as "1 frame off when
-        # switching speakers." Fix: scene boundaries are now the EXACT cut
-        # PTS values from ffmpeg + face_jump detection. Within each run,
-        # take the MEDIAN of smoothed samples for stability.
-        all_boundaries = sorted([0.0] + deduped_cuts + [duration])
-        collapsed: list[tuple[float, float, int]] = []
-        for i in range(len(all_boundaries) - 1):
-            run_start = all_boundaries[i]
-            run_end = all_boundaries[i + 1]
-            if run_end - run_start < MIN_SCENE_DURATION_SEC:
+        # Scene windows from cuts + boundaries
+        boundaries = sorted([0.0] + ffmpeg_cuts + [duration])
+        scene_windows: list[tuple[float, float]] = []
+        for i in range(len(boundaries) - 1):
+            s, e = boundaries[i], boundaries[i + 1]
+            if e - s < MIN_SCENE_DURATION_SEC:
                 continue
-            run_samples = [cx for t, cx in smoothed if run_start <= t < run_end]
-            if not run_samples:
-                # Fallback: nearest sample to the run's midpoint
-                if smoothed:
-                    nearest = min(smoothed, key=lambda s: abs(s[0] - (run_start + run_end) / 2))
-                    run_samples = [nearest[1]]
-                else:
-                    run_samples = [CENTER_CROP_X]
-            run_samples_sorted = sorted(run_samples)
-            median_cx = run_samples_sorted[len(run_samples_sorted) // 2]
-            collapsed.append((round(run_start, 3), round(run_end, 3), int(median_cx)))
+            scene_windows.append((s, e))
 
-        if not collapsed:
+        if not scene_windows:
             return fallback
 
-        # Optimization: if everything is one crop_x, single-segment
-        if len({cx for _s, _e, cx in collapsed}) == 1:
-            only_x = collapsed[0][2]
-            print(f"  [SCENES] dense trajectory, all crop_x={only_x} → 1 scene")
-            return [(0.0, duration, only_x)]
+        # 2-3. Per-scene YuNet active-speaker + intra-scene bisection
+        all_scenes: list[tuple[float, float, int]] = []
+        prev_crop_x: int | None = None
+        n_bisected = 0
+        n_inherited = 0
+        for (s_rel, e_rel) in scene_windows:
+            dur = e_rel - s_rel
+            if dur < MIN_DURATION_FOR_YUNET_SEC:
+                # Inherit prior crop_x; mouth-variance unreliable below 0.6s
+                inherit = prev_crop_x if prev_crop_x is not None else CENTER_CROP_X
+                all_scenes.append((round(s_rel, 3), round(e_rel, 3), inherit))
+                prev_crop_x = inherit
+                n_inherited += 1
+                continue
+            sub_scenes, _ = _crop_x_for_scene(
+                cap, source_video,
+                start_sec + s_rel, start_sec + e_rel, prev_crop_x,
+                crop_w, source_w,
+            )
+            # Convert source-relative timestamps back to clip-relative
+            for (abs_s, abs_e, cx) in sub_scenes:
+                all_scenes.append((
+                    round(abs_s - start_sec, 3),
+                    round(abs_e - start_sec, 3),
+                    cx,
+                ))
+                prev_crop_x = cx
+            if len(sub_scenes) > 1:
+                n_bisected += len(sub_scenes) - 1
 
-        if len(collapsed) > MAX_SCENES:
-            # Round-13: instead of returning a single center-crop scene (which
-            # gives up framing entirely — the c6 "off-center the whole time"
-            # bug), collapse adjacent scenes by bucketing crop_x to 100px
-            # quanta. This keeps the face-tracked positioning even when the
-            # raw scene count blows past the cap.
-            BUCKET = 100
-            bucketed = [(s, e, (cx // BUCKET) * BUCKET) for s, e, cx in collapsed]
-            merged: list[tuple[float, float, int]] = []
-            for s, e, cx in bucketed:
-                if merged and merged[-1][2] == cx:
-                    merged[-1] = (merged[-1][0], e, cx)
-                else:
-                    merged.append((s, e, cx))
-            if len(merged) > MAX_SCENES:
-                # Still too many — keep the longest MAX_SCENES runs, but
-                # extend their durations to fill any short runs that drop
-                # out (so playback timing stays continuous).
-                merged_sorted = sorted(merged, key=lambda r: r[1] - r[0], reverse=True)
-                keep = sorted(merged_sorted[:MAX_SCENES], key=lambda r: r[0])
-                # Stretch each kept run forward to where the next one begins
-                stretched: list[tuple[float, float, int]] = []
-                for i, (s, _, cx) in enumerate(keep):
-                    next_s = keep[i + 1][0] if i + 1 < len(keep) else duration
-                    stretched.append((s, next_s, cx))
-                # Make sure first run starts at 0
-                if stretched and stretched[0][0] > 0:
-                    s0, e0, cx0 = stretched[0]
-                    stretched[0] = (0.0, e0, cx0)
-                merged = stretched
-            print(f"  [SCENES] {len(collapsed)} scenes > cap {MAX_SCENES} → "
-                  f"{len(merged)} scenes (bucketed by 100px)")
-            return merged
+        if not all_scenes:
+            return fallback
 
-        print(f"  [SCENES] {len(deduped_cuts)} cuts ({len(ffmpeg_cuts)} ffmpeg + "
-              f"{len(face_jump_cuts)} face-jump) → {len(collapsed)} scenes (PTS-aligned)")
-        return collapsed
+        # Collapse-to-one optimization: if every scene's crop_x is within
+        # 50px of the others, the whole clip is effectively one camera —
+        # return a single scene to simplify the filter graph.
+        if max(cx for _s, _e, cx in all_scenes) - min(cx for _s, _e, cx in all_scenes) < 50:
+            avg_cx = sum(cx for _s, _e, cx in all_scenes) // len(all_scenes)
+            print(f"  [SCENES] {len(scene_windows)} cuts → 1 collapsed scene (crop_x={avg_cx})")
+            return [(0.0, duration, avg_cx)]
+
+        print(
+            f"  [SCENES] {len(ffmpeg_cuts)} cuts → {len(all_scenes)} scenes "
+            f"(ffmpeg only{f', +{n_bisected} bisected' if n_bisected else ''}"
+            f"{f', {n_inherited} short→inherited' if n_inherited else ''})"
+        )
+        return all_scenes
 
     except Exception as exc:
         print(f"  [SCENES] detection failed: {exc} → 1 scene, center crop")
@@ -1034,35 +826,67 @@ def _build_ffmpeg_cmd(source_video: Path, start: float, end: float, duration: fl
     else:
         vout_label = last_video_label
 
-    # AUDIO CHAIN
-    # Round-13.5: fade dialogue audio out over the last DIALOG_FADE_OUT seconds
-    # of the pod portion so the transition into the CTA doesn't hard-cut. Per
-    # user feedback after round 13 — "added some sort of audio fade from the
-    # pod instead of a hard cut off that it would flow better into the CTA
-    # slide". Fade ends at `duration` (the dialog/CTA boundary); CTA video's
-    # own CTA_FADE_IN handles the visual crossover.
-    DIALOG_FADE_OUT = 0.30
+    # AUDIO CHAIN — round 14 (2026-05-14) redesign.
+    #
+    # Round-13.5 fade was inaudible because afade was applied to [0:a] BEFORE
+    # the asplit. The faded stream fed BOTH the playback branch AND the
+    # sidechain compressor's key input — when the key faded to silence, the
+    # compressor let off the ducking, music ramped UP at exactly the same
+    # rate voice ramped DOWN, and the net loudness barely changed.
+    #
+    # Round-14 fix:
+    #   1. apad the un-faded dialogue (keys for sidechain need full signal).
+    #   2. asplit AFTER apad — one branch feeds sidechain key (un-faded),
+    #      the other feeds the playback fade.
+    #   3. afade applied ONLY to the playback branch.
+    #   4. Music volume becomes a 4-piece linear ramp (was a step function):
+    #        before fade:      ducked level V
+    #        during fade:      V → MUSIC_TROUGH (music dips with the voice swell-out)
+    #        during CTA fade:  MUSIC_TROUGH → 0.22 (matches visual CTA_FADE_IN)
+    #        after CTA fade:   0.22 (bumped level)
+    #      This is smooth instead of a step at t=duration.
+    # Constants bumped: DIALOG_FADE_OUT 0.30 → 0.60 (user said 0.30 unnoticeable).
+    DIALOG_FADE_OUT = 0.60
+    MUSIC_TROUGH = 0.05
     fade_start = max(0.0, duration - DIALOG_FADE_OUT)
     if has_music:
-        # Pad the dialogue with silence to total_duration so the timeline
-        # extends through the CTA portion. Apply fade-out before split so
-        # both the playback branch AND the sidechain key get the faded audio.
+        # Step 1: apad un-faded dialogue (keys for sidechain need full signal).
         filter_parts.append(
-            f"[0:a]apad=whole_dur={total_duration:.3f},"
-            f"afade=t=out:st={fade_start:.3f}:d={DIALOG_FADE_OUT:.3f}[dialog_padded]"
+            f"[0:a]apad=whole_dur={total_duration:.3f}[dialog_padded]"
         )
-        # Split for sidechain key + mix
-        filter_parts.append("[dialog_padded]asplit=2[dialog][dialog_key]")
-        # Music bed: timeline volume — quieter during dialogue, louder during CTA
+        # Step 2-3: asplit, then afade only on playback branch.
+        filter_parts.append("[dialog_padded]asplit=2[dialog_key][dialog_pre_fade]")
+        filter_parts.append(
+            f"[dialog_pre_fade]afade=t=out:st={fade_start:.3f}:d={DIALOG_FADE_OUT:.3f}[dialog]"
+        )
+        # Step 4: piecewise-linear music volume ramp.
+        # Sentinels for readability inside the ffmpeg expression: F=fade_start,
+        # D=duration, Df=fade duration, C=CTA fade-in, V=music_volume, MT=trough.
+        # Inside filter_complex, commas inside the expression MUST be \-escaped.
+        F = fade_start
+        D = duration
+        Df = DIALOG_FADE_OUT
+        C = CTA_FADE_IN
+        V = music_volume
+        MT = MUSIC_TROUGH
+        # Linear interpolation form: a + (b-a)*progress, with progress clipped
+        # to its segment. Nested if() preserves piecewise behavior.
+        music_vol_expr = (
+            f"if(lt(t\\,{F:.3f})\\,{V:.3f}\\,"
+            f"if(lt(t\\,{D:.3f})\\,{V:.3f}+({MT:.3f}-{V:.3f})*(t-{F:.3f})/{Df:.3f}\\,"
+            f"if(lt(t\\,{D + C:.3f})\\,{MT:.3f}+(0.22-{MT:.3f})*(t-{D:.3f})/{C:.3f}\\,"
+            f"0.22)))"
+        )
         filter_parts.append(
             f"[{music_idx}:a]aloop=loop=-1:size=2e9,"
             f"atrim=0:{total_duration:.3f},"
-            f"volume='if(lt(t\\,{duration:.3f})\\,{music_volume:.3f}\\,0.22)':eval=frame"
-            f"[music_raw]"
+            f"volume='{music_vol_expr}':eval=frame[music_raw]"
         )
-        # Sidechain ducking under the dialog (no-op during silent CTA portion
-        # since the dialog stream is silent there — music sits at its bumped
-        # level uninterrupted).
+        # Sidechain ducks against the UN-faded key (full signal during the
+        # voice fade-out → keeps music ducked through the fade, releasing
+        # only when dialog actually stops post-fade). The 400ms release +
+        # the music ramp climb both go in the same direction at CTA fade-in,
+        # producing a smooth swell.
         filter_parts.append(
             "[music_raw][dialog_key]sidechaincompress="
             "threshold=0.05:ratio=8:attack=5:release=400:makeup=1[music]"
@@ -1072,8 +896,8 @@ def _build_ffmpeg_cmd(source_video: Path, start: float, end: float, duration: fl
         )
         aout_label = "[aout]"
     else:
-        # No music: just pad dialogue with silence for the CTA portion, with
-        # the same end-of-dialogue fade-out as the music branch.
+        # No music: apad + afade on the single dialogue stream (no asplit
+        # needed — there's no sidechain key consumer).
         filter_parts.append(
             f"[0:a]apad=whole_dur={total_duration:.3f},"
             f"afade=t=out:st={fade_start:.3f}:d={DIALOG_FADE_OUT:.3f}[aout]"
