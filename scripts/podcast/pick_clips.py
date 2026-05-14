@@ -1424,6 +1424,48 @@ def _end_completion_gate(picks: list[dict], segments: list[dict],
                 return s["text"].strip()
         return "(no following sentence — end of episode)"
 
+    # Round 18 (2026-05-14): deterministic safety nets — detect obvious
+    # setup-at-end (force EXTEND) or pivot-after-end (force SHORTEN) so we
+    # don't depend on Claude's judgment for unambiguous cases. These regexes
+    # run AFTER Claude returns a verdict; they override Claude's PASS only
+    # when the pattern is clear.
+    _SETUP_KEYWORDS_RE = re.compile(
+        r"\b(can you guess|guess which|guess what|guess who|"
+        r"specifically thinking|particular(?:ly)? thinking|"
+        r"one specifically|one in particular|"
+        r"wait (?:un)?til you hear|you know what(?:'s| is)|"
+        r"i'll tell you|i will tell you|"
+        r"there is one|there's one|here'?s the thing|"
+        r"but here'?s|the thing is|"
+        r"let me ask|let me tell)\b",
+        re.IGNORECASE,
+    )
+    _PIVOT_LEAD_RE = re.compile(
+        r"^\s*(?:um\s+|uh\s+|yeah[, ]?\s*|well[, ]?\s*|okay[, ]?\s*|alright[, ]?\s*|"
+        r"oh[, ]?\s*|so[, ]?\s*)?"  # optional filler-leadin
+        r"(?:anyway|moving on|switching (?:topics?|gears?)|"
+        r"by the way|on (?:a|another) (?:different )?(?:note|topic)|"
+        r"different (?:topic|subject|thing)|"
+        r"speaking of|that reminds me|let me ask|"
+        r"alright (?:moving|so)|okay so|alright then|"
+        r"(?:to|let's) (?:switch|change) (?:topics?|subjects?|gears?))\b",
+        re.IGNORECASE,
+    )
+
+    def _is_setup(text: str) -> bool:
+        text = text.strip()
+        if not text:
+            return False
+        # Ends with question mark → almost always a setup awaiting answer
+        if text.rstrip(' "\'').endswith("?"):
+            return True
+        return bool(_SETUP_KEYWORDS_RE.search(text))
+
+    def _is_pivot(text: str) -> bool:
+        if not text:
+            return False
+        return bool(_PIVOT_LEAD_RE.match(text.strip()))
+
     work: list[tuple[dict, str | None, str, list[dict], int]] = []
     for pick in picks:
         try:
@@ -1448,12 +1490,13 @@ def _end_completion_gate(picks: list[dict], segments: list[dict],
         )
 
         # Split into BEFORE (≤ current end) and AFTER (> current end).
-        # Take up to 3 of each so Claude has bidirectional options.
+        # Round 18: bumped from 3 each side to 4 — more Claude options for
+        # finding the right payoff landing or the right pre-pivot landing.
         before_cands = [c for c in cands_raw if c["clip_end"] <= end + 0.20]
         after_cands = [c for c in cands_raw if c["clip_end"] > end + 0.20]
-        # Take the 3 closest BEFORE (= latest 3 before current) and 3 earliest AFTER.
-        before_cands = before_cands[-3:]
-        after_cands = after_cands[:3]
+        # Take the 4 closest BEFORE (= latest 4 before current) and 4 earliest AFTER.
+        before_cands = before_cands[-4:]
+        after_cands = after_cands[:4]
 
         # The current end is whichever BEFORE is closest to `end`, OR the
         # earliest AFTER if no BEFORE exists.
@@ -1576,6 +1619,64 @@ def _end_completion_gate(picks: list[dict], segments: list[dict],
                 n_shortened += 1
             surviving.append(pick)
             continue
+
+        # Round 18 deterministic safety nets — override PASS (or REJECT) when
+        # the CURRENT end's BEFORE/AFTER text matches an obvious setup or
+        # pivot pattern. Only fires when Claude PASSed/REJECTed (didn't
+        # already pick EXTEND/SHORTEN above).
+        cur = candidates[current_idx]
+        cur_before = _preceding_sentence_text(cur["start"])
+        cur_after = _following_sentence_text(cur["end"])
+
+        if _is_setup(cur_before):
+            # CURRENT BEFORE is a setup (ends with ?, contains "guess which", etc.)
+            # — clip CANNOT end here. Force EXTEND to the nearest LATER
+            # candidate whose BEFORE is NOT a setup.
+            forced_idx: int | None = None
+            for j in range(current_idx + 1, len(candidates)):
+                cand_before = _preceding_sentence_text(candidates[j]["start"])
+                if not _is_setup(cand_before):
+                    forced_idx = j
+                    break
+            if forced_idx is not None:
+                chosen = candidates[forced_idx]
+                new_end = chosen["clip_end"]
+                new_dur = new_end - float(pick.get("start_sec", 0))
+                if DURATION_FLOOR_SEC <= new_dur <= DURATION_CEILING_SEC:
+                    print(f"  [end-check] SAFETY-NET EXTEND: {pick.get('title','?')[:50]} "
+                          f"end {pick.get('end_sec',0):.1f}s → {new_end:.2f}s "
+                          f"(setup detected: {cur_before[:50]!r})")
+                    pick = {**pick,
+                            "end_sec": round(new_end, 2),
+                            "duration_sec": round(new_dur, 2),
+                            "_end_extended_safety": True}
+                    n_extended += 1
+                    surviving.append(pick)
+                    continue
+
+        if _is_pivot(cur_after):
+            # CURRENT AFTER starts a topic pivot — clip's current end captures
+            # the pivot we want to cut. Force SHORTEN to the nearest EARLIER
+            # candidate whose BEFORE is still on-topic.
+            forced_idx_s: int | None = None
+            for j in range(current_idx - 1, -1, -1):
+                forced_idx_s = j
+                break
+            if forced_idx_s is not None:
+                chosen = candidates[forced_idx_s]
+                new_end = chosen["clip_end"]
+                new_dur = new_end - float(pick.get("start_sec", 0))
+                if DURATION_FLOOR_SEC <= new_dur <= DURATION_CEILING_SEC:
+                    print(f"  [end-check] SAFETY-NET SHORTEN: {pick.get('title','?')[:50]} "
+                          f"end {pick.get('end_sec',0):.1f}s → {new_end:.2f}s "
+                          f"(pivot detected: {cur_after[:50]!r})")
+                    pick = {**pick,
+                            "end_sec": round(new_end, 2),
+                            "duration_sec": round(new_dur, 2),
+                            "_end_shortened_safety": True}
+                    n_shortened += 1
+                    surviving.append(pick)
+                    continue
 
         # PASS or REJECT (we keep on REJECT — the existing pick is at least
         # silence-aligned; better than dropping the clip entirely)
