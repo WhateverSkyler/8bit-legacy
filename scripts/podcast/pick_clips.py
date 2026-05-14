@@ -579,10 +579,21 @@ def _snap_to_sentence_start(t_sec: float, sentences: list[dict],
 
 
 def _safe_breath_pad(sentence_end: float, sentences: list[dict],
-                     max_pad: float = 0.40) -> float:
+                     max_pad: float = 0.40,
+                     safe_margin: float = 0.10) -> float:
     """Round-13: cap the breath pad after a sentence end to the actual silence
-    available before the next spoken word, so the pad never bleeds into the
-    next sentence's audio.
+    available before the next spoken word, with a safety margin so the clip
+    never bleeds into the START of the next word.
+
+    Round-13.5 fix: even with adaptive pad = gap, the consonant onset of the
+    next word starts ~0.05s before whisperX's `start` timestamp. So if gap
+    is 0.20s and we pad 0.20s, the clip ends exactly when whisperX says the
+    next word starts — capturing the audible onset and producing the "still
+    cuts off mid-sentence" complaint on c3.
+
+    Fix: subtract `safe_margin` from the available gap before applying. With
+    safe_margin=0.10 and gap=0.20, pad becomes 0.10s — clip ends 0.10s
+    before next word starts, leaving real silence before fade-to-CTA.
 
     Without this, a clip ending on a HIGH-confidence sentence boundary in a
     continuous-speech stretch (e.g., "...given the situation." immediately
@@ -607,7 +618,8 @@ def _safe_breath_pad(sentence_end: float, sentences: list[dict],
             break
     if next_start is None:
         return max_pad
-    return min(max_pad, max(0.0, next_start - sentence_end))
+    available = max(0.0, next_start - sentence_end - safe_margin)
+    return min(max_pad, available)
 
 
 def _snap_to_sentence_end(t_sec: float, sentences: list[dict],

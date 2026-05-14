@@ -714,13 +714,16 @@ TITLE_STRIP_PAD_H = 30   # extra horizontal padding inside the strip for text
 TITLE_STRIP_PAD_V = 12   # extra vertical padding
 # Round 9b (2026-05-13) fine alignment: user feedback "move down and left,
 # a few photoshop arrow-key presses". 6px down, 8px left.
+# Round 13.5 (2026-05-14): "slightly too high aligned in the white box" — nudge 2 more px down.
 TITLE_STRIP_NUDGE_X = -8
-TITLE_STRIP_NUDGE_Y = 6
+TITLE_STRIP_NUDGE_Y = 8
 
 # Auto-fit font size search bounds (Bebas Neue at the strip's pixel size).
-TITLE_FONT_MAX = 110
-TITLE_FONT_MIN_ONE_LINE = 64   # below this, wrap to 2 lines instead of shrinking further
-TITLE_FONT_MIN_TWO_LINE = 44
+# Round 13.5 (2026-05-14): "kinda small" — bump max + min so short titles
+# render larger when they have room.
+TITLE_FONT_MAX = 124
+TITLE_FONT_MIN_ONE_LINE = 72   # below this, wrap to 2 lines instead of shrinking further
+TITLE_FONT_MIN_TWO_LINE = 50
 
 # Brand color (matches active-word ORANGE used for karaoke captions). Hex form
 # for ffmpeg's drawtext fontcolor= argument. The 0x prefix is added at use site.
@@ -1032,11 +1035,21 @@ def _build_ffmpeg_cmd(source_video: Path, start: float, end: float, duration: fl
         vout_label = last_video_label
 
     # AUDIO CHAIN
+    # Round-13.5: fade dialogue audio out over the last DIALOG_FADE_OUT seconds
+    # of the pod portion so the transition into the CTA doesn't hard-cut. Per
+    # user feedback after round 13 — "added some sort of audio fade from the
+    # pod instead of a hard cut off that it would flow better into the CTA
+    # slide". Fade ends at `duration` (the dialog/CTA boundary); CTA video's
+    # own CTA_FADE_IN handles the visual crossover.
+    DIALOG_FADE_OUT = 0.30
+    fade_start = max(0.0, duration - DIALOG_FADE_OUT)
     if has_music:
         # Pad the dialogue with silence to total_duration so the timeline
-        # extends through the CTA portion.
+        # extends through the CTA portion. Apply fade-out before split so
+        # both the playback branch AND the sidechain key get the faded audio.
         filter_parts.append(
-            f"[0:a]apad=whole_dur={total_duration:.3f}[dialog_padded]"
+            f"[0:a]apad=whole_dur={total_duration:.3f},"
+            f"afade=t=out:st={fade_start:.3f}:d={DIALOG_FADE_OUT:.3f}[dialog_padded]"
         )
         # Split for sidechain key + mix
         filter_parts.append("[dialog_padded]asplit=2[dialog][dialog_key]")
@@ -1059,9 +1072,11 @@ def _build_ffmpeg_cmd(source_video: Path, start: float, end: float, duration: fl
         )
         aout_label = "[aout]"
     else:
-        # No music: just pad dialogue with silence for the CTA portion.
+        # No music: just pad dialogue with silence for the CTA portion, with
+        # the same end-of-dialogue fade-out as the music branch.
         filter_parts.append(
-            f"[0:a]apad=whole_dur={total_duration:.3f}[aout]"
+            f"[0:a]apad=whole_dur={total_duration:.3f},"
+            f"afade=t=out:st={fade_start:.3f}:d={DIALOG_FADE_OUT:.3f}[aout]"
         )
         aout_label = "[aout]"
 
