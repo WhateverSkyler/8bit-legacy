@@ -132,48 +132,53 @@ Return STRICT JSON ONLY (no prose, no markdown fences, start with `{{` end with 
 # end. Claude sees the LAST sentence + 5 candidate continuation
 # sentences and decides whether to keep the current end or extend.
 
-END_COMPLETION_TEST_V1 = """You are deciding whether a short-form clip's ENDING gives a satisfying conclusion to the discussion (TikTok/Reels viewer, no follow-up context).
+END_COMPLETION_TEST_V1 = """You are deciding where a short-form clip should END so the viewer hears a COMPLETE thought, including any payoff to a setup. TikTok/Reels viewer — no follow-up context, no part-2, the clip stands alone.
 
-The clip's CURRENT LAST spoken thought (what the viewer would hear right before the clip ends):
+CRITICAL RULE — NEVER end on a SETUP without its PAYOFF.
+A setup is anything that primes the viewer to expect more:
+- A QUESTION ("Can you guess?", "What franchise hasn't done this?", "You know what's crazy?")
+- A TEASE ("There's one I'm thinking of specifically", "Wait until you hear this", "I'll tell you why")
+- A CONTRAST / PRE-AMBLE ("There's one exception though", "but here's the thing", "however")
+- An UNRESOLVED SUBJECT pronoun ("Then he said...", "And it was...")
 
-\"\"\"
-{last_sentence}
-\"\"\"
+If the LAST audible thought is a setup, the clip CANNOT end there — you MUST extend to a candidate that captures the payoff (the answer, the reveal, the resolution).
 
-You may EXTEND the clip end to include one of these later candidate ending points if doing so completes the topic better. Each candidate is numbered. #0 is the current end (= same spoken thought as above). All candidates are **silence-aligned endings** — every candidate lands in real audio silence in the source recording, so the clip end is always a clean cut, never mid-word. `silence_dur` shows how long that silence period is — LONGER silence = more emphatic conversational pause = often a stronger landing.
+Each candidate below shows you THREE pieces of text:
+- BEFORE: the sentence the viewer hears RIGHT BEFORE this candidate's silence (= what the clip's last audible thought would be if you pick this candidate)
+- AFTER: the next sentence (post-silence) — this is what gets CUT OFF if you choose this candidate. Use this to check whether you'd be cutting off a payoff that needed to be heard.
+- silence_dur: how long the audio silence is (longer = more emphatic conversational pause = often a natural landing)
 
-CANDIDATE ENDINGS (numbered):
+CANDIDATE ENDINGS (numbered, sorted by clip-end time ascending):
 {candidates_block}
 
-EVALUATE the CURRENT ending (#0):
+#0 is the clip's CURRENT end. Candidates #1+ are later silence points you can EXTEND to.
 
-1. **Does the discussion feel CONCLUDED?** Has the speaker landed the point, made the take, or wrapped a thought? Or does it cut off mid-thought?
-2. **Would extending to a later sentence make the clip MORE satisfying?** Sometimes a clip ends one sentence too early — the punchline or conclusion is in the very next sentence.
+DECISION RULES:
 
-PASS examples (current ending IS satisfying):
+1. Read each candidate's BEFORE text and ask: "Does this stand alone as a complete thought?" If BEFORE ends on a question, tease, contrast marker, or unresolved pronoun → that candidate is INVALID. Move to a later candidate.
+
+2. Among valid candidates, prefer the one with the most satisfying landing — a stated take, a punchline, a resolution. Look at silence_dur as a quality signal (longer pause = stronger landing).
+
+3. If the CURRENT ending (#0) is already a complete thought AND no later candidate would noticeably improve it, PASS.
+
+4. If every candidate's BEFORE text is a setup with no payoff in the window, REJECT (rare).
+
+PASS examples (current ending IS a complete payoff):
   - "...and that's why GameStop will never get my money again."  ← conclusive stance
   - "It's literally infinite money."  ← punchy landing
   - "I'd rather just play the original."  ← clear ending take
 
-EXTEND examples (current ending cuts off mid-thought):
-  - "...so I think it's just kind of."  ← incomplete, trails off
-  - "...and that's why I think they're going to."  ← cuts mid-sentence
-  - "...because at the end of the day,"  ← setup with no payoff
-
-DECISIONS:
-
-- **PASS**: current ending (#0) is satisfying. Don't extend.
-
-- **EXTEND**: current ending is premature. Set `chosen_index` to the smallest index >0 whose sentence completes the thought naturally. Prefer the EARLIEST candidate that gives a satisfying landing — don't extend further than necessary.
-
-- **REJECT**: every candidate is also bad (the speaker rambled into a tangent or never lands the point). Use sparingly — most picks should be PASS or EXTEND, not REJECT.
+EXTEND examples (current ending is a setup — payoff is in a later candidate):
+  - Current: "Can you guess which franchise hasn't done this?" → MUST extend to the candidate where the answer is given.
+  - Current: "There's one I'm specifically thinking of." → MUST extend to the candidate that names it.
+  - Current: "...so I think it's just kind of."  ← trails off, incomplete
 
 Return STRICT JSON ONLY (no prose, no markdown fences, start with `{{` end with `}}`):
 {{
   "discussion_concluded": true | false,
   "recommendation": "PASS" | "EXTEND" | "REJECT",
   "chosen_index": null | <integer index from the candidate list, only set if EXTEND>,
-  "reason": "one short sentence explaining the call"
+  "reason": "one short sentence — specifically NAME the setup/payoff if EXTENDing"
 }}
 """
 

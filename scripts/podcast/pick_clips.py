@@ -1406,8 +1406,7 @@ def _end_completion_gate(picks: list[dict], segments: list[dict],
 
     def _preceding_sentence_text(silence_start: float) -> str:
         """Return the text of the sentence whose end is closest to (and at or
-        before) silence_start. Used as Claude's context for what was last
-        spoken before each silence period."""
+        before) silence_start."""
         best = None
         for s in sentences:
             if s["end"] <= silence_start + 0.10:
@@ -1415,6 +1414,15 @@ def _end_completion_gate(picks: list[dict], segments: list[dict],
             else:
                 break
         return best["text"].strip() if best else "(no preceding sentence)"
+
+    def _following_sentence_text(silence_end: float) -> str:
+        """Return the text of the sentence whose start is closest to (and at or
+        after) silence_end. Used to show Claude what would be CUT OFF if we
+        end at this silence — critical for detecting setup→payoff endings."""
+        for s in sentences:
+            if s["start"] >= silence_end - 0.05:
+                return s["text"].strip()
+        return "(no following sentence — end of episode)"
 
     work: list[tuple[dict, str | None, str, list[dict]]] = []
     for pick in picks:
@@ -1455,17 +1463,26 @@ def _end_completion_gate(picks: list[dict], segments: list[dict],
         candidates = [current] + extensions[:5]   # up to 6 total
 
         # Build the prompt block: each candidate shows the preceding sentence
-        # text (what Claude reads as the last spoken thought before that
-        # silence) + the silence_dur (longer = more emphatic pause).
+        # (what the viewer would HEAR last if we end here) AND the following
+        # sentence (what gets CUT OFF). Round 15: showing the following
+        # sentence is critical for catching setup→payoff endings — Claude
+        # can now see "ending here cuts off the answer to the just-posed
+        # question" and EXTEND to capture the payoff.
+        def _candidate_block(i: int, c: dict) -> str:
+            before = _preceding_sentence_text(c['start'])[:180]
+            after = _following_sentence_text(c['end'])[:180]
+            return (
+                f"  #{i}: clip_end={c['clip_end']:.2f}s  silence_dur={c['duration']:.2f}s\n"
+                f"      BEFORE (last heard): \"{before}\"\n"
+                f"      AFTER  (cut off):    \"{after}\""
+            )
         candidates_block = "\n".join(
-            f"  #{i}: ends after: \"{_preceding_sentence_text(c['start'])[:120]}\""
-            f"  (clip_end={c['clip_end']:.2f}s, silence_dur={c['duration']:.2f}s)"
-            for i, c in enumerate(candidates)
+            _candidate_block(i, c) for i, c in enumerate(candidates)
         )
         last_sentence = _preceding_sentence_text(current["start"])
         prompt = END_COMPLETION_TEST_V1.format(
             last_sentence=last_sentence[:600],
-            candidates_block=candidates_block[:3000],
+            candidates_block=candidates_block[:5000],
         )
         clip_id = pick.get("clip_id") or pick.get("title", "?")[:60]
         work.append((pick, prompt, clip_id, candidates))

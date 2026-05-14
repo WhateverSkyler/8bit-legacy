@@ -278,81 +278,95 @@ INTRA_SCENE_CUT_PX = 300
 def _crop_x_for_scene(cap, source_video: Path, start_sec: float,
                       end_sec: float, prev_crop_x: int | None,
                       crop_w: int, source_w: int,
-                      samples: int = 8) -> tuple[list[tuple[float, float, int]], list[int]]:
-    """Run YuNet on `samples` frames inside [start_sec, end_sec] and return:
-      (1) a list of (start, end, crop_x) sub-scenes — single-element unless
-          intra-scene bisection detected a missed cut, in which case two
-      (2) the per-sample best-face X values (source-image coords) for the
-          calling-side intra-scene-cut bookkeeping (logging)
+                      speaker_profile: list[dict] | None,
+                      samples: int = 3) -> tuple[list[tuple[float, float, int]], list[int]]:
+    """Identify WHICH speaker is on camera in this scene and return their
+    canonical crop_x from the per-episode speaker profile.
 
-    Falls back to prev_crop_x (or CENTER_CROP_X if None) when YuNet can't
-    detect a face anywhere in the scene.
+    Round 15 (2026-05-14): per-scene face tracking was producing drift and
+    delayed transitions per user feedback. Replaced with: take a few quick
+    samples to identify WHICH speaker is on screen, then use that speaker's
+    FIXED canonical_x from the per-episode profile. The crop_x for the
+    whole scene is locked. No per-clip movement.
+
+    Returns (sub_scenes, per_sample_face_xs).
+      - sub_scenes: usually 1 element [(start, end, crop_x)]; 2 if
+        intra-scene bisection caught a missed cut where two different
+        speakers are in the same ffmpeg-undetected window.
+      - per_sample_face_xs: raw observations for logging.
+
+    Falls back to prev_crop_x (or CENTER_CROP_X) when YuNet can't detect
+    a face anywhere in the scene.
 
     `cap` is an open cv2.VideoCapture; we seek via CAP_PROP_POS_MSEC.
     """
     import cv2  # type: ignore
-    from _face_detect import FaceDetector, best_speaker_cx
+    from _face_detect import FaceDetector
+    from _speaker_profile import canonical_x_for_scene, speaker_for_face_x
 
     duration = max(0.1, end_sec - start_sec)
 
-    # Sample 8 frames at even offsets across the scene window. Capture each
-    # frame's per-face detections; pass the whole batch to `best_speaker_cx`
-    # for active-speaker selection via mouth-motion variance + scoring.
+    # Sample a few frames inside the scene to identify which speaker is on
+    # screen. 3 samples is plenty when we only need to MATCH against the
+    # speaker profile (not compute a precise face position).
     det = FaceDetector.get()
-    frames_faces: list[list[dict]] = []
-    per_sample_best_x: list[int | None] = []
+    per_sample_face_x: list[int] = []
     for i in range(samples):
         t = start_sec + duration * ((i + 0.5) / samples)
         cap.set(cv2.CAP_PROP_POS_MSEC, t * 1000.0)
         ok, frame = cap.read()
         if not ok or frame is None:
-            frames_faces.append([])
-            per_sample_best_x.append(None)
             continue
         faces = det.detect(frame)
-        frames_faces.append(faces)
-        # For intra-scene bisection: track the largest face on each frame
-        # (cheap heuristic; matches what `best_speaker_cx` uses for the
-        # 1-face cluster path).
-        per_sample_best_x.append(faces[0]["cx"] if faces else None)
+        if faces:
+            per_sample_face_x.append(faces[0]["cx"])  # largest face per frame
 
-    cx = best_speaker_cx(frames_faces)
-    if cx is None:
-        cx = prev_crop_x + crop_w // 2 if prev_crop_x is not None else CENTER_CROP_X + crop_w // 2
-    crop_x = max(0, min(source_w - crop_w, int(cx) - crop_w // 2))
+    fallback_face_x = (prev_crop_x + crop_w // 2) if prev_crop_x is not None else (CENTER_CROP_X + crop_w // 2)
+    if speaker_profile:
+        canonical_face_x = canonical_x_for_scene(
+            per_sample_face_x, speaker_profile, fallback_x=fallback_face_x,
+        )
+    elif per_sample_face_x:
+        # No profile (very short/short-episode mode) — use median of observations
+        per_sample_face_x.sort()
+        canonical_face_x = per_sample_face_x[len(per_sample_face_x) // 2]
+    else:
+        canonical_face_x = fallback_face_x
 
-    # Intra-scene bisection check: do the per-sample face Xs split into two
-    # clusters >300px apart with >= 3 samples on each side?
-    xs_with_idx = [(i, x) for i, x in enumerate(per_sample_best_x) if x is not None]
+    crop_x = max(0, min(source_w - crop_w, int(canonical_face_x) - crop_w // 2))
+
+    # Intra-scene bisection: if the samples in this scene match TWO different
+    # speakers from the profile, the scene contains a missed cut. Bisect at
+    # the boundary between the two speakers' samples.
     bisect_t: float | None = None
-    if len(xs_with_idx) >= 6:
-        for k in range(2, len(xs_with_idx) - 2):
-            left = [x for _i, x in xs_with_idx[:k + 1]]
-            right = [x for _i, x in xs_with_idx[k + 1:]]
-            if len(left) >= 3 and len(right) >= 3:
-                if abs((sum(left) / len(left)) - (sum(right) / len(right))) >= INTRA_SCENE_CUT_PX:
-                    # Bisect at the midpoint timestamp between sample k and k+1
-                    t_left = start_sec + duration * ((xs_with_idx[k][0] + 0.5) / samples)
-                    t_right = start_sec + duration * ((xs_with_idx[k + 1][0] + 0.5) / samples)
-                    bisect_t = (t_left + t_right) / 2
-                    break
+    if speaker_profile and len(per_sample_face_x) >= 3:
+        sample_speakers = [
+            speaker_for_face_x(x, speaker_profile) for x in per_sample_face_x
+        ]
+        sample_speaker_ids = [s["speaker_id"] if s else None for s in sample_speakers]
+        # Find the first transition between two different non-None speaker ids
+        for k in range(len(sample_speaker_ids) - 1):
+            a, b = sample_speaker_ids[k], sample_speaker_ids[k + 1]
+            if a is not None and b is not None and a != b:
+                t_left = start_sec + duration * ((k + 0.5) / samples)
+                t_right = start_sec + duration * ((k + 1.5) / samples)
+                bisect_t = (t_left + t_right) / 2
+                break
 
     if bisect_t is None:
-        return [(round(start_sec, 3), round(end_sec, 3), crop_x)], [
-            x for x in per_sample_best_x if x is not None
-        ]
+        return [(round(start_sec, 3), round(end_sec, 3), crop_x)], per_sample_face_x
 
-    # Bisected: recurse on each half (samples halved, but at least 4 each)
+    # Bisected — compute crop_x for each half independently.
     left_subs, _ = _crop_x_for_scene(
         cap, source_video, start_sec, bisect_t, prev_crop_x,
-        crop_w, source_w, samples=max(4, samples // 2),
+        crop_w, source_w, speaker_profile, samples=samples,
     )
     right_prev = left_subs[-1][2] if left_subs else prev_crop_x
     right_subs, _ = _crop_x_for_scene(
         cap, source_video, bisect_t, end_sec, right_prev,
-        crop_w, source_w, samples=max(4, samples // 2),
+        crop_w, source_w, speaker_profile, samples=samples,
     )
-    return left_subs + right_subs, [x for x in per_sample_best_x if x is not None]
+    return left_subs + right_subs, per_sample_face_x
 
 
 def detect_scenes_and_crops(
@@ -366,24 +380,23 @@ def detect_scenes_and_crops(
     """Detect camera cuts inside [start_sec, end_sec] and return one fixed
     crop_x per scene as a list of (start, end, crop_x) tuples.
 
-    Round 14 (2026-05-14): rebuilt to use ffmpeg histogram cuts ONLY for
-    scene detection and ONE YuNet active-speaker call per scene for crop_x.
-    Previous rounds (11-13) used a 6-fps dense Haar face track + EMA smoothing
-    + 150-300px face-jump cuts; that pipeline accumulated per-sample noise
-    that caused "spazzing" within stable shots and hit a MAX_SCENES cap that
-    fell back to dead-center crop for entire clips.
+    Round 15 (2026-05-14): per-clip face tracking still drifted within stable
+    shots and lagged at shot transitions because each clip's scenes had to
+    re-decide both WHO is on camera AND WHERE their face is. Per user:
+    crop should snap to a FIXED canonical X per speaker, detected ONCE per
+    episode. Even if a speaker temporarily leans left/right, their crop
+    stays at their typical seat position.
 
-    Per-scene flow:
-      1. ffmpeg histogram cuts (threshold pinned to SCENE_DETECT_THRESHOLD=0.30
-         — the constant; previously called with cut_threshold=0.25 which was
-         a noise source).
-      2. For each scene window >= MIN_DURATION_FOR_YUNET_SEC (0.6s): 8 frame
-         samples → YuNet detect on each → best_speaker_cx picks the talker.
-         Shorter scenes inherit the prior scene's crop_x (mouth-variance is
-         unreliable below 0.6s).
-      3. Intra-scene bisection: if the 8 samples split into two X-clusters
-         >300px apart, the scene contained a missed cut → bisect at the
-         cluster boundary midpoint.
+    Flow:
+      1. Load the per-episode speaker profile (cached at
+         <source>.speakers.json; built lazily by _speaker_profile).
+      2. ffmpeg histogram cuts → scene windows.
+      3. Per scene: 3 quick face-detection samples → match to a profile
+         speaker → use that speaker's canonical_x for the WHOLE scene.
+      4. Intra-scene bisection: if the 3 samples match TWO different
+         profile speakers, the scene contained a missed cut → bisect.
+
+    Shorter scenes (< MIN_DURATION_FOR_YUNET_SEC) inherit prior crop_x.
     """
     duration = max(0.1, end_sec - start_sec)
     fallback = [(0.0, duration, CENTER_CROP_X)]
@@ -394,6 +407,22 @@ def detect_scenes_and_crops(
         print("  [SCENES] opencv not installed → 1 scene, center crop")
         return fallback
 
+    # Load per-episode speaker profile (Round 15). Failing to build it is
+    # non-fatal — _crop_x_for_scene falls back to per-scene face median.
+    speaker_profile: list[dict] | None = None
+    try:
+        from _speaker_profile import build_speaker_profile
+        speaker_profile = build_speaker_profile(source_video)
+        if speaker_profile and not getattr(detect_scenes_and_crops, "_profile_logged", False):
+            speakers_str = ", ".join(
+                f"#{s['speaker_id']} x={s['canonical_x']}" for s in speaker_profile
+            )
+            print(f"  [profile] speakers: {speakers_str}")
+            detect_scenes_and_crops._profile_logged = True  # type: ignore[attr-defined]
+    except Exception as exc:
+        print(f"  [profile] speaker profile unavailable ({exc}) — per-scene fallback")
+        speaker_profile = None
+
     cap = None
     try:
         cap = cv2.VideoCapture(str(source_video))
@@ -401,7 +430,7 @@ def detect_scenes_and_crops(
             print("  [SCENES] cv2 could not open source → 1 scene, center crop")
             return fallback
 
-        # 1. ffmpeg histogram cuts — sole cut signal in round 14
+        # 1. ffmpeg histogram cuts — sole cut signal
         ffmpeg_cuts = _detect_cuts_via_ffmpeg(
             source_video, start_sec, end_sec, threshold=cut_threshold,
         )
@@ -419,7 +448,7 @@ def detect_scenes_and_crops(
         if not scene_windows:
             return fallback
 
-        # 2-3. Per-scene YuNet active-speaker + intra-scene bisection
+        # 2-3. Per-scene speaker-profile lookup + intra-scene bisection
         all_scenes: list[tuple[float, float, int]] = []
         prev_crop_x: int | None = None
         n_bisected = 0
@@ -427,7 +456,6 @@ def detect_scenes_and_crops(
         for (s_rel, e_rel) in scene_windows:
             dur = e_rel - s_rel
             if dur < MIN_DURATION_FOR_YUNET_SEC:
-                # Inherit prior crop_x; mouth-variance unreliable below 0.6s
                 inherit = prev_crop_x if prev_crop_x is not None else CENTER_CROP_X
                 all_scenes.append((round(s_rel, 3), round(e_rel, 3), inherit))
                 prev_crop_x = inherit
@@ -436,7 +464,7 @@ def detect_scenes_and_crops(
             sub_scenes, _ = _crop_x_for_scene(
                 cap, source_video,
                 start_sec + s_rel, start_sec + e_rel, prev_crop_x,
-                crop_w, source_w,
+                crop_w, source_w, speaker_profile,
             )
             # Convert source-relative timestamps back to clip-relative
             for (abs_s, abs_e, cx) in sub_scenes:
