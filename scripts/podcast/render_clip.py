@@ -279,7 +279,8 @@ def _crop_x_for_scene(cap, source_video: Path, start_sec: float,
                       end_sec: float, prev_crop_x: int | None,
                       crop_w: int, source_w: int,
                       speaker_profile: list[dict] | None,
-                      samples: int = 3) -> tuple[list[tuple[float, float, int]], list[int]]:
+                      samples: int = 3,
+                      _depth: int = 0) -> tuple[list[tuple[float, float, int]], list[int]]:
     """Identify WHICH speaker is on camera in this scene and return their
     canonical crop_x from the per-episode speaker profile.
 
@@ -338,8 +339,15 @@ def _crop_x_for_scene(cap, source_video: Path, start_sec: float,
     # Intra-scene bisection: if the samples in this scene match TWO different
     # speakers from the profile, the scene contains a missed cut. Bisect at
     # the boundary between the two speakers' samples.
+    # Depth-limited (max 2 levels) and minimum half-duration to prevent
+    # runaway recursion on noisy scenes where consecutive samples keep
+    # alternating speakers.
+    MAX_BISECT_DEPTH = 2
+    MIN_BISECT_HALF_SEC = 0.8
     bisect_t: float | None = None
-    if speaker_profile and len(per_sample_face_x) >= 3:
+    if (_depth < MAX_BISECT_DEPTH
+            and speaker_profile and len(per_sample_face_x) >= 3
+            and duration >= 2 * MIN_BISECT_HALF_SEC):
         sample_speakers = [
             speaker_for_face_x(x, speaker_profile) for x in per_sample_face_x
         ]
@@ -350,8 +358,12 @@ def _crop_x_for_scene(cap, source_video: Path, start_sec: float,
             if a is not None and b is not None and a != b:
                 t_left = start_sec + duration * ((k + 0.5) / samples)
                 t_right = start_sec + duration * ((k + 1.5) / samples)
-                bisect_t = (t_left + t_right) / 2
-                break
+                candidate_t = (t_left + t_right) / 2
+                # Reject bisections that leave a half shorter than the floor.
+                if (candidate_t - start_sec >= MIN_BISECT_HALF_SEC
+                        and end_sec - candidate_t >= MIN_BISECT_HALF_SEC):
+                    bisect_t = candidate_t
+                    break
 
     if bisect_t is None:
         return [(round(start_sec, 3), round(end_sec, 3), crop_x)], per_sample_face_x
@@ -360,11 +372,13 @@ def _crop_x_for_scene(cap, source_video: Path, start_sec: float,
     left_subs, _ = _crop_x_for_scene(
         cap, source_video, start_sec, bisect_t, prev_crop_x,
         crop_w, source_w, speaker_profile, samples=samples,
+        _depth=_depth + 1,
     )
     right_prev = left_subs[-1][2] if left_subs else prev_crop_x
     right_subs, _ = _crop_x_for_scene(
         cap, source_video, bisect_t, end_sec, right_prev,
         crop_w, source_w, speaker_profile, samples=samples,
+        _depth=_depth + 1,
     )
     return left_subs + right_subs, per_sample_face_x
 

@@ -47,6 +47,28 @@ echo "==> SCP to TrueNAS ($TRUENAS_IP)"
 scp -i "$SSH_KEY" "$LOCAL_SRC" "truenas_admin@${TRUENAS_IP}:${REMOTE_SRC}"
 scp -i "$SSH_KEY" deploy/docker-compose.yml "truenas_admin@${TRUENAS_IP}:${REMOTE_APP_DIR}/docker-compose.yml"
 
+# Ensure the YuNet face-detection ONNX model is in the host-mounted data dir.
+# The container's `data/` is bind-mounted from the host, so the model can't
+# be in the image (the mount would shadow it). Idempotent: only copies if
+# missing or different size.
+echo "==> Ensuring YuNet model is on host"
+if [[ -f deploy/_models/face_detection_yunet_2023mar.onnx ]]; then
+  scp -i "$SSH_KEY" deploy/_models/face_detection_yunet_2023mar.onnx \
+    "truenas_admin@${TRUENAS_IP}:/tmp/yunet_model.onnx" 2>&1 | tail -1
+  ssh -i "$SSH_KEY" "truenas_admin@${TRUENAS_IP}" \
+    "MODEL_DIR=/mnt/pool/apps/8bit-pipeline/data/podcast/_models; \
+     if [ ! -f \$MODEL_DIR/face_detection_yunet_2023mar.onnx ]; then \
+       sudo mkdir -p \$MODEL_DIR && \
+       sudo mv /tmp/yunet_model.onnx \$MODEL_DIR/face_detection_yunet_2023mar.onnx && \
+       sudo chown -R 950:950 \$MODEL_DIR && sudo chmod -R a+rX \$MODEL_DIR && \
+       echo '  YuNet model installed'; \
+     else echo '  YuNet model already present'; \
+       rm -f /tmp/yunet_model.onnx; \
+     fi" 2>&1 | tail -2
+else
+  echo "  WARN: deploy/_models/face_detection_yunet_2023mar.onnx missing — face detection will fall back to Haar"
+fi
+
 echo "==> Triggering build + deploy via TrueNAS cronjob API"
 BUILD_CMD="rm -rf ${REMOTE_BUILD}; mkdir -p ${REMOTE_BUILD} && tar xzf ${REMOTE_SRC} -C ${REMOTE_BUILD} && cd ${REMOTE_BUILD} && DOCKER_BUILDKIT=0 docker build --no-cache -f deploy/Dockerfile -t 8bit-pipeline:latest . > /tmp/8bit-pipeline-build.log 2>&1 && docker stop 8bit-pipeline 2>/dev/null; docker rm 8bit-pipeline 2>/dev/null; cd ${REMOTE_APP_DIR} && docker compose up -d >> /tmp/8bit-pipeline-build.log 2>&1 && echo DEPLOY_SUCCESS >> /tmp/8bit-pipeline-build.log || echo DEPLOY_FAILED >> /tmp/8bit-pipeline-build.log"
 
