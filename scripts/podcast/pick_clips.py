@@ -1438,11 +1438,13 @@ def _end_completion_gate(picks: list[dict], segments: list[dict],
         # `start + 0.6 * DURATION_FLOOR_SEC` — a clip can shorten to ~60% of
         # the floor if a stronger landing exists earlier (we'd rather have a
         # shorter sharp clip than a longer one that includes a tangent).
+        from _silence_detect import GATE_END_MIN_SILENCE_SEC
         cands_raw = silence_candidates_for_gate(
             silence_map,
             lo=start + DURATION_FLOOR_SEC * 0.6,
             hi=start + DURATION_CEILING_SEC + 2.0,
             max_n=12,  # wider window — split between BEFORE/AFTER
+            min_silence=GATE_END_MIN_SILENCE_SEC,
         )
 
         # Split into BEFORE (≤ current end) and AFTER (> current end).

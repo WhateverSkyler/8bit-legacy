@@ -160,8 +160,7 @@ Each candidate shows:
 CANDIDATE ENDINGS (numbered chronologically, ascending clip_end):
 {candidates_block}
 
-Note: the `last_sentence` Claude sees at the top is what the viewer hears right before the CURRENT end:
-"{last_sentence}"
+(The candidate marked `<-- CURRENT` is the clip's current end. Its BEFORE text is what the viewer would currently hear last: "{last_sentence}")
 
 DECISION RULES:
 

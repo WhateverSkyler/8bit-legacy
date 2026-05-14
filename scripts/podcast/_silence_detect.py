@@ -39,6 +39,16 @@ SILENCE_MIN_DUR = 0.20        # min silence duration the detector reports (secon
 # real pause where the speaker has finished a thought.
 MIN_END_SILENCE_SEC = 0.30
 
+# Round 17 (2026-05-14): the end-completion GATE (Claude judgment over
+# multiple candidates) can consider slightly tighter pauses than the
+# first-pass _snap_and_validate placement. Reason: when the gate is
+# EXTENDing to capture a payoff (e.g., "guess which franchise → Mario"),
+# the answer-landing silence is sometimes shorter than the setup-landing
+# silence. Strict 0.30s threshold for _snap_and_validate keeps initial
+# placement clean; relaxed 0.22s for gate candidates gives Claude more
+# options without lowering the bar for clips with no over-extension.
+GATE_END_MIN_SILENCE_SEC = 0.22
+
 # Offset into the silence period at which the clip ends. 100ms gives the audio
 # a clean tail of post-word silence before the visual/audio fade kicks in.
 END_OFFSET_INTO_SILENCE = 0.10
