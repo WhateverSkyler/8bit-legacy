@@ -54,8 +54,8 @@ EPISODE_SAFE=$(echo "$EPISODE" | tr ' ' '_')
 rm -f "/app/data/podcast/clips/${EPISODE_SAFE}/"*.mp4 "/app/data/podcast/clips/${EPISODE_SAFE}/"*.ass 2>/dev/null
 rm -rf "/app/data/podcast/clips/${EPISODE_SAFE}/_kf" "/app/data/podcast/clips/${EPISODE_SAFE}/preview" 2>/dev/null
 mkdir -p "/app/data/podcast/clips/${EPISODE_SAFE}/_rejected"
-echo "--- pick_clips: FROM FULL EPISODE ONLY, chunked 30-min windows ---"
-python3 scripts/podcast/pick_clips.py "$FULL_TRANSCRIPT" --chunk-minutes 30 --target-count 30
+echo "--- extract clips: ONE Sonnet call per topic file (single-call architecture) ---"
+python3 scripts/podcast/clips/extract.py "$FULL_TRANSCRIPT"
 echo "--- copying picks to _all.json so render_clip.py finds them ---"
 cp "/app/data/podcast/clips_plan/__STEM___1080p.json" /app/data/podcast/clips_plan/_all.json
 echo "--- render_clips (rc ignored — Gate-2/3 rejects are expected) ---"
