@@ -27,7 +27,26 @@ from urllib.parse import quote_plus
 
 import requests
 from bs4 import BeautifulSoup
-from dotenv import load_dotenv
+
+# Strict console taxonomy — replaces the previous fuzzy substring match that
+# caused Wii ↔ Wii U cross-console price corruption (2026-04/05).
+sys.path.insert(0, str(Path(__file__).parent))
+from _console_taxonomy import pc_label_to_id, tag_to_id, same_family  # noqa: E402
+
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    def load_dotenv(path):  # minimal fallback for environments without python-dotenv
+        if not os.path.exists(path):
+            return False
+        with open(path) as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith('#') or '=' not in line:
+                    continue
+                k, _, v = line.partition('=')
+                os.environ.setdefault(k.strip(), v.strip().strip("'\""))
+        return True
 
 SCRIPT_DIR = Path(__file__).parent
 PROJECT_DIR = SCRIPT_DIR.parent
@@ -129,14 +148,23 @@ def parse_price_text(text):
     match = re.search(r"[\$]?([\d,]+\.?\d*)", text.replace(",", ""))
     return float(match.group(1)) if match else 0.0
 
+_CONSOLE_SUFFIX_RE = re.compile(
+    # End-anchored: PC sometimes appends the console name to result titles.
+    # Anchoring at end-of-string avoids stripping the leading 'Wii' from titles
+    # like 'Wii Sports Resort' (was the source of the May 2026 pricing bug).
+    r'\s*(NES|SNES|Nintendo 64|Gamecube|Gameboy|Genesis|Playstation|PS[123]|'
+    r'Dreamcast|Saturn|GBA|Xbox|Wii|Sega|Atari|TurboGrafx|GameBoy|Game Boy)\s*$',
+    flags=re.IGNORECASE,
+)
+
+def _strip_trailing_console(s):
+    return _CONSOLE_SUFFIX_RE.sub('', s).strip()
+
 def title_similarity(query_title, result_title):
     """Check how well a PriceCharting result title matches the search query.
     Returns a score from 0 to 1. Higher is better."""
     qt = re.sub(r'[^a-z0-9 ]', '', query_title.lower()).split()
-    # Strip console suffix from result (PriceCharting appends it)
-    rt_clean = re.sub(r'(NES|SNES|Nintendo 64|Gamecube|Gameboy|Genesis|Playstation|PS[123]|'
-                      r'Dreamcast|Saturn|GBA|Xbox|Wii|Sega|Atari|TurboGrafx|GameBoy|Game Boy).*$',
-                      '', result_title, flags=re.IGNORECASE).strip()
+    rt_clean = _strip_trailing_console(result_title)
     rt = re.sub(r'[^a-z0-9 ]', '', rt_clean.lower()).split()
 
     if not qt or not rt:
@@ -207,7 +235,11 @@ def _fetch_candidates(query, console_name):
     if not rows:
         return None
 
-    target_console = console_name.lower().strip()
+    target_id = tag_to_id(console_name)
+    if target_id is None:
+        log(f"  UNMAPPED target console (not in taxonomy): {console_name!r} — skipping product")
+        return None
+
     candidates = []
     for row in rows[:8]:
         cols = row.find_all("td")
@@ -220,9 +252,26 @@ def _fetch_candidates(query, console_name):
         result_console = cols[2].get_text(strip=True).lower().strip() if len(cols) > 2 else ""
         if "pal" in result_console or "jp " in result_console or "japanese" in result_console:
             continue
-        if target_console not in result_console and result_console not in target_console:
+        # STRICT console match via canonical taxonomy. Unknown labels are
+        # rejected (no fuzzy fallback) — was the source of the Wii ↔ Wii U bug.
+        result_id = pc_label_to_id(result_console)
+        if result_id is None:
+            # Unknown PC label — log once per run to surface taxonomy gaps,
+            # but reject the row rather than guess.
             continue
-        similarity = title_similarity(" ".join(query.split()[:-2]) if len(query.split()) > 2 else query, result_title)
+        if result_id != target_id:
+            # Cross-family suspect: surface in logs (different console but
+            # same family = the classic regression pattern).
+            if same_family(result_console, console_name):
+                log(f"  CROSS_FAMILY_REJECT: {result_title} [{result_console}] vs target {console_name!r}")
+            continue
+        # Strip the actual console_name (variable word count) from query for similarity.
+        # Old "[:-2]" hack assumed 2-word consoles; broke for "Wii", "NES", etc.
+        if query.lower().endswith(" " + console_name.lower()):
+            sim_query = query[: -(len(console_name) + 1)].strip()
+        else:
+            sim_query = query
+        similarity = title_similarity(sim_query, result_title)
         loose = parse_price_text(cols[3].get_text(strip=True)) if len(cols) > 3 else 0
         cib = parse_price_text(cols[4].get_text(strip=True)) if len(cols) > 4 else 0
         candidates.append({
@@ -262,10 +311,25 @@ def search_pricecharting(game_title, console_name):
     for c in candidates:
         c["similarity"] = title_similarity(game_title, c["title"])
 
-    # Pick the best title match (minimum 0.3 similarity)
-    best = max(candidates, key=lambda c: c["similarity"])
-    if best["similarity"] < 0.3:
+    # Sort candidates by similarity (best first) for ambiguity check below.
+    candidates.sort(key=lambda c: c["similarity"], reverse=True)
+    best = candidates[0]
+
+    # Tightened acceptance gate. Previous threshold (0.3) was how Wii Party U
+    # got mismatched. New rules:
+    #   1. similarity must be >= 0.55 (high confidence only)
+    #   2. if there's a runner-up within 0.10 of the best, reject as ambiguous
+    #      (two candidates are roughly equally good — too dangerous to pick one)
+    MIN_SIMILARITY = 0.55
+    AMBIGUITY_GAP = 0.10
+    if best["similarity"] < MIN_SIMILARITY:
         return None
+    if len(candidates) > 1:
+        gap = best["similarity"] - candidates[1]["similarity"]
+        if gap < AMBIGUITY_GAP:
+            log(f"  AMBIGUOUS: {game_title} — top2 within {gap:.2f} "
+                f"({best['title']!r} vs {candidates[1]['title']!r})")
+            return None
 
     # Cap extremely high prices — likely bad matches or ultra-rare variants
     if best["loose"] > MAX_MARKET_PRICE or best["cib"] > MAX_MARKET_PRICE:

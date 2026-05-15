@@ -174,10 +174,13 @@ export function registerAllJobs(): void {
   });
 
   // ── Automated Game Price Sync (Search-Based) ──────────────────────
+  // DISABLED 2026-05-15 — Phase 0 of pricing-accuracy plan. Existing matcher has
+  // a fuzzy-substring console bug (Wii ↔ Wii U) that has corrupted prices in past
+  // runs. Will be re-enabled in Phase 4 with hardened matcher + new safety guards.
   registerJob({
     name: "price-sync",
     cron: "0 */4 * * *", // every 4 hours
-    enabled: true,
+    enabled: false,
     description: "Refresh game prices from PriceCharting (100 most stale products per run)",
     handler: async () => {
       const result = await refreshGamePricesBatch();
@@ -197,10 +200,13 @@ export function registerAllJobs(): void {
   });
 
   // ── Pokemon Card Price Refresh ────────────────────────────────────
+  // PAUSED 2026-05-15 — Phase 0 of pricing-accuracy plan. SKU-keyed and structurally
+  // safer than retro pipeline, but paused during the reset for zero-moving-parts.
+  // Re-enabled first (before retro) in Phase 4 staged rollout.
   registerJob({
     name: "pokemon-price-sync",
     cron: "0 3,15 * * *", // twice daily at 3 AM and 3 PM ET
-    enabled: true,
+    enabled: false,
     description: "Refresh Pokemon card prices from TCGPlayer via Pokemon TCG API",
     handler: async () => {
       // Only run if we have Pokemon cards in the DB

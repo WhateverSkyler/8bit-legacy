@@ -2,7 +2,7 @@ import type { PriceChartingItem, PriceDiffRecord } from "@/types/product";
 import type { PricingConfig } from "@/types/pricing";
 import { calculateSellPrice, calculateProfit, checkMinimumProfit } from "./pricing";
 
-export type MatchType = "upc" | "title_exact" | "title_console" | "fuzzy";
+export type MatchType = "upc" | "title_exact" | "title_console";
 
 const POKEMON_KEYWORDS = ["pokemon", "pokémon", "tcg", "pokemon-cards", "pokemon_cards"];
 const CONSOLE_KEYWORDS = ["console", "system", "hardware"];
@@ -105,19 +105,13 @@ export function matchProducts(
       continue;
     }
 
-    // Try fuzzy: PC title contained in Shopify title or vice versa
-    let matched = false;
-    for (const [normalized, sp] of shopifyByTitle.entries()) {
-      if (pcTitle.includes(normalized) || normalized.includes(pcTitle)) {
-        matches.push({ pc: pcItem, shopify: sp, matchType: "fuzzy" });
-        matched = true;
-        break;
-      }
-    }
-
-    if (!matched) {
-      unmatched.push(pcItem);
-    }
+    // No fuzzy fallback. The previous substring-containment fuzzy match
+    // (PC title in Shopify title or vice versa) was the source of the
+    // Wii ↔ Wii U price corruption — picked the first product whose title
+    // overlapped with the PC result, in Map insertion order, regardless of
+    // console. Anything that doesn't match by UPC, exact title, or
+    // title+console must be surfaced as unmatched and reviewed.
+    unmatched.push(pcItem);
   }
 
   return { matches, unmatched };
