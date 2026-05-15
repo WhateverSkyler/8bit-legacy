@@ -253,9 +253,10 @@ main {
   padding: 2px 0;
   cursor: pointer;
   border-radius: 2px;
+  /* All transcript words are visible by default, regardless of clip membership */
 }
-.word:hover { background: var(--panel-2); }
-.word.active-word { background: var(--accent); color: #1a1a1a; }
+.word:hover { outline: 1px solid var(--muted); }
+.word.active-word { background: var(--accent) !important; color: #1a1a1a !important; }
 
 .word.speaker-0 { color: var(--speaker-0); }
 .word.speaker-1 { color: var(--speaker-1); }
@@ -264,26 +265,21 @@ main {
 .word.speaker-4 { color: var(--speaker-4); }
 .word.speaker-default { color: var(--text); }
 
-.clip-range {
-  background: var(--clip-0);
-  border-radius: 2px;
-  padding: 2px 0;
-  position: relative;
-}
-.clip-range.color-0 { background: var(--clip-0); }
-.clip-range.color-1 { background: var(--clip-1); }
-.clip-range.color-2 { background: var(--clip-2); }
-.clip-range.color-3 { background: var(--clip-3); }
-.clip-range.color-4 { background: var(--clip-4); }
-
-.clip-range.unapproved {
-  background: rgba(248, 113, 113, 0.10);
+/* Words inside a clip get a colored background overlay. Multi-clip overlap
+   shows the FIRST containing clip's color; tooltip lists all clips. */
+.word.in-clip { padding: 2px 1px; border-radius: 0; }
+.word.in-clip.clip-color-0 { background: var(--clip-0); }
+.word.in-clip.clip-color-1 { background: var(--clip-1); }
+.word.in-clip.clip-color-2 { background: var(--clip-2); }
+.word.in-clip.clip-color-3 { background: var(--clip-3); }
+.word.in-clip.clip-color-4 { background: var(--clip-4); }
+.word.in-clip.unapproved-clip {
+  background: rgba(248, 113, 113, 0.12) !important;
   text-decoration: line-through;
-  text-decoration-color: rgba(248, 113, 113, 0.6);
+  text-decoration-color: rgba(248, 113, 113, 0.5);
 }
-.clip-range.focused {
+.word.in-clip.focused-clip {
   outline: 2px solid var(--accent);
-  outline-offset: 2px;
 }
 
 .clip-handle {
@@ -311,6 +307,10 @@ main {
 
 .clip-handle.dragging {
   background: var(--accent-2);
+}
+.clip-handle.focused {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 1px;
 }
 
 #clips-pane {

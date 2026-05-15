@@ -121,57 +121,75 @@ function renderTranscript() {
   const container = document.getElementById('transcript');
   container.innerHTML = '';
 
-  // Build clip lookup: word_index -> clip_idx (for highlighting)
-  // Active clips list sorted by start
   const sortedClips = [...t.clips].sort((a, b) => a.start_sec - b.start_sec);
-  const wordToClip = new Map();
-  sortedClips.forEach((c, idx) => {
-    for (const w of t.words) {
+
+  // Color index per clip (0-4, recycles)
+  const colorIdxByClip = {};
+  sortedClips.forEach((c, idx) => { colorIdxByClip[c.id] = idx % 5; });
+
+  // For each word, which clips contain it AND which clips start/end at it
+  const startsByWord = t.words.map(() => []);
+  const endsByWord = t.words.map(() => []);
+  const clipsByWord = t.words.map(() => []);
+  for (const c of sortedClips) {
+    let firstIdx = -1, lastIdx = -1;
+    for (let i = 0; i < t.words.length; i++) {
+      const w = t.words[i];
       if (w.start >= c.start_sec - 0.001 && w.end <= c.end_sec + 0.001) {
-        wordToClip.set(w.i, {clip: c, colorIdx: idx % 5});
+        clipsByWord[i].push(c);
+        if (firstIdx === -1) firstIdx = i;
+        lastIdx = i;
       }
     }
-  });
+    if (firstIdx >= 0) startsByWord[firstIdx].push(c);
+    if (lastIdx >= 0) endsByWord[lastIdx].push(c);
+  }
 
-  // Render words; group consecutive words sharing the same clip into a single span
-  // so handles can be inserted at the start and end.
-  let i = 0;
-  while (i < t.words.length) {
+  // Render the FULL transcript word-by-word. Each word is a flat span. Clip
+  // membership is shown via background color on the word; clip start/end is
+  // marked by inserting an orange handle BEFORE the first word and AFTER the
+  // last word of each clip. Overlapping clips: word picks the color of its
+  // first containing clip (chronologically); the tooltip lists all containing
+  // clips so the user can see overlap.
+  for (let i = 0; i < t.words.length; i++) {
     const w = t.words[i];
-    const inClip = wordToClip.get(w.i);
-    if (inClip) {
-      // Find the run of words in this clip
-      const clip = inClip.clip;
-      const colorIdx = inClip.colorIdx;
-      const runStart = i;
-      while (i < t.words.length && wordToClip.has(t.words[i].i) &&
-             wordToClip.get(t.words[i].i).clip.id === clip.id) {
-        i++;
-      }
-      const runEnd = i;
-      const range = document.createElement('span');
-      range.className = `clip-range color-${colorIdx}` + (clip.approved ? '' : ' unapproved');
-      range.dataset.clipId = clip.id;
-      // Start handle
-      const startHandle = makeHandle(clip.id, 'start');
-      range.appendChild(startHandle);
-      // Words inside
-      for (let j = runStart; j < runEnd; j++) {
-        range.appendChild(makeWordSpan(t.words[j]));
-      }
-      // End handle
-      const endHandle = makeHandle(clip.id, 'end');
-      range.appendChild(endHandle);
-      // Title tooltip
-      range.title = `${clip.title || '(no title)'} — ${(clip.end_sec - clip.start_sec).toFixed(1)}s`;
-      range.addEventListener('click', (e) => {
-        if (e.target.classList.contains('clip-handle')) return;
-        focusClip(clip.id);
-      });
-      container.appendChild(range);
-    } else {
-      container.appendChild(makeWordSpan(w));
-      i++;
+
+    // Drop start handles for any clips beginning at this word
+    for (const c of startsByWord[i]) {
+      container.appendChild(makeHandle(c.id, 'start'));
+    }
+
+    const wordSpan = makeWordSpan(w);
+    const inClips = clipsByWord[i];
+    if (inClips.length > 0) {
+      const primary = inClips[0];
+      wordSpan.classList.add('in-clip', `clip-color-${colorIdxByClip[primary.id]}`);
+      if (!primary.approved) wordSpan.classList.add('unapproved-clip');
+      wordSpan.dataset.clipIds = inClips.map(c => c.id).join(',');
+      wordSpan.title = inClips
+        .map(c => `${c.title || '(no title)'} (${(c.end_sec - c.start_sec).toFixed(1)}s)`)
+        .join('  •  ');
+      // Click on a clip word focuses the first overlapping clip
+      wordSpan.addEventListener('click', (e) => {
+        if (State.pendingAddClip) return;  // let normal handler run for add-mode
+        e.stopPropagation();
+        if (e.shiftKey || e.ctrlKey) {
+          // shift-click: seek audio (override clip-focus)
+          if (State.audio && State.audio.src) {
+            State.audio.currentTime = w.start;
+            State.audioPlaybackEnd = null;
+            State.audio.play().catch(() => {});
+          }
+        } else {
+          focusClip(primary.id);
+        }
+      }, true);
+    }
+    container.appendChild(wordSpan);
+
+    // Drop end handles for any clips ending at this word
+    for (const c of endsByWord[i]) {
+      container.appendChild(makeHandle(c.id, 'end'));
     }
   }
 }
@@ -371,17 +389,36 @@ function renderClipsList() {
 }
 
 function focusClip(clipId) {
+  // Clear prior focus
   document.querySelectorAll('.clip-card.focused').forEach(e => e.classList.remove('focused'));
-  document.querySelectorAll('.clip-range.focused').forEach(e => e.classList.remove('focused'));
+  document.querySelectorAll('.word.focused-clip').forEach(e => e.classList.remove('focused-clip'));
+  document.querySelectorAll('.clip-handle.focused').forEach(e => e.classList.remove('focused'));
+
+  // Highlight the clip card
   const card = document.querySelector(`.clip-card[data-clip-id="${clipId}"]`);
   if (card) {
     card.classList.add('focused');
     card.scrollIntoView({behavior: 'smooth', block: 'nearest'});
   }
-  const range = document.querySelector(`.clip-range[data-clip-id="${clipId}"]`);
-  if (range) {
-    range.classList.add('focused');
-    range.scrollIntoView({behavior: 'smooth', block: 'center'});
+
+  // Highlight every word that belongs to this clip
+  const wordsForClip = document.querySelectorAll(
+    `.word.in-clip[data-clip-ids*="${clipId}"]`
+  );
+  let firstWord = null;
+  wordsForClip.forEach(w => {
+    const ids = (w.dataset.clipIds || '').split(',');
+    if (ids.includes(clipId)) {
+      w.classList.add('focused-clip');
+      if (!firstWord) firstWord = w;
+    }
+  });
+  // Highlight the handles too
+  document.querySelectorAll(`.clip-handle[data-clip-id="${clipId}"]`).forEach(h => {
+    h.classList.add('focused');
+  });
+  if (firstWord) {
+    firstWord.scrollIntoView({behavior: 'smooth', block: 'center'});
   }
 }
 
