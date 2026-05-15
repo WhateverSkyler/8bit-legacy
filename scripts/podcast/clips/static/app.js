@@ -169,18 +169,11 @@ function renderTranscript() {
       wordSpan.title = inClips
         .map(c => `${c.title || '(no title)'} (${(c.end_sec - c.start_sec).toFixed(1)}s)`)
         .join('  •  ');
-      // Click on a clip word focuses the first overlapping clip
+      // Click → seek+play (handled in onWordClick). Shift-click → focus the clip
+      // card on the right pane without disturbing playback.
       wordSpan.addEventListener('click', (e) => {
-        if (State.pendingAddClip) return;  // let normal handler run for add-mode
-        e.stopPropagation();
-        if (e.shiftKey || e.ctrlKey) {
-          // shift-click: seek audio (override clip-focus)
-          if (State.audio && State.audio.src) {
-            State.audio.currentTime = w.start;
-            State.audioPlaybackEnd = null;
-            State.audio.play().catch(() => {});
-          }
-        } else {
+        if (e.shiftKey || e.ctrlKey || e.metaKey) {
+          e.stopImmediatePropagation();
           focusClip(primary.id);
         }
       }, true);
@@ -226,42 +219,150 @@ function makeHandle(clipId, side) {
   h.addEventListener('mousedown', (e) => {
     e.stopPropagation();
     e.preventDefault();
-    State.draggingHandle = {clipId, side};
+    const clip = currentTopic().clips.find(c => c.id === clipId);
+    if (!clip) return;
+    State.draggingHandle = {
+      clipId,
+      side,
+      // Snapshot original boundaries so we can revert / show original target
+      origStart: clip.start_sec,
+      origEnd: clip.end_sec,
+      // Pending value updated each frame; committed on mouseup
+      tentative: side === 'start' ? clip.start_sec : clip.end_sec,
+    };
     h.classList.add('dragging');
     document.body.style.cursor = 'ew-resize';
+    document.body.classList.add('dragging-handle');
+    showDragTooltip(e.clientX, e.clientY, clip);
   });
   return h;
 }
 
+let _dragRafPending = false;
+let _lastDragEvent = null;
+
 document.addEventListener('mousemove', (e) => {
   if (!State.draggingHandle) return;
-  // Find the word under the cursor
+  // Throttle visual updates to one per animation frame for smooth perf on
+  // big transcripts (the May 5 episode renders ~14k word spans).
+  _lastDragEvent = e;
+  if (_dragRafPending) return;
+  _dragRafPending = true;
+  requestAnimationFrame(applyDragFrame);
+});
+
+function applyDragFrame() {
+  _dragRafPending = false;
+  const e = _lastDragEvent;
+  if (!e || !State.draggingHandle) return;
+
+  // Find the word directly under the cursor — the user's drop target.
   const el = document.elementFromPoint(e.clientX, e.clientY);
-  if (!el || !el.classList.contains('word')) return;
-  const wordIdx = parseInt(el.dataset.wordIdx);
-  const word = currentTopic().words[wordIdx];
-  if (!word) return;
+  let targetWord = null;
+  if (el && el.classList && el.classList.contains('word')) {
+    const idx = parseInt(el.dataset.wordIdx);
+    targetWord = currentTopic().words[idx];
+  }
+
+  // Clear prior drag-target highlight
+  document.querySelectorAll('.word.drag-target').forEach(w => w.classList.remove('drag-target'));
+
+  if (!targetWord) {
+    // Outside the transcript — keep tooltip visible but no target highlight
+    moveDragTooltip(e.clientX, e.clientY);
+    return;
+  }
 
   const t = currentTopic();
   const clip = t.clips.find(c => c.id === State.draggingHandle.clipId);
   if (!clip) return;
+
+  // Compute tentative new value (don't commit yet — that happens on mouseup).
+  let newVal;
   if (State.draggingHandle.side === 'start') {
-    if (word.start < clip.end_sec - 0.5) clip.start_sec = word.start;
+    newVal = targetWord.start;
+    if (newVal >= State.draggingHandle.origEnd - 0.3) {
+      newVal = State.draggingHandle.origEnd - 0.3;
+    }
   } else {
-    if (word.end > clip.start_sec + 0.5) clip.end_sec = word.end;
+    newVal = targetWord.end;
+    if (newVal <= State.draggingHandle.origStart + 0.3) {
+      newVal = State.draggingHandle.origStart + 0.3;
+    }
   }
-});
+  State.draggingHandle.tentative = newVal;
+
+  // Mark the target word for visual feedback
+  if (el) el.classList.add('drag-target');
+
+  // Update the floating tooltip with the new duration
+  updateDragTooltip(e.clientX, e.clientY, clip, State.draggingHandle.side, newVal);
+}
 
 document.addEventListener('mouseup', () => {
-  if (State.draggingHandle) {
-    document.body.style.cursor = '';
-    document.querySelectorAll('.clip-handle.dragging').forEach(h => h.classList.remove('dragging'));
-    State.draggingHandle = null;
-    renderTranscript();
-    renderClipsList();
-    saveTopic();
+  if (!State.draggingHandle) return;
+  const t = currentTopic();
+  const clip = t.clips.find(c => c.id === State.draggingHandle.clipId);
+  if (clip) {
+    if (State.draggingHandle.side === 'start') {
+      clip.start_sec = Math.round(State.draggingHandle.tentative * 100) / 100;
+    } else {
+      clip.end_sec = Math.round(State.draggingHandle.tentative * 100) / 100;
+    }
   }
+  document.body.style.cursor = '';
+  document.body.classList.remove('dragging-handle');
+  document.querySelectorAll('.clip-handle.dragging').forEach(h => h.classList.remove('dragging'));
+  document.querySelectorAll('.word.drag-target').forEach(w => w.classList.remove('drag-target'));
+  hideDragTooltip();
+  State.draggingHandle = null;
+  renderTranscript();
+  renderClipsList();
+  saveTopic();
 });
+
+// --- Drag tooltip ---------------------------------------------------------
+let _dragTooltip = null;
+function ensureDragTooltip() {
+  if (_dragTooltip) return _dragTooltip;
+  _dragTooltip = document.createElement('div');
+  _dragTooltip.id = 'drag-tooltip';
+  _dragTooltip.style.cssText = `
+    position: fixed; z-index: 200; pointer-events: none;
+    background: var(--accent); color: #1a1a1a;
+    padding: 6px 10px; border-radius: 6px; font-size: 13px;
+    font-weight: 700; white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    transform: translate(12px, -120%);
+  `;
+  document.body.appendChild(_dragTooltip);
+  return _dragTooltip;
+}
+function showDragTooltip(x, y, clip) {
+  const tip = ensureDragTooltip();
+  const dur = clip.end_sec - clip.start_sec;
+  tip.textContent = `${dur.toFixed(1)}s — drag to a word`;
+  moveDragTooltip(x, y);
+  tip.style.display = 'block';
+}
+function moveDragTooltip(x, y) {
+  if (!_dragTooltip) return;
+  _dragTooltip.style.left = x + 'px';
+  _dragTooltip.style.top = y + 'px';
+}
+function updateDragTooltip(x, y, clip, side, newVal) {
+  const tip = ensureDragTooltip();
+  let newStart = clip.start_sec, newEnd = clip.end_sec;
+  if (side === 'start') newStart = newVal; else newEnd = newVal;
+  const newDur = newEnd - newStart;
+  const arrow = side === 'start' ? '⇤' : '⇥';
+  tip.textContent = `${arrow} ${newDur.toFixed(1)}s   (${formatTime(newStart)} → ${formatTime(newEnd)})`;
+  tip.style.display = 'block';
+  moveDragTooltip(x, y);
+}
+function hideDragTooltip() {
+  if (_dragTooltip) _dragTooltip.style.display = 'none';
+}
 
 function onWordClick(w) {
   // If we're in add-clip mode, this click sets start or end
@@ -269,11 +370,14 @@ function onWordClick(w) {
     handleAddClipWordClick(w);
     return;
   }
-  // Otherwise just seek audio
+  // Otherwise: seek to this word and play. Works for clip and non-clip words.
+  // Audio status updates in onAudioTimeUpdate via the active-word highlight.
   if (State.audio && State.audio.src) {
     State.audio.currentTime = w.start;
     State.audioPlaybackEnd = null; // free-play, not clip preview
     State.audio.play().catch(() => {});
+    document.getElementById('audio-status').textContent =
+      `Playing from ${formatTime(w.start)}`;
   }
 }
 

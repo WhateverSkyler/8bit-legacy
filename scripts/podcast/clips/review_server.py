@@ -40,8 +40,10 @@ _PLATFORM_ALL = ["youtube_shorts", "instagram_reels", "tiktok", "facebook_reels"
 
 
 def _safe_name(name: str) -> str:
-    """Allow only alphanumerics, dash, underscore, dot. Path-traversal guard."""
-    return re.sub(r"[^A-Za-z0-9._-]", "", name)
+    """Allow alphanumerics, dash, underscore, dot, and SPACE. Path-traversal guard.
+    Spaces are preserved because some episode stems contain spaces
+    (e.g. '8-Bit Podcast May 5 2026 FULL FINAL V2_1080p')."""
+    return re.sub(r"[^A-Za-z0-9._\- ]", "", name)
 
 
 def _load_json(path: Path, default=None):
@@ -115,21 +117,24 @@ def _audio_path_for(episode_dir: Path, stem: str) -> Path | None:
 
 
 def _list_topics(episode_dir: Path) -> list[str]:
-    """Discover topics in the episode dir.
+    """Discover transcripts in the episode dir.
 
-    A topic is anything with a transcript JSON. We dedupe stems and skip the
-    full-episode transcript (it's the merged version, not a topic file).
+    Each transcript file becomes one "topic" tab in the editor — could be
+    per-topic split files OR a single full-episode transcript. The user
+    chooses the granularity by what they put in transcripts/.
+
+    Skips backup files. If both per-topic AND a full-episode transcript
+    exist, lists ALL of them — the editor surfaces them as separate tabs
+    and the user picks which to work on.
     """
     transcripts_dir = episode_dir / "transcripts"
     if not transcripts_dir.exists():
         return []
     stems = set()
     for p in transcripts_dir.glob("*.json"):
-        if p.suffix != ".json" or p.name.endswith(".bak.json"):
+        if p.suffix != ".json":
             continue
-        if p.name.endswith(".pre-realign.bak"):
-            continue
-        if "FULL" in p.name or "Full" in p.name or "full" in p.name:
+        if p.name.endswith(".pre-realign.bak") or p.name.endswith(".bak.json"):
             continue
         stems.add(p.stem)
     return sorted(stems)

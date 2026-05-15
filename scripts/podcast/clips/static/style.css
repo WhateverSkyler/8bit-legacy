@@ -289,6 +289,24 @@ main {
   outline: 2px solid var(--accent);
 }
 
+/* Drag preview: word the cursor is currently hovering over while dragging
+   a clip handle. Bright orange outline so it pops above any clip background. */
+.word.drag-target {
+  outline: 3px solid var(--accent) !important;
+  outline-offset: 2px;
+  background: rgba(255, 149, 38, 0.45) !important;
+  color: #1a1a1a !important;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+}
+
+/* While dragging, suppress text selection across the whole document so the
+   browser doesn't fight the drag with selection-on-mousemove. */
+body.dragging-handle, body.dragging-handle * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+body.dragging-handle .word { cursor: ew-resize; }
+
 .clip-handle {
   display: inline-block;
   width: 14px;
