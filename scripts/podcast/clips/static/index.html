@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clip Review — 8-Bit Legacy</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header id="topbar">
+    <div class="topbar-left">
+      <h1 id="episode-name">Loading…</h1>
+      <div id="save-indicator" class="save-indicator idle">All changes saved</div>
+    </div>
+    <div class="topbar-right">
+      <div id="instructions-toggle" class="btn-secondary">How this works</div>
+      <button id="submit-btn" class="btn-primary" disabled>Submit reviewed plan</button>
+    </div>
+  </header>
+
+  <div id="instructions" class="instructions hidden">
+    <h2>How to review</h2>
+    <ol>
+      <li><strong>Switch topics</strong> with the tabs on the left.</li>
+      <li><strong>Click any word</strong> in the transcript to jump the audio there.</li>
+      <li><strong>Each highlighted range is a proposed clip.</strong> Hover to see its title; click the card on the right to open it.</li>
+      <li><strong>Drag the orange handles</strong> at the start/end of a clip's highlight to extend or trim it (snaps to word boundaries).</li>
+      <li><strong>Edit titles</strong> by clicking the title text on a clip card.</li>
+      <li><strong>Toggle approval</strong> with the checkmark on each card. Unchecked clips are skipped.</li>
+      <li><strong>Add a new clip</strong>: click "+ New Clip" then click the START word, then the END word.</li>
+      <li><strong>Delete</strong> with the × on each card.</li>
+      <li><strong>Hit "Submit"</strong> when done. The renderer kicks off automatically.</li>
+    </ol>
+    <p>Auto-saves every change. Safe to close the tab and come back.</p>
+    <button class="btn-secondary" onclick="document.getElementById('instructions').classList.add('hidden')">Got it</button>
+  </div>
+
+  <main>
+    <aside id="topic-tabs">
+      <div class="tabs-header">Topics</div>
+      <ul id="topic-list"></ul>
+    </aside>
+
+    <section id="content">
+      <div id="topic-header">
+        <h2 id="topic-title">Select a topic</h2>
+        <div id="topic-meta"></div>
+      </div>
+
+      <div id="audio-bar">
+        <audio id="audio-player" controls preload="metadata"></audio>
+        <div id="audio-status">No clip playing</div>
+      </div>
+
+      <div id="workspace">
+        <div id="transcript-pane">
+          <div id="transcript-toolbar">
+            <button id="add-clip-btn" class="btn-secondary">+ New Clip</button>
+            <span id="add-clip-hint" class="hint hidden">Click the START word in the transcript…</span>
+          </div>
+          <div id="transcript"></div>
+        </div>
+
+        <div id="clips-pane">
+          <div class="pane-header">
+            <span>Clips</span>
+            <span id="clip-count" class="muted">0 approved</span>
+          </div>
+          <div id="clips-list"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="submit-modal" class="modal hidden">
+    <div class="modal-card">
+      <h2>Submitted ✓</h2>
+      <p id="submit-summary"></p>
+      <p class="muted">The renderer is running. You can close this tab.</p>
+      <button class="btn-secondary" onclick="document.getElementById('submit-modal').classList.add('hidden')">Close</button>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
