@@ -1378,7 +1378,8 @@ def _cold_opener_gate(picks: list[dict], segments: list[dict],
 # seeing the sentence text that immediately precedes each silence as context.
 def _end_completion_gate(picks: list[dict], segments: list[dict],
                          transcript: dict | None = None,
-                         silence_map: list[dict] | None = None) -> list[dict]:
+                         silence_map: list[dict] | None = None,
+                         fallback_silence_map: list[dict] | None = None) -> list[dict]:
     """Round 19 (2026-05-14): semantic topic-conclusion gate.
 
     For each pick:
@@ -1386,14 +1387,17 @@ def _end_completion_gate(picks: list[dict], segments: list[dict],
          with timestamps per sentence (the natural end-of-last-word time).
       2. Ask Claude (Sonnet) WHERE in this window the discussion of the clip's
          topic naturally concludes. Returns a single timestamp.
-      3. Snap that timestamp to the nearest real audio silence (silence_map),
-         preserving the round-14 guarantee of never cutting mid-word.
-      4. Enforce DURATION_FLOOR / DURATION_CEILING bounds.
+      3. Snap that timestamp to a nearby sentence-end silence (silence_map);
+         falls back to any silence in fallback_silence_map only if none in
+         the primary map is within tolerance. Preserves the round-14
+         guarantee of never cutting mid-word.
+      4. Enforce DURATION_FLOOR / DURATION_CEILING bounds. Round 20 Layer D:
+         REJECT (drop) any pick whose semantically-correct end would put
+         duration below FLOOR — better to ship 3 clean clips than 4 broken
+         (the c2 Wind Waker pattern from r19.5).
 
     No candidate-picking, no hardcoded phrase regexes — pure semantic LLM
-    judgment on the full conversational arc. Generalizes to any topic, any
-    phrasing, any speaker. Earlier rounds' candidate-list + safety-net regex
-    approaches were narrow / brittle; this replaces them.
+    judgment on the full conversational arc.
 
     If silence_map is None (audio unavailable), gate is a no-op — picks
     retain their _snap_and_validate-placed silence-aligned ends.
@@ -1415,10 +1419,29 @@ def _end_completion_gate(picks: list[dict], segments: list[dict],
     episode_stem = picks[0].get("source_stem", "unknown")
     sentences = _extract_sentences(transcript or {"segments": segments})
 
+    # ROUND 20 LAYER B: pre-compute which sentence-end timestamps coincide
+    # with a real sentence-end silence in the audio. silence_map here is
+    # already the sentence-end filtered map (callers pass it that way).
+    # A sentence-end timestamp is `[SE]`-tagged if any silence in the map
+    # starts within ±0.25s of it.
+    se_marker_times: set[int] = set()  # rounded to 0.1s for set membership
+    SE_TOLERANCE = 0.25
+    for s in sentences:
+        if not (start_window_min := s.get("end")):
+            continue
+        for sil in silence_map:
+            if sil["start"] < start_window_min - SE_TOLERANCE:
+                continue
+            if sil["start"] > start_window_min + SE_TOLERANCE:
+                break
+            se_marker_times.add(int(round(start_window_min * 10)))
+            break
+
     def _build_window_text(start: float, window_end: float) -> str:
         """Build the transcript window text Claude sees: each in-window
         sentence on its own line, prefixed with its end-of-last-word
-        timestamp. Compact format so Claude can scan it quickly.
+        timestamp. Round 20 Layer B: append `[SE]` to lines whose end
+        timestamp coincides with a sentence-end silence in the audio.
         """
         lines: list[str] = []
         for s in sentences:
@@ -1430,7 +1453,8 @@ def _end_completion_gate(picks: list[dict], segments: list[dict],
             txt = s["text"].strip()
             if not txt:
                 continue
-            lines.append(f"[{t:7.2f}s] {txt}")
+            tag = " [SE]" if int(round(t * 10)) in se_marker_times else ""
+            lines.append(f"[{t:7.2f}s] {txt}{tag}")
         return "\n".join(lines)
 
     work: list[tuple[dict, str | None, str, float, float]] = []
@@ -1527,26 +1551,35 @@ def _end_completion_gate(picks: list[dict], segments: list[dict],
         if target_t > ceiling_t:
             target_t = ceiling_t
 
-        # Snap to a NEARBY (±0.5s) silence if one exists; otherwise use
-        # target_t directly with a tiny tail pad. Round 19.5: NEVER snap
-        # forward by 1+ seconds — that includes content Claude did not
-        # mean to capture (the round-19.0 bug where clips played 4s past
-        # Claude's intended end and cut mid-sentence on the next sentence).
+        # Snap to a NEARBY (±0.5s) sentence-end silence if one exists.
+        # Round 20 Layer A: prefer the sentence-end filtered map; fall back
+        # to the full silence_map only if no sentence-end silence is nearby.
+        # If neither map has a nearby silence, use target_t directly with a
+        # tiny tail pad. Round 19.5: NEVER snap forward by 1+ seconds — that
+        # includes content Claude did not mean to capture.
         snap = nearest_silence_at_or_after(silence_map, target_t)
+        if snap is None and fallback_silence_map is not None:
+            snap = nearest_silence_at_or_after(fallback_silence_map, target_t)
         if snap is not None:
             new_end = snap
         else:
-            # No nearby silence — use Claude's target directly. The last
-            # word ends at whisperX's `word.end` ≈ target_t; a 0.05s pad
-            # gives the audio a tiny natural tail. Won't be mid-word
-            # because target_t IS a word end per the prompt design.
             new_end = target_t + 0.05
 
-        # Enforce DURATION_FLOOR / CEILING. If the suggested new end produces
-        # a clip outside bounds, keep the original.
+        # Round 20 Layer D: when the semantic conclusion is BEFORE the floor,
+        # REJECT the pick instead of shipping a fragment. The c2 Wind Waker
+        # disaster shipped a broken clip because we silently fell back to
+        # the wrong (longer) end when Claude said the topic concluded early.
         new_dur = new_end - start
-        if new_dur < DURATION_FLOOR_SEC or new_dur > DURATION_CEILING_SEC:
-            print(f"  [end-check] target out-of-bounds (new_dur={new_dur:.1f}s) for {pick.get('title','?')[:40]} — keeping current end")
+        if new_dur < DURATION_FLOOR_SEC:
+            print(f"  [end-check] REJECT '{pick.get('title','?')[:50]}' — semantic conclusion at {new_dur:.1f}s < FLOOR ({DURATION_FLOOR_SEC}s); topic too short")
+            log_gate_decision(episode_stem, "end_check_reject", clip_id,
+                              {"reason": "topic_too_short_for_floor",
+                               "new_dur": round(new_dur, 2),
+                               "floor": DURATION_FLOOR_SEC,
+                               "target_t": round(target_t, 2)})
+            continue  # drop pick from surviving list
+        if new_dur > DURATION_CEILING_SEC:
+            print(f"  [end-check] target above ceiling (new_dur={new_dur:.1f}s) for {pick.get('title','?')[:40]} — keeping current end")
             surviving.append(pick)
             continue
 
@@ -1568,6 +1601,239 @@ def _end_completion_gate(picks: list[dict], segments: list[dict],
 
     print(f"  [end-check] {len(picks)} picks → {n_changed} re-ended via semantic conclusion")
     return surviving
+
+
+def _last_sentence_grammar_guard(picks: list[dict],
+                                  transcript: dict,
+                                  silence_map: list[dict] | None) -> list[dict]:
+    """Round 20 Layer E — deterministic backstop after all LLM gates.
+
+    A clip can only ship if EITHER:
+      (1) the last word of the clip ends with terminal punctuation . ! ?, OR
+      (2) the silence immediately following the clip's end is >= 0.6s.
+
+    Both signals are general (no keyword lists). If neither holds, the clip
+    ends mid-sentence or mid-thought — REJECT.
+
+    This catches anything that slipped through the semantic LLM gates. The
+    most common failure pattern in r19.5 was the LLM picking a target that
+    landed in a mid-sentence breath pause; this guard kills those.
+    """
+    if not picks:
+        return picks
+
+    LONG_TAIL_SILENCE_SEC = 0.60
+
+    try:
+        from _silence_detect import _build_word_index, _find_word_ending_before
+    except ImportError as exc:
+        print(f"  [grammar-guard] silence_detect unavailable ({exc}) — skipping")
+        return picks
+
+    words = _build_word_index(transcript)
+
+    survivors: list[dict] = []
+    rejected = 0
+    for pick in picks:
+        try:
+            end_t = float(pick["end_sec"])
+        except (TypeError, ValueError, KeyError):
+            survivors.append(pick)
+            continue
+
+        last_word = _find_word_ending_before(end_t, words)
+        has_terminal_punct = False
+        if last_word and last_word.get("text"):
+            stripped = last_word["text"].rstrip(' \t\n\r"\')]}')
+            has_terminal_punct = stripped.endswith((".", "!", "?"))
+
+        long_tail_silence = False
+        if silence_map:
+            for sil in silence_map:
+                s_start = sil["start"]
+                if s_start < end_t - 0.10:
+                    continue
+                if s_start > end_t + 0.30:
+                    break
+                if sil["duration"] >= LONG_TAIL_SILENCE_SEC:
+                    long_tail_silence = True
+                    break
+
+        if has_terminal_punct or long_tail_silence:
+            survivors.append(pick)
+        else:
+            tail = last_word["text"] if last_word else "?"
+            print(f"  [grammar-guard] REJECT '{pick.get('title','?')[:50]}' — "
+                  f"last word='{tail}' has no terminal punct AND no long tail silence")
+            rejected += 1
+
+    if rejected:
+        print(f"  [grammar-guard] {len(picks)} picks → {len(survivors)} kept, {rejected} rejected (unclean ending)")
+    else:
+        print(f"  [grammar-guard] {len(picks)} picks → all passed")
+    return survivors
+
+
+# --- Round 20 Layer F: single-topic check (post-Gate 1, pre-snap) -----------
+
+def _single_topic_check(picks: list[dict], transcript: dict) -> list[dict]:
+    """Round 20 Layer F — drop candidates that span multiple conversational
+    topics. Runs AFTER Gate 1 (narrative coherence) and BEFORE snap/end-gate.
+
+    Catches the c2 Wind Waker class of failure where a candidate covered
+    "Wind Waker's art style" AND a list of favorite Zelda games — neither
+    of which matched the eventual title cleanly. Multi-topic candidates
+    are structurally broken from the start; better to drop them than
+    waste compute on later gates trying to repair them.
+    """
+    if not picks:
+        return picks
+    try:
+        from _qa_helpers import call_claude_text_async, log_gate_decision, SONNET_MODEL
+        from qa_prompts import SINGLE_TOPIC_TEST_V1
+    except ImportError as exc:
+        print(f"  [topic-check] qa helpers unavailable ({exc}) — skipping")
+        return picks
+
+    import asyncio
+
+    episode_stem = picks[0].get("source_stem", "unknown")
+
+    def _clip_text(p: dict) -> str:
+        return _extract_text_in_range(transcript, float(p.get("start_sec", 0)),
+                                      float(p.get("end_sec", 0)))[:6000]
+
+    prompts: list[tuple[dict, str | None, str]] = []
+    for p in picks:
+        text = _clip_text(p)
+        if not text:
+            prompts.append((p, None, p.get("clip_id", "?")))
+            continue
+        prompt = SINGLE_TOPIC_TEST_V1.format(
+            title=(p.get("title") or "(no title)")[:200],
+            clip_text=text,
+        )
+        prompts.append((p, prompt, p.get("clip_id") or p.get("title", "?")[:60]))
+
+    n_with_prompt = sum(1 for _, pr, _ in prompts if pr)
+    if n_with_prompt == 0:
+        return picks
+
+    async def _gather() -> list:
+        tasks = []
+        for _p, pr, _c in prompts:
+            if pr is None:
+                tasks.append(asyncio.sleep(0, result=None))
+            else:
+                tasks.append(call_claude_text_async(pr, model=SONNET_MODEL, max_tokens=300))
+        return await asyncio.gather(*tasks, return_exceptions=True)
+
+    print(f"  [topic-check] {n_with_prompt} picks concurrently...")
+    verdicts = asyncio.run(_gather())
+
+    survivors: list[dict] = []
+    rejected = 0
+    for (pick, _pr, clip_id), v in zip(prompts, verdicts):
+        if _pr is None or isinstance(v, Exception) or not isinstance(v, dict):
+            survivors.append(pick)
+            continue
+        is_single = bool(v.get("single_topic", True))
+        log_gate_decision(episode_stem, "topic_check", clip_id, v, extra={
+            "title": pick.get("title", "?"),
+            "start_sec": pick.get("start_sec"),
+            "end_sec": pick.get("end_sec"),
+        })
+        if is_single:
+            survivors.append(pick)
+        else:
+            secondary = v.get("secondary_topic") or "?"
+            print(f"  [topic-check] REJECT '{pick.get('title','?')[:50]}' — "
+                  f"multi-topic (pivots to: {secondary[:60]})")
+            rejected += 1
+
+    print(f"  [topic-check] {len(picks)} picks → {len(survivors)} kept, {rejected} rejected (multi-topic)")
+    return survivors
+
+
+# --- Round 20 Layer C: post-end coherence check (final sanity) --------------
+
+def _clip_coherence_check(picks: list[dict], transcript: dict) -> list[dict]:
+    """Round 20 Layer C — final sanity check after all snap/end-gate work.
+
+    Reads the FINALIZED clip text (from already-locked boundaries) and
+    asks Claude: does this stand alone, end on a payoff, and stay on one
+    topic? Rejects any clip that fails. This is the second-opinion gate
+    that catches anything the structural and end-gate layers missed.
+    """
+    if not picks:
+        return picks
+    try:
+        from _qa_helpers import call_claude_text_async, log_gate_decision, SONNET_MODEL
+        from qa_prompts import CLIP_COHERENCE_TEST_V1
+    except ImportError as exc:
+        print(f"  [coherence] qa helpers unavailable ({exc}) — skipping")
+        return picks
+
+    import asyncio
+
+    episode_stem = picks[0].get("source_stem", "unknown")
+
+    prompts: list[tuple[dict, str | None, str]] = []
+    for p in picks:
+        try:
+            start = float(p["start_sec"])
+            end = float(p["end_sec"])
+        except (KeyError, TypeError, ValueError):
+            prompts.append((p, None, p.get("clip_id", "?")))
+            continue
+        text = _extract_text_in_range(transcript, start, end)[:6000]
+        if not text:
+            prompts.append((p, None, p.get("clip_id", "?")))
+            continue
+        pr = CLIP_COHERENCE_TEST_V1.format(
+            title=(p.get("title") or "(no title)")[:200],
+            duration=end - start,
+            clip_text=text,
+        )
+        prompts.append((p, pr, p.get("clip_id") or p.get("title", "?")[:60]))
+
+    n_with_prompt = sum(1 for _, pr, _ in prompts if pr)
+    if n_with_prompt == 0:
+        return picks
+
+    async def _gather() -> list:
+        tasks = []
+        for _p, pr, _c in prompts:
+            if pr is None:
+                tasks.append(asyncio.sleep(0, result=None))
+            else:
+                tasks.append(call_claude_text_async(pr, model=SONNET_MODEL, max_tokens=300))
+        return await asyncio.gather(*tasks, return_exceptions=True)
+
+    print(f"  [coherence] {n_with_prompt} clips concurrently...")
+    verdicts = asyncio.run(_gather())
+
+    survivors: list[dict] = []
+    rejected = 0
+    for (pick, _pr, clip_id), v in zip(prompts, verdicts):
+        if _pr is None or isinstance(v, Exception) or not isinstance(v, dict):
+            survivors.append(pick)
+            continue
+        ok = bool(v.get("ok", True))
+        log_gate_decision(episode_stem, "coherence_check", clip_id, v, extra={
+            "title": pick.get("title", "?"),
+            "start_sec": pick.get("start_sec"),
+            "end_sec": pick.get("end_sec"),
+        })
+        if ok:
+            survivors.append(pick)
+        else:
+            reason = (v.get("reason") or "")[:80]
+            print(f"  [coherence] REJECT '{pick.get('title','?')[:50]}' — {reason}")
+            rejected += 1
+
+    print(f"  [coherence] {len(picks)} clips → {len(survivors)} kept, {rejected} rejected (incoherent / multi-topic / no payoff)")
+    return survivors
 
 
 # --- Title quality + hashtag + audio mix audits (post-Gate 1, pre-render) ----
@@ -1799,6 +2065,11 @@ def pick_clips_from_transcript(
     # when actually checked against the chosen boundaries.
     candidates = _gate1_narrative_coherence(candidates, tx, segments)
 
+    # ROUND 20 LAYER F: drop candidates that span multiple conversational
+    # topics. Runs BEFORE snap/end-gate so multi-topic structural failures
+    # never reach the silence/conclusion logic that can't fix them.
+    candidates = _single_topic_check(candidates, tx)
+
     # Round 11: extract sentences ONCE for the whole transcript (cached on tx).
     # Used by _snap_and_validate (sentence-precise STARTS) and the cold-opener
     # gate (sentence-grain context). Round 14: ENDS now come from audio
@@ -1810,9 +2081,10 @@ def pick_clips_from_transcript(
     # _snap_and_validate, _cold_opener_gate ADJUST, and _end_completion_gate
     # to land clip ends in REAL audio silence — no more text-derived end
     # boundaries that miss whisperX timing drift.
-    silence_map: list[dict] | None = None
+    silence_map: list[dict] | None = None      # raw silence periods (round 14)
+    sentence_end_map: list[dict] | None = None  # round 20: filtered to sentence-end only
     try:
-        from _silence_detect import compute_silence_map
+        from _silence_detect import compute_silence_map, sentence_end_silences
         audio_path_str = tx.get("source")
         if audio_path_str:
             audio_path = Path(audio_path_str)
@@ -1828,6 +2100,10 @@ def pick_clips_from_transcript(
                 silence_map = compute_silence_map(audio_path)
                 print(f"  [silence] cached {len(silence_map)} silence periods "
                       f"(audio={audio_path.name})")
+                # Round 20 Layer A: classify silences as sentence-end vs
+                # mid-sentence breath pauses. Downstream snap logic prefers
+                # sentence-end silences, falls back to raw map if needed.
+                sentence_end_map = sentence_end_silences(silence_map, tx)
             else:
                 print(f"  [silence] audio source not found at {audio_path_str} — "
                       "silence-aligned end disabled (will rely on text snap)")
@@ -1836,6 +2112,12 @@ def pick_clips_from_transcript(
                   "end disabled (will rely on text snap)")
     except Exception as exc:
         print(f"  [silence] compute failed ({exc}) — silence-aligned end disabled")
+
+    # Early snap functions (_snap_and_validate, _cold_opener_gate) keep the
+    # FULL silence_map. They snap candidate boundaries that are already at
+    # sentence ends (per Claude's text-based pick), so any nearby silence is
+    # fine. Filtering to sentence-end-only would over-reject candidates on
+    # sparse-punctuation transcripts.
 
     validated: list[dict] = []
     rejected: list[dict] = []
@@ -1855,12 +2137,28 @@ def pick_clips_from_transcript(
         validated, segments, transcript=tx, silence_map=silence_map,
     )
 
-    # END-COMPLETION GATE (round 12, rebuilt round 14 — 2026-05-14)
-    # Candidates are audio silence periods (not text sentences). Claude picks
-    # WHICH silence to land in for the most narratively satisfying ending.
+    # END-COMPLETION GATE (round 12, rebuilt round 14 — 2026-05-14, round 19
+    # rebuilt for semantic conclusion identification, round 20 layer A:
+    # prefers sentence-end filtered silences for the semantic snap, falls
+    # back to the full silence_map only if no sentence-end silence is
+    # near Claude's target timestamp).
     validated = _end_completion_gate(
-        validated, segments, transcript=tx, silence_map=silence_map,
+        validated, segments, transcript=tx,
+        silence_map=sentence_end_map if sentence_end_map else silence_map,
+        fallback_silence_map=silence_map,
     )
+
+    # ROUND 20 LAYER E: deterministic last-sentence grammar guard.
+    # Backstop check: each surviving pick must end at a real audio sentence
+    # boundary OR have terminal punctuation on its last word. Anything that
+    # slipped through the LLM gates gets rejected here.
+    validated = _last_sentence_grammar_guard(validated, tx, silence_map)
+
+    # ROUND 20 LAYER C: final coherence sanity check on FINALIZED clips.
+    # Last LLM gate — re-checks the locked-in clip text from a cold-viewer
+    # perspective. Rejects anything that doesn't stand alone, doesn't end
+    # on a payoff, or rambles across multiple topics.
+    validated = _clip_coherence_check(validated, tx)
 
     # Drop near-duplicates (retain highest-scoring representative of each cluster)
     deduped = _de_overlap(validated)

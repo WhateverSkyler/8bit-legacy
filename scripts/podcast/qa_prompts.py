@@ -138,13 +138,15 @@ Clip topic / title: "{title}"
 Clip starts at: {start_sec:.2f}s
 Allowed end-timestamp range: [{floor_t:.2f}s ... {ceiling_t:.2f}s] (clip must be at least {floor_sec:.0f}s and at most {ceiling_sec:.0f}s long; the answer MUST fall in this range — pick the BEST conclusion inside it).
 
-Below is the transcript of the source episode from the clip's start through {window_end:.2f}s (a window that covers the full possible clip length plus extra). Each sentence is annotated with the timestamp at which its LAST word ends.
+Below is the transcript of the source episode from the clip's start through {window_end:.2f}s. Each sentence is annotated with the timestamp at which its LAST word ends.
+
+A `[SE]` tag at end of a line means: the audio has a real SENTENCE-END SILENCE (long pause) right after that sentence. These are the clean conversational breakpoints — clips MUST end at a timestamp marked `[SE]`. Lines WITHOUT `[SE]` are followed only by a breath pause or are mid-thought; ending the clip on a non-`[SE]` timestamp will produce a cut that sounds mid-sentence.
 
 ```
 {window_text}
 ```
 
-Your task: read this window and identify the exact timestamp where the discussion of THIS specific topic (per the title) naturally CONCLUDES. The clip should end at or just past that timestamp.
+Your task: read this window and identify the exact timestamp where the discussion of THIS specific topic (per the title) naturally CONCLUDES. The clip should end at or just past that timestamp, and that timestamp MUST be from a line tagged `[SE]`.
 
 Reason about the conversation arc:
 
@@ -152,13 +154,15 @@ Reason about the conversation arc:
 - The clip CANNOT end on a setup: a question awaiting an answer, a tease ("I'll tell you why"), a contrast marker ("but here's the thing"), an unresolved pronoun ("then he said..."), or any phrasing that creates expectation of more on the same topic.
 - The clip CANNOT end after the topic has shifted: a pivot to a new topic, a tangent, filler reactions ("yeah", "anyway") after the point has already been made, or a speaker pulling the conversation in a different direction.
 - The conclusion timestamp is the moment AFTER the speaker has fully landed their point, BEFORE any pivot or tangent.
+- If the last sentence is a complete thought but the speaker continues making the same point in subsequent sentences, EXTEND past those.
+- If the last sentence is a complete thought and the next sentence pivots to a NEW topic, you've found the right end.
 
-Use semantic reasoning. Do not pattern-match on specific words — judge based on whether the topic of THE CLIP has been fully discussed.
+Use semantic reasoning. Do not pattern-match on specific words — judge based on whether the topic of THE CLIP has been fully discussed AND whether the timestamp is marked `[SE]`.
 
 Return STRICT JSON ONLY (no prose, no markdown fences, start with `{{` end with `}}`):
 {{
   "topic_in_focus": "one-sentence statement of what the clip is actually about (your own summary, used as a sanity check)",
-  "conclusion_timestamp": <float — the end-of-last-word timestamp where this topic naturally concludes>,
+  "conclusion_timestamp": <float — must be a timestamp tagged `[SE]` in the window above>,
   "reason": "one short sentence — what makes that the natural conclusion, and what comes after that you're cutting off"
 }}
 """
@@ -781,5 +785,70 @@ Return STRICT JSON only:
   ],
   "final_decision": "APPROVE" | "FLAG_FOR_REVIEW" | "REJECT",
   "reason": "one-sentence summary suitable for a Navi task"
+}}
+"""
+
+
+# Round 20 Layer F — pre-snap single-topic check. Rejects multi-topic
+# candidates BEFORE they reach silence snapping / end gate.
+SINGLE_TOPIC_TEST_V1 = """You are checking whether a candidate podcast clip is about ONE conversational topic or whether it spans multiple unrelated topics.
+
+A short-form clip (TikTok/Reels) MUST be about a single coherent subject. Multi-topic clips confuse viewers because:
+- The title only describes ONE topic, so the rest is unexpected/off-topic.
+- The viewer can't tell what the clip is "about" — there's no single thread.
+- Engagement collapses because the algorithm can't categorize the content.
+
+Candidate title: "{title}"
+Candidate transcript (the actual spoken content between clip start and end):
+
+```
+{clip_text}
+```
+
+Decide: does this clip stay on ONE topic the whole time? Or does it pivot to a noticeably different conversational topic partway through?
+
+"One topic" can include natural digressions / examples / back-and-forth on the SAME subject. That's fine.
+"Multiple topics" means a clear pivot: e.g. "Wind Waker's art style" → "list of favorite Zelda games", or "GameStop pricing" → "Switch 2 launch lineup".
+
+Return STRICT JSON ONLY (no prose, no markdown fences, start with `{{` end with `}}`):
+{{
+  "single_topic": true | false,
+  "topic_in_focus": "one-sentence statement of the topic (or the FIRST topic if multi-topic)",
+  "secondary_topic": "<null if single_topic, else the new topic that the clip pivots to>",
+  "reason": "one short sentence — what makes this single- or multi-topic"
+}}
+"""
+
+
+# Round 20 Layer C — post-end coherence sanity check. Last-line defense AFTER
+# all snap/end-gate work has finalized boundaries. Rejects clips that don't
+# stand alone, even if they technically end at a clean sentence-end silence.
+CLIP_COHERENCE_TEST_V1 = """You are reviewing a FINALIZED short-form podcast clip — the boundaries are locked, this is the exact audio/text a TikTok/Reels viewer would see.
+
+Imagine you are a cold viewer who knows nothing about the show, scrolled past it, and watched this single clip.
+
+Clip title shown on overlay: "{title}"
+Clip duration: {duration:.1f}s
+Clip transcript (this is exactly what the viewer hears, beginning to end):
+
+```
+{clip_text}
+```
+
+Answer three questions:
+(1) Does the clip make sense to a cold viewer with NO prior context?
+(2) Does the LAST sentence land a complete thought / payoff — not a setup, tease, contrast pre-amble, or unresolved pronoun?
+(3) Does the clip stay on ONE topic the whole time (the title's topic), without rambling across unrelated subtopics?
+
+If ALL three are YES, the clip ships.
+If ANY is NO, the clip fails — should be REJECTED rather than shipped.
+
+Return STRICT JSON ONLY (no prose, no markdown fences, start with `{{` end with `}}`):
+{{
+  "stands_alone": true | false,
+  "ends_on_payoff": true | false,
+  "single_topic": true | false,
+  "ok": true | false,
+  "reason": "one short sentence — if not ok, name the specific problem"
 }}
 """

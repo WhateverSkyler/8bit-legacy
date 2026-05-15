@@ -53,6 +53,16 @@ GATE_END_MIN_SILENCE_SEC = 0.22
 # a clean tail of post-word silence before the visual/audio fade kicks in.
 END_OFFSET_INTO_SILENCE = 0.10
 
+# Round 20 (2026-05-14): silence classifier thresholds — distinguish
+# sentence-end silences from mid-sentence breath pauses by combining audio
+# duration with the transcript-side punctuation signal.
+# Loosened on first calibration pass against May 5 episode (only 9% of
+# whisperX words carry terminal punctuation, so we can't rely on text alone).
+LONG_PAUSE_FOR_SENTENCE_END = 0.55       # any pause ≥ this is a real boundary regardless of text
+MEDIUM_PAUSE_WITH_PUNCT_SEC = 0.30       # 0.30–0.55s pauses count only if prev word ends with .!?
+SHORT_PAUSE_WITH_PUNCT_AND_GAP_SEC = 0.22  # 0.22–0.30s pauses count only with strong text signal
+SENTENCE_END_TERMINAL_PUNCT = ('.', '!', '?')
+
 # Format string for the disk-cache params field. If this changes, caches
 # invalidate automatically.
 PARAMS_FINGERPRINT = f"{SILENCE_DB}dB:d={SILENCE_MIN_DUR}"
@@ -164,6 +174,126 @@ def compute_silence_map(audio_path: Path) -> list[dict]:
     periods = _run_silencedetect(audio_path)
     _save_cache(cache_file, key, periods)
     return periods
+
+
+# ----------------------------------------------------------------------------
+# Round 20 (2026-05-14): SILENCE CLASSIFIER
+# Combine audio (silence duration) + transcript (prior word's punctuation,
+# gap to next word) signals to distinguish sentence-end silences from
+# mid-sentence breath pauses. Mid-sentence silences are NOT valid clip
+# endpoints.
+# ----------------------------------------------------------------------------
+
+def _build_word_index(transcript: dict) -> list[dict]:
+    """Flatten transcript segments into a sorted word list with start/end/text.
+    Used by `classify_silence` to look up surrounding words for each silence
+    period. Cheap — called once per episode.
+    """
+    words: list[dict] = []
+    for seg in transcript.get("segments", []):
+        for w in seg.get("words") or []:
+            txt = (w.get("word") or "").strip()
+            if not txt:
+                continue
+            try:
+                start = float(w.get("start", 0.0))
+                end = float(w.get("end", 0.0))
+            except (TypeError, ValueError):
+                continue
+            words.append({"start": start, "end": end, "text": txt})
+    words.sort(key=lambda x: x["start"])
+    return words
+
+
+def _find_word_ending_before(t: float, words: list[dict]) -> dict | None:
+    """Return the word whose `end` is closest to (and ≤ t + small epsilon).
+    Binary search would be faster but the linear scan is fine for ~10k words."""
+    best = None
+    for w in words:
+        if w["end"] <= t + 0.05:
+            best = w
+        else:
+            break
+    return best
+
+
+def _find_word_starting_after(t: float, words: list[dict]) -> dict | None:
+    """Return the first word whose `start` is ≥ t - small epsilon."""
+    for w in words:
+        if w["start"] >= t - 0.05:
+            return w
+    return None
+
+
+def classify_silence(silence: dict, words: list[dict]) -> str:
+    """Classify a silence period as 'sentence-end' or 'mid-sentence' based on
+    combined audio (silence duration) and transcript (punctuation + gap) signals.
+
+    Rules — all combine audio + text signals (no keyword lists, no
+    video-specific patterns):
+
+      1. silence_duration ≥ 0.70s → 'sentence-end'
+         Long pauses are intentional conversational boundaries regardless
+         of whether the transcript captured punctuation.
+
+      2. silence_duration ≥ 0.35s AND prev_word ends with .!? → 'sentence-end'
+         Medium pause + explicit punctuation signal = real sentence boundary.
+
+      3. silence_duration ≥ 0.25s AND prev_word ends with .!?
+         AND (next_word.start - silence.end) ≥ 0.05 → 'sentence-end'
+         Short but bounded by both signals.
+
+      4. Otherwise → 'mid-sentence'
+         Likely a breath pause or emphasis pause inside a single thought.
+    """
+    dur = float(silence.get("duration", 0.0))
+    prev_w = _find_word_ending_before(silence["start"], words)
+    next_w = _find_word_starting_after(silence["end"], words)
+
+    has_terminal_punct = bool(prev_w and
+        prev_w["text"].rstrip('"\'').endswith(SENTENCE_END_TERMINAL_PUNCT))
+
+    if dur >= LONG_PAUSE_FOR_SENTENCE_END:
+        return "sentence-end"
+    if dur >= MEDIUM_PAUSE_WITH_PUNCT_SEC and has_terminal_punct:
+        return "sentence-end"
+    if dur >= SHORT_PAUSE_WITH_PUNCT_AND_GAP_SEC and has_terminal_punct:
+        # If we also have a measurable gap between silence-end and next word
+        # (i.e., the speaker didn't restart immediately), it's a real boundary.
+        if next_w is None or next_w["start"] - silence["end"] >= 0.02:
+            return "sentence-end"
+    return "mid-sentence"
+
+
+def sentence_end_silences(silence_map: list[dict], transcript: dict) -> list[dict]:
+    """Return only the silence periods classified as 'sentence-end' boundaries.
+
+    Each returned dict is the original silence period augmented with
+    `_classification: 'sentence-end'`. Mid-sentence breath pauses are
+    omitted entirely — invisible to downstream gate logic so the clip-end
+    snap can NEVER land at a mid-sentence pause.
+
+    Cached on the transcript dict under `_sentence_end_silences` so this
+    runs once per episode regardless of how many gate calls need it.
+    """
+    cache_key = f"_sentence_end_silences_{id(silence_map)}"
+    cached = transcript.get(cache_key)
+    if cached is not None:
+        return cached
+    words = _build_word_index(transcript)
+    filtered: list[dict] = []
+    n_sent = n_mid = 0
+    for s in silence_map:
+        cls = classify_silence(s, words)
+        if cls == "sentence-end":
+            filtered.append({**s, "_classification": "sentence-end"})
+            n_sent += 1
+        else:
+            n_mid += 1
+    transcript[cache_key] = filtered
+    print(f"  [silence] classified {len(silence_map)} periods → "
+          f"{n_sent} sentence-end, {n_mid} mid-sentence (filtered out)")
+    return filtered
 
 
 # ----------------------------------------------------------------------------
