@@ -232,19 +232,24 @@ def classify_silence(silence: dict, words: list[dict]) -> str:
     Rules — all combine audio + text signals (no keyword lists, no
     video-specific patterns):
 
-      1. silence_duration ≥ 0.70s → 'sentence-end'
+      0. (PRIORITY GUARD) if the next word starts < 0.10s after silence ends,
+         the speaker is CONTINUING the same thought — regardless of how long
+         the silence was. Catches emphasis pauses ("this is a game ... that
+         is like over a decade old") where the speaker pauses for drama
+         then completes the sentence. Without this guard a 0.66s emphasis
+         pause would qualify as sentence-end by duration alone (rule 1).
+
+      1. silence_duration ≥ 0.55s → 'sentence-end'
          Long pauses are intentional conversational boundaries regardless
-         of whether the transcript captured punctuation.
+         of whether the transcript captured punctuation. (Combined with rule
+         0, only fires when the next word starts after a measurable gap.)
 
-      2. silence_duration ≥ 0.35s AND prev_word ends with .!? → 'sentence-end'
-         Medium pause + explicit punctuation signal = real sentence boundary.
+      2. silence_duration ≥ 0.30s AND prev_word ends with .!? → 'sentence-end'
 
-      3. silence_duration ≥ 0.25s AND prev_word ends with .!?
-         AND (next_word.start - silence.end) ≥ 0.05 → 'sentence-end'
-         Short but bounded by both signals.
+      3. silence_duration ≥ 0.22s AND prev_word ends with .!?
+         AND (next_word.start - silence.end) ≥ 0.02 → 'sentence-end'
 
       4. Otherwise → 'mid-sentence'
-         Likely a breath pause or emphasis pause inside a single thought.
     """
     dur = float(silence.get("duration", 0.0))
     prev_w = _find_word_ending_before(silence["start"], words)
@@ -253,13 +258,15 @@ def classify_silence(silence: dict, words: list[dict]) -> str:
     has_terminal_punct = bool(prev_w and
         prev_w["text"].rstrip('"\'').endswith(SENTENCE_END_TERMINAL_PUNCT))
 
+    # Rule 0 — continuation override
+    if next_w is not None and (next_w["start"] - silence["end"]) < 0.10:
+        return "mid-sentence"
+
     if dur >= LONG_PAUSE_FOR_SENTENCE_END:
         return "sentence-end"
     if dur >= MEDIUM_PAUSE_WITH_PUNCT_SEC and has_terminal_punct:
         return "sentence-end"
     if dur >= SHORT_PAUSE_WITH_PUNCT_AND_GAP_SEC and has_terminal_punct:
-        # If we also have a measurable gap between silence-end and next word
-        # (i.e., the speaker didn't restart immediately), it's a real boundary.
         if next_w is None or next_w["start"] - silence["end"] >= 0.02:
             return "sentence-end"
     return "mid-sentence"

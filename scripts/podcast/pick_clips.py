@@ -2152,7 +2152,15 @@ def pick_clips_from_transcript(
     # Backstop check: each surviving pick must end at a real audio sentence
     # boundary OR have terminal punctuation on its last word. Anything that
     # slipped through the LLM gates gets rejected here.
-    validated = _last_sentence_grammar_guard(validated, tx, silence_map)
+    # Round 20.1: pass the sentence_end_map (NOT the full silence_map) so
+    # the "long tail silence" path only triggers on real conversational
+    # boundaries — not mid-sentence emphasis pauses (the c1 Black Flag bug
+    # where a 0.66s dramatic pause inside "this is a game ... that is like
+    # over a decade old" was misclassified as sentence-end by duration).
+    validated = _last_sentence_grammar_guard(
+        validated, tx,
+        sentence_end_map if sentence_end_map else silence_map,
+    )
 
     # ROUND 20 LAYER C: final coherence sanity check on FINALIZED clips.
     # Last LLM gate — re-checks the locked-in clip text from a cold-viewer
