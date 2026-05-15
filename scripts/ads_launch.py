@@ -375,13 +375,21 @@ def rebuild_listing_tree(ad_group_id: str, ad_group_resource: str,
         print(f"  [dry] would full-rebuild listing tree")
         return
 
-    # Step 1: atomic remove-all + create the 5 structural nodes.
+    # Step 1a: remove all existing nodes (tolerant of phantom resources from
+    # prior partial runs / manual cleanup). Children-first via reverse criterionId sort.
     def tmp(n: int) -> str:
         return f"customers/{CUSTOMER_ID}/adGroupCriteria/{ad_group_id}~-{n}"
 
+    if existing:
+        remove_ops = [{"remove": g["resourceName"]}
+                      for g in sorted(existing, key=lambda x: int(x.get("criterionId", 0)),
+                                       reverse=True)]
+        n_removed = _batched_mutate(remove_ops, "/adGroupCriteria:mutate", token,
+                                    batch_size=1000, partial_failure=True)
+        print(f"  removed {n_removed} existing nodes (partial-failure tolerant)")
+
+    # Step 1b: create the 5 structural nodes atomically (single batch).
     structural_ops: list[dict] = []
-    for g in sorted(existing, key=lambda x: int(x.get("criterionId", 0)), reverse=True):
-        structural_ops.append({"remove": g["resourceName"]})
 
     # 1: ROOT (subdivides on product_item_id)
     structural_ops.append({"create": {
@@ -439,7 +447,7 @@ def rebuild_listing_tree(ad_group_id: str, ad_group_resource: str,
     }})
 
     api("POST", "/adGroupCriteria:mutate", token, {"operations": structural_ops})
-    print(f"  structural skeleton: removed {len(existing)} + created 5 nodes")
+    print(f"  structural skeleton: created 5 new nodes")
 
     # Step 2: re-fetch root resource_name (server-assigned), then batch create item_id negatives
     refreshed = get_listing_groups(ad_group_id, token)

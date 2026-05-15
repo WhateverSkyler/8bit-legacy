@@ -221,6 +221,25 @@ def _append_log(entry: dict) -> None:
     UPLOAD_LOG.write_text(json.dumps(existing, indent=2))
 
 
+def _already_uploaded_sources() -> set[str]:
+    """Return set of normalized source identifiers already logged in UPLOAD_LOG.
+    The log writer stores `source` as relative-to-ROOT when possible, absolute
+    otherwise — normalize both forms by stem-matching for robust comparison."""
+    if not UPLOAD_LOG.exists():
+        return set()
+    try:
+        existing = json.loads(UPLOAD_LOG.read_text())
+    except (OSError, json.JSONDecodeError):
+        return set()
+    out: set[str] = set()
+    for e in existing:
+        src = e.get("source")
+        if src:
+            # Compare by stem — robust to relative/absolute differences across hosts.
+            out.add(Path(src).stem)
+    return out
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("video", nargs="?")
@@ -228,6 +247,8 @@ def main() -> int:
     parser.add_argument("--privacy", default="private", choices=["private", "unlisted", "public"])
     parser.add_argument("--batch", help="Dir of MP4s to upload")
     parser.add_argument("--schedule", help="JSON file: {stem: iso_publish_at} for batch mode")
+    parser.add_argument("--reupload", action="store_true",
+                        help="Re-upload even if source path is already in youtube_uploads.json")
     args = parser.parse_args()
 
     schedule = {}
@@ -242,7 +263,12 @@ def main() -> int:
     if not targets:
         parser.error("pass a video path or --batch")
 
+    already = _already_uploaded_sources() if not args.reupload else set()
+
     for v in targets:
+        if v.stem in already:
+            print(f"[SKIP] {v.name} — already in youtube_uploads.json (pass --reupload to override)")
+            continue
         try:
             pub = args.publish_at
             if not pub:

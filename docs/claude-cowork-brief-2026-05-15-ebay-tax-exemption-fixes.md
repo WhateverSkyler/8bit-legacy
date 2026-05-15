@@ -1,9 +1,16 @@
 # Cowork Brief — 2026-05-15 — eBay Tax Exemption follow-up fixes
 
-**Type:** Mac cowork session (Preview PDF edit + browser eBay UI).
-**Estimated time:** 15 min.
-**Mutations authorized:** YES — (a) edit + re-export the signed MTC PDF, (b) add business name + address to eBay account, (c) re-upload corrected MTC. No other account changes.
+**Type:** Mac cowork session (Preview re-sign + browser eBay UI).
+**Estimated time:** 10 min.
+**Mutations authorized:** YES — (a) sign + export the regenerated MTC PDF, (b) add business name + address to eBay account, (c) re-upload corrected MTC. No other account changes.
 **Run this from the Mac** — signed PDFs are at `~/Documents/8bit-tax/`.
+
+## 2026-05-15 update — PDF already regenerated
+
+`scripts/fix-mtc-ga-only.py` was run and produced a fresh **unsigned** PDF at:
+`~/Documents/8bit-tax/MTC-Uniform-Resale-Cert_8BitLegacy_FILLED_v2.pdf`
+
+This new PDF has the GA permit `308837085` ONLY in the GA cell. All 34 other state cells are blank (verified programmatically: exactly 1 non-empty state cell, GA). IL/KS/MD were already blank by design. **No Preview rectangle redaction needed** — Step 1 below is now just sign + export.
 
 ## Why this exists
 
@@ -16,21 +23,21 @@ SST cert was NOT flagged. Leave it alone for now. (If a separate SST rejection e
 
 **Strategic cost of complying with #1:** MTC effectively narrows from 35 states → GA only. We already have GA ST-5, so MTC becomes redundant. We lose ~15 states that are MTC-only (AK, AL, AZ, CA, CO, CT, FL, HI, ID, ME, MO, NM, PA, SC, TX). The remaining ~24 states stay covered by the SST cert (assuming it gets through). TX, FL, PA are the meaningful ones. Tristan accepted this trade — comply rather than push back.
 
-## Step 1 — Fix the MTC PDF (Preview, ~5 min)
+## Step 1 — Sign the regenerated MTC PDF (Preview, ~3 min)
 
-1. Open `~/Documents/8bit-tax/MTC-Uniform-Resale-Cert_8BitLegacy_SIGNED.pdf` in Preview.
-2. Tools → Annotate → Rectangle (or use the rectangle shape tool).
-3. Set fill color to **white**, no border.
-4. Cover the `308837085` text in **every state cell EXCEPT GA**. The state grid is on page 1. States to white-out:
-   - AK, AL, AR, AZ, CA, CO, CT, FL, HI, ID, IA, KY, ME, MI, MN, MO, NE, NV, NJ, NM, NC, ND, OH, OK, PA, RI, SC, SD, TN, TX, UT, VT, WA, WI
-   - That's **34 cells**. IL/KS/MD are already blank — leave them blank.
-   - **DO NOT** white-out the GA cell (`308837085` should remain visible there).
-5. Optional sanity: zoom in and confirm the GA row still shows the number, all others are blank.
-6. **File → Export as PDF** → save as `~/Documents/8bit-tax/MTC-Uniform-Resale-Cert_8BitLegacy_SIGNED_v2.pdf` (new filename — keep the original `_SIGNED.pdf` intact as backup).
+The corrected unsigned PDF is already on disk: `~/Documents/8bit-tax/MTC-Uniform-Resale-Cert_8BitLegacy_FILLED_v2.pdf`.
+
+1. Open `MTC-Uniform-Resale-Cert_8BitLegacy_FILLED_v2.pdf` in Preview.
+2. Visually verify the state grid on page 1: GA cell shows `308837085`, every other state cell is blank. IL/KS/MD blank too (as before).
+3. **Check the "Retailer" checkbox** (top of page 1, "is engaged or is registered as a..." list) — pypdf's checkbox encoding may not have taken; click it manually.
+4. **Sign the "Authorized Signature" line** at the bottom. Use Tools → Annotate → Signature, or your saved signature. Title (MEMBER) and Date (2026-05-14) are already filled.
+5. **File → Export as PDF** → save as `~/Documents/8bit-tax/MTC-Uniform-Resale-Cert_8BitLegacy_SIGNED_v2.pdf`.
+
+The original `_SIGNED.pdf` stays as a backup — do not overwrite it.
 
 ### Pause-and-ask
-- **The white rectangles look obviously like white rectangles** (visible borders, off-white tint): try Tools → Annotate → Eraser instead, or set the rect to truly pure white (#FFFFFF) with zero stroke. eBay reviewers are lenient on cosmetics but cleaner is better.
-- **Can't tell which cell is which** (state labels overlap weirdly): screenshot the page, send it to me, I'll mark up which cells to clear.
+- **GA cell looks blank in Preview**: the field value is set programmatically — try zoom in, or open in Acrobat Reader to confirm. If still blank, ping me to re-run the script.
+- **Retailer checkbox doesn't visually appear checked even after clicking**: try clicking it twice (Preview sometimes ghosts the state). If still no check, mark a clean checkmark with the annotate tool.
 
 ## Step 2 — Add business name to eBay account (~3 min)
 

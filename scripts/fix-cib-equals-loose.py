@@ -132,16 +132,20 @@ def parse_price_text(text: str) -> float:
     return float(m.group(1)) if m else 0.0
 
 
+_CONSOLE_SUFFIX_RE = re.compile(
+    # End-anchored: PC sometimes appends the console name to result titles.
+    # Anchoring at end-of-string avoids stripping the leading 'Wii' from titles
+    # like 'Wii Sports Resort' (was the source of the May 2026 pricing bug
+    # — same fix as scripts/search-price-refresh.py).
+    r'\s*(NES|SNES|Nintendo 64|Gamecube|Gameboy|Genesis|Playstation|PS[123]|'
+    r'Dreamcast|Saturn|GBA|Xbox|Wii|Sega|Atari|TurboGrafx|GameBoy|Game Boy)\s*$',
+    flags=re.IGNORECASE,
+)
+
 def title_similarity(query_title: str, result_title: str) -> float:
     """Same logic as search-price-refresh.py — word overlap with a sequel penalty."""
     qt = re.sub(r"[^a-z0-9 ]", "", query_title.lower()).split()
-    rt_clean = re.sub(
-        r"(NES|SNES|Nintendo 64|Gamecube|Gameboy|Genesis|Playstation|PS[123]|"
-        r"Dreamcast|Saturn|GBA|Xbox|Wii|Sega|Atari|TurboGrafx|GameBoy|Game Boy).*$",
-        "",
-        result_title,
-        flags=re.IGNORECASE,
-    ).strip()
+    rt_clean = _CONSOLE_SUFFIX_RE.sub("", result_title).strip()
     rt = re.sub(r"[^a-z0-9 ]", "", rt_clean.lower()).split()
     if not qt or not rt:
         return 0.0

@@ -325,6 +325,8 @@ def main() -> int:
     parser.add_argument("--batch", help="Directory of transcripts to process")
     parser.add_argument("--episode-number", type=int, help="Episode number (full only; next is 6)")
     parser.add_argument("--episode-date", default="2026-04-14", help="Recorded date YYYY-MM-DD")
+    parser.add_argument("--regen", action="store_true",
+                        help="Overwrite existing metadata files (default: skip if exists)")
     args = parser.parse_args()
 
     METADATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -354,6 +356,14 @@ def main() -> int:
                     pass
 
     for t in targets:
+        out = METADATA_DIR / t.name
+        # Idempotency guard: skip if metadata already exists. Critical when
+        # re-running the pipeline for an episode that has already been YT-uploaded
+        # — overwriting would produce a new title/description that diverges from
+        # what the audience saw at publish.
+        if out.exists() and not args.regen:
+            print(f"[SKIP] {t.name} (metadata exists; pass --regen to overwrite)")
+            continue
         try:
             meta = generate(
                 t,
@@ -362,7 +372,6 @@ def main() -> int:
                 episode_number=args.episode_number,
                 episode_date=args.episode_date,
             )
-            out = METADATA_DIR / t.name
             out.write_text(json.dumps(meta, indent=2))
             print(f"[META] {t.name} → {meta['title']}")
         except Exception as exc:

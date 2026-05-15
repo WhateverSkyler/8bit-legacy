@@ -28,3 +28,7 @@ data/social-media/*.log
 # Local-only design assets (PSDs, thumbnail working files — large binaries)
 podcast-assets/
 *.psd
+
+# Signed tax / legal docs — never commit (canonical copies live at ~/Documents/8bit-tax/)
+*SIGNED*.pdf
+*FILLED*.pdf
