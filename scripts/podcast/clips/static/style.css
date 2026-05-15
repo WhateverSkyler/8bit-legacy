@@ -242,10 +242,17 @@ main {
 #transcript {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 16px 20px;
   font-size: 16px;
-  line-height: 1.8;
+  line-height: 1.85;
   background: var(--bg);
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  /* Cap reading width for long episodes — easier on the eyes than full-width */
+  max-width: 980px;
+  margin: 0 auto;
 }
 
 .word {

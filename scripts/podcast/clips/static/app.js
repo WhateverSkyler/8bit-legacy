@@ -191,6 +191,9 @@ function renderTranscript() {
     for (const c of endsByWord[i]) {
       container.appendChild(makeHandle(c.id, 'end'));
     }
+
+    // Single space between words so browser can wrap lines normally.
+    appendSpace(container);
   }
 }
 
@@ -201,9 +204,17 @@ function makeWordSpan(w) {
   span.dataset.wordIdx = w.i;
   span.dataset.start = w.start;
   span.dataset.end = w.end;
-  span.textContent = w.text;
+  // WhisperX may or may not store words with leading spaces depending on
+  // realignment. Always strip and we'll add a single space between every
+  // word span ourselves at render time. Keeps spacing uniform.
+  span.textContent = (w.text || '').replace(/^\s+|\s+$/g, '');
   span.addEventListener('click', () => onWordClick(w));
   return span;
+}
+
+function appendSpace(container) {
+  // Plain text node so the browser can break lines at this point.
+  container.appendChild(document.createTextNode(' '));
 }
 
 function makeHandle(clipId, side) {
