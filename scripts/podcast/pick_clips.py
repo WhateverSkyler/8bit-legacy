@@ -1379,13 +1379,24 @@ def _cold_opener_gate(picks: list[dict], segments: list[dict],
 def _end_completion_gate(picks: list[dict], segments: list[dict],
                          transcript: dict | None = None,
                          silence_map: list[dict] | None = None) -> list[dict]:
-    """Per pick, extend or keep the clip-end position using audio-silence
-    candidates. Concurrent batch (asyncio.gather), Sonnet model.
+    """Round 19 (2026-05-14): semantic topic-conclusion gate.
 
-    If silence_map is None (e.g., audio unavailable on host), gate becomes
-    a no-op — returns picks unchanged. _snap_and_validate would already have
-    REJECTed any pick with no silence in window, so survivors are at clean
-    silence-aligned ends.
+    For each pick:
+      1. Build a transcript window from clip_start through start + CEILING + 10s,
+         with timestamps per sentence (the natural end-of-last-word time).
+      2. Ask Claude (Sonnet) WHERE in this window the discussion of the clip's
+         topic naturally concludes. Returns a single timestamp.
+      3. Snap that timestamp to the nearest real audio silence (silence_map),
+         preserving the round-14 guarantee of never cutting mid-word.
+      4. Enforce DURATION_FLOOR / DURATION_CEILING bounds.
+
+    No candidate-picking, no hardcoded phrase regexes — pure semantic LLM
+    judgment on the full conversational arc. Generalizes to any topic, any
+    phrasing, any speaker. Earlier rounds' candidate-list + safety-net regex
+    approaches were narrow / brittle; this replaces them.
+
+    If silence_map is None (audio unavailable), gate is a no-op — picks
+    retain their _snap_and_validate-placed silence-aligned ends.
     """
     if not picks:
         return picks
@@ -1393,8 +1404,8 @@ def _end_completion_gate(picks: list[dict], segments: list[dict],
         return picks
     try:
         from _qa_helpers import call_claude_text_async, log_gate_decision, SONNET_MODEL
-        from qa_prompts import END_COMPLETION_TEST_V1
-        from _silence_detect import silence_candidates_for_gate
+        from qa_prompts import TOPIC_CONCLUSION_TEST_V1
+        from _silence_detect import nearest_silence_at_or_after
     except ImportError as exc:
         print(f"  [end-check] qa helpers unavailable ({exc}) — skipping gate")
         return picks
@@ -1404,285 +1415,148 @@ def _end_completion_gate(picks: list[dict], segments: list[dict],
     episode_stem = picks[0].get("source_stem", "unknown")
     sentences = _extract_sentences(transcript or {"segments": segments})
 
-    def _preceding_sentence_text(silence_start: float) -> str:
-        """Return the text of the sentence whose end is closest to (and at or
-        before) silence_start."""
-        best = None
+    def _build_window_text(start: float, window_end: float) -> str:
+        """Build the transcript window text Claude sees: each in-window
+        sentence on its own line, prefixed with its end-of-last-word
+        timestamp. Compact format so Claude can scan it quickly.
+        """
+        lines: list[str] = []
         for s in sentences:
-            if s["end"] <= silence_start + 0.10:
-                best = s
-            else:
+            if s["end"] < start - 0.5:
+                continue
+            if s["start"] > window_end:
                 break
-        return best["text"].strip() if best else "(no preceding sentence)"
+            t = s["end"]
+            txt = s["text"].strip()
+            if not txt:
+                continue
+            lines.append(f"[{t:7.2f}s] {txt}")
+        return "\n".join(lines)
 
-    def _following_sentence_text(silence_end: float) -> str:
-        """Return the text of the sentence whose start is closest to (and at or
-        after) silence_end. Used to show Claude what would be CUT OFF if we
-        end at this silence — critical for detecting setup→payoff endings."""
-        for s in sentences:
-            if s["start"] >= silence_end - 0.05:
-                return s["text"].strip()
-        return "(no following sentence — end of episode)"
-
-    # Round 18 (2026-05-14): deterministic safety nets — detect obvious
-    # setup-at-end (force EXTEND) or pivot-after-end (force SHORTEN) so we
-    # don't depend on Claude's judgment for unambiguous cases. These regexes
-    # run AFTER Claude returns a verdict; they override Claude's PASS only
-    # when the pattern is clear.
-    _SETUP_KEYWORDS_RE = re.compile(
-        r"\b(can you guess|guess which|guess what|guess who|"
-        r"specifically thinking|particular(?:ly)? thinking|"
-        r"one specifically|one in particular|"
-        r"wait (?:un)?til you hear|you know what(?:'s| is)|"
-        r"i'll tell you|i will tell you|"
-        r"there is one|there's one|here'?s the thing|"
-        r"but here'?s|the thing is|"
-        r"let me ask|let me tell)\b",
-        re.IGNORECASE,
-    )
-    _PIVOT_LEAD_RE = re.compile(
-        r"^\s*(?:um\s+|uh\s+|yeah[, ]?\s*|well[, ]?\s*|okay[, ]?\s*|alright[, ]?\s*|"
-        r"oh[, ]?\s*|so[, ]?\s*)?"  # optional filler-leadin
-        r"(?:anyway|moving on|switching (?:topics?|gears?)|"
-        r"by the way|on (?:a|another) (?:different )?(?:note|topic)|"
-        r"different (?:topic|subject|thing)|"
-        r"speaking of|that reminds me|let me ask|"
-        r"alright (?:moving|so)|okay so|alright then|"
-        r"(?:to|let's) (?:switch|change) (?:topics?|subjects?|gears?))\b",
-        re.IGNORECASE,
-    )
-
-    def _is_setup(text: str) -> bool:
-        text = text.strip()
-        if not text:
-            return False
-        # Ends with question mark → almost always a setup awaiting answer
-        if text.rstrip(' "\'').endswith("?"):
-            return True
-        return bool(_SETUP_KEYWORDS_RE.search(text))
-
-    def _is_pivot(text: str) -> bool:
-        if not text:
-            return False
-        return bool(_PIVOT_LEAD_RE.match(text.strip()))
-
-    work: list[tuple[dict, str | None, str, list[dict], int]] = []
+    work: list[tuple[dict, str | None, str, float, float]] = []
+    # work tuple: (pick, prompt or None, clip_id, start_sec, current_end_sec)
     for pick in picks:
         try:
-            end = float(pick.get("end_sec", 0))
             start = float(pick.get("start_sec", 0))
+            end = float(pick.get("end_sec", 0))
         except (TypeError, ValueError):
-            work.append((pick, None, "?", [], 0))
-            continue
-        # Round 16 (2026-05-14): bidirectional candidates.
-        # Window includes silences BEFORE the current end (for SHORTEN candidates)
-        # and AFTER (for EXTEND candidates). Floor for SHORTEN candidates is
-        # `start + 0.6 * DURATION_FLOOR_SEC` — a clip can shorten to ~60% of
-        # the floor if a stronger landing exists earlier (we'd rather have a
-        # shorter sharp clip than a longer one that includes a tangent).
-        from _silence_detect import GATE_END_MIN_SILENCE_SEC
-        cands_raw = silence_candidates_for_gate(
-            silence_map,
-            lo=start + DURATION_FLOOR_SEC * 0.6,
-            hi=start + DURATION_CEILING_SEC + 2.0,
-            max_n=12,  # wider window — split between BEFORE/AFTER
-            min_silence=GATE_END_MIN_SILENCE_SEC,
-        )
-
-        # Split into BEFORE (≤ current end) and AFTER (> current end).
-        # Round 18: bumped from 3 each side to 4 — more Claude options for
-        # finding the right payoff landing or the right pre-pivot landing.
-        before_cands = [c for c in cands_raw if c["clip_end"] <= end + 0.20]
-        after_cands = [c for c in cands_raw if c["clip_end"] > end + 0.20]
-        # Take the 4 closest BEFORE (= latest 4 before current) and 4 earliest AFTER.
-        before_cands = before_cands[-4:]
-        after_cands = after_cands[:4]
-
-        # The current end is whichever BEFORE is closest to `end`, OR the
-        # earliest AFTER if no BEFORE exists.
-        current = before_cands[-1] if before_cands else (after_cands[0] if after_cands else None)
-        if current is None:
-            work.append((pick, None, "?", [], 0))
+            work.append((pick, None, "?", 0.0, 0.0))
             continue
 
-        # Assemble the candidate list in chronological order, dedup against current.
-        chronological: list[dict] = []
-        for c in before_cands + after_cands:
-            if not chronological or c["clip_end"] != chronological[-1]["clip_end"]:
-                chronological.append(c)
-
-        # Need at least 2 distinct candidates to make a meaningful choice.
-        if len(chronological) < 2:
-            work.append((pick, None, "?", [], 0))
+        # Window extends from clip start to start + CEILING + 10s — gives
+        # Claude visibility past the duration cap so it can see the natural
+        # conclusion even if it's a bit past where we'd clip.
+        window_end = start + DURATION_CEILING_SEC + 10.0
+        window_text = _build_window_text(start, window_end)
+        if not window_text:
+            work.append((pick, None, "?", start, end))
             continue
 
-        # Mark which one is CURRENT (the index Claude should treat as the baseline).
-        current_idx = chronological.index(current)
-        candidates = chronological
-
-        # Build the prompt block. Mark `<-- CURRENT` on the current end.
-        def _candidate_block(i: int, c: dict) -> str:
-            before_text = _preceding_sentence_text(c['start'])[:180]
-            after_text = _following_sentence_text(c['end'])[:180]
-            mark = " <-- CURRENT" if i == current_idx else ""
-            return (
-                f"  #{i}: clip_end={c['clip_end']:.2f}s  silence_dur={c['duration']:.2f}s{mark}\n"
-                f"      BEFORE (last heard): \"{before_text}\"\n"
-                f"      AFTER  (cut off):    \"{after_text}\""
-            )
-        candidates_block = "\n".join(
-            _candidate_block(i, c) for i, c in enumerate(candidates)
-        )
-        last_sentence = _preceding_sentence_text(current["start"])
-        prompt = END_COMPLETION_TEST_V1.format(
-            last_sentence=last_sentence[:600],
-            candidates_block=candidates_block[:5000],
+        title = pick.get("title") or "(no title)"
+        prompt = TOPIC_CONCLUSION_TEST_V1.format(
+            title=title[:200],
+            start_sec=start,
+            window_end=window_end,
+            window_text=window_text[:8000],   # ~8K chars caps the prompt size
         )
         clip_id = pick.get("clip_id") or pick.get("title", "?")[:60]
-        # Stash current_idx in the work tuple so the verdict-handler knows it.
-        work.append((pick, prompt, clip_id, candidates, current_idx))
+        work.append((pick, prompt, clip_id, start, end))
 
     async def _gather_all() -> list:
         tasks = []
-        for _p, prompt, _c, _cands, _cur in work:
+        for _p, prompt, _c, _s, _e in work:
             if prompt is None:
                 tasks.append(asyncio.sleep(0, result=None))
             else:
-                tasks.append(call_claude_text_async(prompt, model=SONNET_MODEL, max_tokens=300))
+                tasks.append(call_claude_text_async(prompt, model=SONNET_MODEL, max_tokens=400))
         return await asyncio.gather(*tasks, return_exceptions=True)
 
     n_with_prompt = sum(1 for _, p, _, _, _ in work if p)
     if n_with_prompt == 0:
         return picks
-    print(f"  [end-check] running {n_with_prompt} picks concurrently...")
+    print(f"  [end-check] semantic conclusion: {n_with_prompt} picks concurrently...")
     import time as _time
     t0 = _time.time()
     verdicts = asyncio.run(_gather_all())
     print(f"  [end-check] completed in {_time.time() - t0:.1f}s")
 
     surviving: list[dict] = []
-    n_extended = 0
-    n_shortened = 0
-    for (pick, prompt, clip_id, candidates, current_idx), verdict in zip(work, verdicts):
-        if prompt is None or not candidates:
+    n_changed = 0
+    for (pick, prompt, clip_id, start, old_end), verdict in zip(work, verdicts):
+        if prompt is None:
             surviving.append(pick)
             continue
         if isinstance(verdict, Exception) or not verdict or not isinstance(verdict, dict):
+            print(f"  [end-check] (no verdict for {pick.get('title','?')[:40]}) — keeping current end")
             surviving.append(pick)
             continue
-        rec = (verdict.get("recommendation") or "").upper()
-        reason = verdict.get("reason", "?")
+
+        try:
+            target_t = float(verdict.get("conclusion_timestamp"))
+        except (TypeError, ValueError):
+            target_t = None
+        reason = (verdict.get("reason") or "")[:80]
+        topic_in_focus = (verdict.get("topic_in_focus") or "")[:80]
 
         log_gate_decision(episode_stem, "end_check", clip_id, verdict, extra={
             "title": pick.get("title", "?"),
-            "end_sec": pick.get("end_sec", 0),
-            "n_candidates": len(candidates),
-            "current_idx": current_idx,
+            "start_sec": start,
+            "old_end_sec": old_end,
+            "topic_in_focus": topic_in_focus,
         })
 
-        # Round 16: EXTEND moves to a LATER candidate (idx > current_idx),
-        # SHORTEN moves to an EARLIER candidate (idx < current_idx).
-        if rec in ("EXTEND", "SHORTEN"):
-            try:
-                idx = int(verdict.get("chosen_index"))
-            except (TypeError, ValueError):
-                idx = None
-            if idx is None or idx < 0 or idx >= len(candidates) or idx == current_idx:
-                surviving.append(pick)
-                continue
-            # Direction sanity check: EXTEND requires LATER, SHORTEN requires EARLIER.
-            if rec == "EXTEND" and idx <= current_idx:
-                surviving.append(pick)
-                continue
-            if rec == "SHORTEN" and idx >= current_idx:
-                surviving.append(pick)
-                continue
-            chosen = candidates[idx]
-            old_end = float(pick.get("end_sec", 0))
-            new_end = chosen["clip_end"]
-            new_dur = new_end - float(pick.get("start_sec", 0))
-            # Respect floor + ceiling. SHORTEN that pushes below DURATION_FLOOR
-            # is rejected — we'd rather keep the longer-but-imperfect clip than
-            # have a fragment.
-            if new_dur > DURATION_CEILING_SEC or new_dur < DURATION_FLOOR_SEC:
-                surviving.append(pick)
-                continue
-            print(f"  [end-check] {rec}: {pick.get('title','?')[:50]} "
-                  f"end {old_end:.1f}s → {new_end:.2f}s ({reason[:60]})")
-            pick = {**pick,
-                    "end_sec": round(new_end, 2),
-                    "duration_sec": round(new_dur, 2),
-                    f"_end_{rec.lower()}ed": True}
-            if rec == "EXTEND":
-                n_extended += 1
-            else:
-                n_shortened += 1
+        # Sanity-check Claude's target — must be after pick start and not absurd.
+        if target_t is None or target_t <= start + 1.0:
+            print(f"  [end-check] invalid target_t={target_t} from {pick.get('title','?')[:40]} — keeping current end")
             surviving.append(pick)
             continue
 
-        # Round 18 deterministic safety nets — override PASS (or REJECT) when
-        # the CURRENT end's BEFORE/AFTER text matches an obvious setup or
-        # pivot pattern. Only fires when Claude PASSed/REJECTed (didn't
-        # already pick EXTEND/SHORTEN above).
-        cur = candidates[current_idx]
-        cur_before = _preceding_sentence_text(cur["start"])
-        cur_after = _following_sentence_text(cur["end"])
+        # Clamp to ceiling — never extend past start + CEILING regardless of
+        # what Claude says.
+        ceiling_t = start + DURATION_CEILING_SEC
+        if target_t > ceiling_t:
+            target_t = ceiling_t
 
-        if _is_setup(cur_before):
-            # CURRENT BEFORE is a setup (ends with ?, contains "guess which", etc.)
-            # — clip CANNOT end here. Force EXTEND to the nearest LATER
-            # candidate whose BEFORE is NOT a setup.
-            forced_idx: int | None = None
-            for j in range(current_idx + 1, len(candidates)):
-                cand_before = _preceding_sentence_text(candidates[j]["start"])
-                if not _is_setup(cand_before):
-                    forced_idx = j
-                    break
-            if forced_idx is not None:
-                chosen = candidates[forced_idx]
-                new_end = chosen["clip_end"]
-                new_dur = new_end - float(pick.get("start_sec", 0))
-                if DURATION_FLOOR_SEC <= new_dur <= DURATION_CEILING_SEC:
-                    print(f"  [end-check] SAFETY-NET EXTEND: {pick.get('title','?')[:50]} "
-                          f"end {pick.get('end_sec',0):.1f}s → {new_end:.2f}s "
-                          f"(setup detected: {cur_before[:50]!r})")
-                    pick = {**pick,
-                            "end_sec": round(new_end, 2),
-                            "duration_sec": round(new_dur, 2),
-                            "_end_extended_safety": True}
-                    n_extended += 1
-                    surviving.append(pick)
-                    continue
+        # Snap to nearest real audio silence at-or-after target_t (with a
+        # back-search window for cases where target_t lands JUST after a
+        # silence period). Preserves round-14's mid-word-cut guarantee:
+        # the actual clip end is ALWAYS inside a real silence.
+        new_end = nearest_silence_at_or_after(
+            silence_map, target_t,
+            forward_window=2.0, back_window=2.0,
+        )
+        if new_end is None:
+            # No real silence within ±2s of the conclusion. Keep old end —
+            # _snap_and_validate already placed it in a real silence.
+            print(f"  [end-check] no silence near target={target_t:.2f}s for {pick.get('title','?')[:40]} — keeping current end")
+            surviving.append(pick)
+            continue
 
-        if _is_pivot(cur_after):
-            # CURRENT AFTER starts a topic pivot — clip's current end captures
-            # the pivot we want to cut. Force SHORTEN to the nearest EARLIER
-            # candidate whose BEFORE is still on-topic.
-            forced_idx_s: int | None = None
-            for j in range(current_idx - 1, -1, -1):
-                forced_idx_s = j
-                break
-            if forced_idx_s is not None:
-                chosen = candidates[forced_idx_s]
-                new_end = chosen["clip_end"]
-                new_dur = new_end - float(pick.get("start_sec", 0))
-                if DURATION_FLOOR_SEC <= new_dur <= DURATION_CEILING_SEC:
-                    print(f"  [end-check] SAFETY-NET SHORTEN: {pick.get('title','?')[:50]} "
-                          f"end {pick.get('end_sec',0):.1f}s → {new_end:.2f}s "
-                          f"(pivot detected: {cur_after[:50]!r})")
-                    pick = {**pick,
-                            "end_sec": round(new_end, 2),
-                            "duration_sec": round(new_dur, 2),
-                            "_end_shortened_safety": True}
-                    n_shortened += 1
-                    surviving.append(pick)
-                    continue
+        # Enforce DURATION_FLOOR / CEILING. If the suggested new end produces
+        # a clip outside bounds, keep the original.
+        new_dur = new_end - start
+        if new_dur < DURATION_FLOOR_SEC or new_dur > DURATION_CEILING_SEC:
+            print(f"  [end-check] target out-of-bounds (new_dur={new_dur:.1f}s) for {pick.get('title','?')[:40]} — keeping current end")
+            surviving.append(pick)
+            continue
 
-        # PASS or REJECT (we keep on REJECT — the existing pick is at least
-        # silence-aligned; better than dropping the clip entirely)
+        # Only apply if the new end is actually different from the current.
+        if abs(new_end - old_end) < 0.05:
+            surviving.append(pick)
+            continue
+
+        direction = "EXTEND" if new_end > old_end else "SHORTEN"
+        print(f"  [end-check] {direction}: {pick.get('title','?')[:50]} "
+              f"end {old_end:.2f}s → {new_end:.2f}s  (target={target_t:.2f}s; {reason})")
+        pick = {**pick,
+                "end_sec": round(new_end, 2),
+                "duration_sec": round(new_dur, 2),
+                "_end_semantic_conclusion": True,
+                "_end_conclusion_target": round(target_t, 2)}
+        n_changed += 1
         surviving.append(pick)
 
-    print(f"  [end-check] {len(picks)} picks → {n_extended} extended, {n_shortened} shortened")
+    print(f"  [end-check] {len(picks)} picks → {n_changed} re-ended via semantic conclusion")
     return surviving
 
 

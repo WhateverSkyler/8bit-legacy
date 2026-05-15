@@ -198,6 +198,44 @@ def best_end_in_window(silence_map: list[dict], target_end: float,
     return chosen["start"] + END_OFFSET_INTO_SILENCE
 
 
+def nearest_silence_at_or_after(silence_map: list[dict], target_t: float,
+                                forward_window: float = 2.0,
+                                back_window: float = 2.0,
+                                min_duration: float = GATE_END_MIN_SILENCE_SEC,
+                                ) -> float | None:
+    """Round 19 (2026-05-14): given an LLM-identified semantic conclusion
+    timestamp, return the clip-end timestamp at the nearest REAL audio
+    silence period at-or-after that point. Preserves the round-14 guarantee
+    that clip ends always land in real silence (no mid-word cuts).
+
+    Search order:
+      1. Forward: first silence whose `start >= target_t` AND
+         `start <= target_t + forward_window` AND `duration >= min_duration`.
+      2. If nothing forward: backward to the latest silence whose `start <=
+         target_t` AND `start >= target_t - back_window` AND duration ok.
+
+    Returns `silence_start + END_OFFSET_INTO_SILENCE` (= 100ms into the
+    silence). Returns None if no qualifying silence within ±forward/back.
+
+    Used by `_end_completion_gate` (round 19) to snap an LLM-returned
+    semantic conclusion timestamp to the closest real audio pause.
+    """
+    forward: dict | None = None
+    backward: dict | None = None
+    for s in silence_map:
+        if s["duration"] < min_duration:
+            continue
+        if target_t <= s["start"] <= target_t + forward_window:
+            forward = s
+            break  # silence_map is sorted; first hit is closest forward
+        if target_t - back_window <= s["start"] < target_t:
+            backward = s  # keep updating to find LATEST in back window
+    chosen = forward if forward is not None else backward
+    if chosen is None:
+        return None
+    return chosen["start"] + END_OFFSET_INTO_SILENCE
+
+
 def silence_candidates_for_gate(silence_map: list[dict],
                                 lo: float, hi: float,
                                 min_silence: float = MIN_END_SILENCE_SEC,

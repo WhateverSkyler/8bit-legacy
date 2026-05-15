@@ -132,6 +132,37 @@ Return STRICT JSON ONLY (no prose, no markdown fences, start with `{{` end with 
 # end. Claude sees the LAST sentence + 5 candidate continuation
 # sentences and decides whether to keep the current end or extend.
 
+TOPIC_CONCLUSION_TEST_V1 = """You are deciding where a short-form podcast clip should END. The viewer (TikTok/Reels, scrolling, no prior context, no part-2) needs to hear the FULL topic this clip is about — and nothing AFTER that topic concludes.
+
+Clip topic / title: "{title}"
+Clip starts at: {start_sec:.2f}s
+
+Below is the transcript of the source episode from the clip's start through {window_end:.2f}s (a window that covers the full possible clip length plus extra). Each sentence is annotated with the timestamp at which its LAST word ends.
+
+```
+{window_text}
+```
+
+Your task: read this window and identify the exact timestamp where the discussion of THIS specific topic (per the title) naturally CONCLUDES. The clip should end at or just past that timestamp.
+
+Reason about the conversation arc:
+
+- The speaker is making a point or telling a story about the clip's topic. Find where that point is fully made.
+- The clip CANNOT end on a setup: a question awaiting an answer, a tease ("I'll tell you why"), a contrast marker ("but here's the thing"), an unresolved pronoun ("then he said..."), or any phrasing that creates expectation of more on the same topic.
+- The clip CANNOT end after the topic has shifted: a pivot to a new topic, a tangent, filler reactions ("yeah", "anyway") after the point has already been made, or a speaker pulling the conversation in a different direction.
+- The conclusion timestamp is the moment AFTER the speaker has fully landed their point, BEFORE any pivot or tangent.
+
+Use semantic reasoning. Do not pattern-match on specific words — judge based on whether the topic of THE CLIP has been fully discussed.
+
+Return STRICT JSON ONLY (no prose, no markdown fences, start with `{{` end with `}}`):
+{{
+  "topic_in_focus": "one-sentence statement of what the clip is actually about (your own summary, used as a sanity check)",
+  "conclusion_timestamp": <float — the end-of-last-word timestamp where this topic naturally concludes>,
+  "reason": "one short sentence — what makes that the natural conclusion, and what comes after that you're cutting off"
+}}
+"""
+
+
 END_COMPLETION_TEST_V1 = """You are deciding where a short-form clip should END so the viewer hears a COMPLETE thought AND nothing irrelevant after it. TikTok/Reels viewer — no follow-up context, no part-2, the clip stands alone.
 
 You can move the clip end EARLIER (SHORTEN) or LATER (EXTEND), or PASS. The current end is marked `<-- CURRENT` in the candidate list.
