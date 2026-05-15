@@ -136,6 +136,7 @@ TOPIC_CONCLUSION_TEST_V1 = """You are deciding where a short-form podcast clip s
 
 Clip topic / title: "{title}"
 Clip starts at: {start_sec:.2f}s
+Allowed end-timestamp range: [{floor_t:.2f}s ... {ceiling_t:.2f}s] (clip must be at least {floor_sec:.0f}s and at most {ceiling_sec:.0f}s long; the answer MUST fall in this range — pick the BEST conclusion inside it).
 
 Below is the transcript of the source episode from the clip's start through {window_end:.2f}s (a window that covers the full possible clip length plus extra). Each sentence is annotated with the timestamp at which its LAST word ends.
 

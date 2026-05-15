@@ -1453,11 +1453,17 @@ def _end_completion_gate(picks: list[dict], segments: list[dict],
             continue
 
         title = pick.get("title") or "(no title)"
+        floor_t = start + DURATION_FLOOR_SEC
+        ceiling_t = start + DURATION_CEILING_SEC
         prompt = TOPIC_CONCLUSION_TEST_V1.format(
             title=title[:200],
             start_sec=start,
             window_end=window_end,
             window_text=window_text[:8000],   # ~8K chars caps the prompt size
+            floor_t=floor_t,
+            ceiling_t=ceiling_t,
+            floor_sec=DURATION_FLOOR_SEC,
+            ceiling_sec=DURATION_CEILING_SEC,
         )
         clip_id = pick.get("clip_id") or pick.get("title", "?")[:60]
         work.append((pick, prompt, clip_id, start, end))
@@ -1486,8 +1492,12 @@ def _end_completion_gate(picks: list[dict], segments: list[dict],
         if prompt is None:
             surviving.append(pick)
             continue
-        if isinstance(verdict, Exception) or not verdict or not isinstance(verdict, dict):
-            print(f"  [end-check] (no verdict for {pick.get('title','?')[:40]}) — keeping current end")
+        if isinstance(verdict, Exception):
+            print(f"  [end-check] EXCEPTION for {pick.get('title','?')[:40]}: {verdict!r} — keeping current end")
+            surviving.append(pick)
+            continue
+        if not verdict or not isinstance(verdict, dict):
+            print(f"  [end-check] NO/INVALID verdict for {pick.get('title','?')[:40]}: {verdict!r} — keeping current end")
             surviving.append(pick)
             continue
 
@@ -1523,7 +1533,7 @@ def _end_completion_gate(picks: list[dict], segments: list[dict],
         # the actual clip end is ALWAYS inside a real silence.
         new_end = nearest_silence_at_or_after(
             silence_map, target_t,
-            forward_window=2.0, back_window=2.0,
+            forward_window=5.0, back_window=5.0,
         )
         if new_end is None:
             # No real silence within ±2s of the conclusion. Keep old end —

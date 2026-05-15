@@ -199,8 +199,8 @@ def best_end_in_window(silence_map: list[dict], target_end: float,
 
 
 def nearest_silence_at_or_after(silence_map: list[dict], target_t: float,
-                                forward_window: float = 2.0,
-                                back_window: float = 2.0,
+                                forward_window: float = 5.0,
+                                back_window: float = 5.0,
                                 min_duration: float = GATE_END_MIN_SILENCE_SEC,
                                 ) -> float | None:
     """Round 19 (2026-05-14): given an LLM-identified semantic conclusion
