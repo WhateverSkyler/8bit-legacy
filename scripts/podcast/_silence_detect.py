@@ -199,41 +199,53 @@ def best_end_in_window(silence_map: list[dict], target_end: float,
 
 
 def nearest_silence_at_or_after(silence_map: list[dict], target_t: float,
-                                forward_window: float = 5.0,
-                                back_window: float = 5.0,
+                                forward_window: float = 0.5,
+                                back_window: float = 0.5,
                                 min_duration: float = GATE_END_MIN_SILENCE_SEC,
                                 ) -> float | None:
-    """Round 19 (2026-05-14): given an LLM-identified semantic conclusion
-    timestamp, return the clip-end timestamp at the nearest REAL audio
-    silence period at-or-after that point. Preserves the round-14 guarantee
-    that clip ends always land in real silence (no mid-word cuts).
+    """Round 19.5 (2026-05-14): land the clip end AT Claude's semantic
+    conclusion timestamp, snapping to a nearby real audio silence ONLY if
+    one exists very close (±0.5s).
 
-    Search order:
-      1. Forward: first silence whose `start >= target_t` AND
-         `start <= target_t + forward_window` AND `duration >= min_duration`.
-      2. If nothing forward: backward to the latest silence whose `start <=
-         target_t` AND `start >= target_t - back_window` AND duration ok.
+    Critical: Claude's target_t is the end-of-last-word it wants included.
+    Snapping to a silence MUCH later than target (e.g., +4s) means playing
+    through 4 seconds of content Claude did NOT mean to include — likely a
+    new sentence. That's the user-reported r19.0 failure mode ("EVERY
+    video cuts off mid-sentence").
 
-    Returns `silence_start + END_OFFSET_INTO_SILENCE` (= 100ms into the
-    silence). Returns None if no qualifying silence within ±forward/back.
-
-    Used by `_end_completion_gate` (round 19) to snap an LLM-returned
-    semantic conclusion timestamp to the closest real audio pause.
+    Rules:
+      1. If target_t is INSIDE a silence period [start, end]:
+         → land at max(target_t, silence_start + 0.10), never earlier than target_t.
+      2. If silence exists JUST AFTER target_t (≤ 0.5s forward) with
+         duration ≥ min_duration:
+         → land at silence_start + 0.10s.
+      3. If target_t is just PAST a silence end (≤ 0.5s, silence_end < target_t):
+         → land at target_t + 0.05 (essentially the target with a tiny tail).
+      4. Otherwise:
+         → return None — caller should fall back to using target_t directly.
+            Better to clip a trailing consonant by a few ms than play 4s
+            of unwanted content past Claude's intended end.
     """
     forward: dict | None = None
-    backward: dict | None = None
     for s in silence_map:
         if s["duration"] < min_duration:
             continue
-        if target_t <= s["start"] <= target_t + forward_window:
+        s_start = s["start"]
+        s_end = s["end"]
+        # 1. Target is INSIDE this silence period.
+        if s_start <= target_t <= s_end + 0.05:
+            proposed = s_start + END_OFFSET_INTO_SILENCE
+            return max(proposed, target_t)
+        # 2. Silence is just forward of target.
+        if target_t < s_start <= target_t + forward_window:
             forward = s
             break  # silence_map is sorted; first hit is closest forward
-        if target_t - back_window <= s["start"] < target_t:
-            backward = s  # keep updating to find LATEST in back window
-    chosen = forward if forward is not None else backward
-    if chosen is None:
-        return None
-    return chosen["start"] + END_OFFSET_INTO_SILENCE
+        # No useful 'before' case — if silence ends before target_t, the
+        # last word starts after that silence, so landing in silence cuts
+        # the last word. Skip.
+    if forward is not None:
+        return forward["start"] + END_OFFSET_INTO_SILENCE
+    return None
 
 
 def silence_candidates_for_gate(silence_map: list[dict],

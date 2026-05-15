@@ -1527,20 +1527,20 @@ def _end_completion_gate(picks: list[dict], segments: list[dict],
         if target_t > ceiling_t:
             target_t = ceiling_t
 
-        # Snap to nearest real audio silence at-or-after target_t (with a
-        # back-search window for cases where target_t lands JUST after a
-        # silence period). Preserves round-14's mid-word-cut guarantee:
-        # the actual clip end is ALWAYS inside a real silence.
-        new_end = nearest_silence_at_or_after(
-            silence_map, target_t,
-            forward_window=5.0, back_window=5.0,
-        )
-        if new_end is None:
-            # No real silence within ±2s of the conclusion. Keep old end —
-            # _snap_and_validate already placed it in a real silence.
-            print(f"  [end-check] no silence near target={target_t:.2f}s for {pick.get('title','?')[:40]} — keeping current end")
-            surviving.append(pick)
-            continue
+        # Snap to a NEARBY (±0.5s) silence if one exists; otherwise use
+        # target_t directly with a tiny tail pad. Round 19.5: NEVER snap
+        # forward by 1+ seconds — that includes content Claude did not
+        # mean to capture (the round-19.0 bug where clips played 4s past
+        # Claude's intended end and cut mid-sentence on the next sentence).
+        snap = nearest_silence_at_or_after(silence_map, target_t)
+        if snap is not None:
+            new_end = snap
+        else:
+            # No nearby silence — use Claude's target directly. The last
+            # word ends at whisperX's `word.end` ≈ target_t; a 0.05s pad
+            # gives the audio a tiny natural tail. Won't be mid-word
+            # because target_t IS a word end per the prompt design.
+            new_end = target_t + 0.05
 
         # Enforce DURATION_FLOOR / CEILING. If the suggested new end produces
         # a clip outside bounds, keep the original.
