@@ -318,14 +318,14 @@ def stage_pick_clips(args, state) -> int:
             # Without chunking, the single 25-pick call against the truncated
             # 80k-char transcript would miss content in the middle/end of the
             # episode that didn't make it to any auto-segmented topic.
-            return _run(["python3", str(ROOT / "scripts" / "podcast" / "clips" / "extract.py"),
-                         str(full_transcript)], args.dry_run)
+            return _run(["python3", str(ROOT / "scripts" / "podcast" / "pick_clips.py"),
+                         str(full_transcript), "--chunk-minutes", "30"], args.dry_run)
 
     # Episode-scoped batch: pick_clips.py --mtime-within-days 7 filters out
     # transcripts older than 7 days. This captures the current episode's
     # freshly-generated transcripts (just touched by transcribe/auto_segment)
     # and excludes already-published prior episodes' leftovers.
-    return _run(["python3", str(ROOT / "scripts" / "podcast" / "clips" / "extract.py"),
+    return _run(["python3", str(ROOT / "scripts" / "podcast" / "pick_clips.py"),
                  "--batch", str(TRANSCRIPTS),
                  "--mtime-within-days", "7"], args.dry_run)
 
